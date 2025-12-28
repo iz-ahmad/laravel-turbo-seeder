@@ -1,10 +1,10 @@
 <?php
 
-namespace IzAhmad\LaravelTurboSeeder\Tests;
+namespace IzAhmad\TurboSeeder\Tests;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use IzAhmad\LaravelTurboSeeder\LaravelTurboSeederServiceProvider;
+use IzAhmad\TurboSeeder\TurboSeederServiceProvider;
 
 class TestCase extends Orchestra
 {
@@ -13,14 +13,14 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'IzAhmad\\LaravelTurboSeeder\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'IzAhmad\\TurboSeeder\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
     }
 
     protected function getPackageProviders($app)
     {
         return [
-            LaravelTurboSeederServiceProvider::class,
+            TurboSeederServiceProvider::class,
         ];
     }
 

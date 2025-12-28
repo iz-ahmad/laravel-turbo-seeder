@@ -1,5 +1,5 @@
 <?php
 
-use IzAhmad\LaravelTurboSeeder\Tests\TestCase;
+use IzAhmad\TurboSeeder\Tests\TestCase;
 
 uses(TestCase::class)->in(__DIR__);

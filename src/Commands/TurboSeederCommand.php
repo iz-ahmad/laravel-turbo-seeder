@@ -1,12 +1,12 @@
 <?php
 
-namespace IzAhmad\LaravelTurboSeeder\Commands;
+namespace IzAhmad\TurboSeeder\Commands;
 
 use Illuminate\Console\Command;
 
-class LaravelTurboSeederCommand extends Command
+class TurboSeederCommand extends Command
 {
-    public $signature = 'laravel-turbo-seeder';
+    public $signature = 'turbo-seeder';
 
     public $description = 'My command';
 

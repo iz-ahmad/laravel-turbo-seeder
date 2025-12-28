@@ -1,6 +1,6 @@
 <?php
 
-// config for IzAhmad/LaravelTurboSeeder
+// config for IzAhmad/TurboSeeder
 return [
 
 ];

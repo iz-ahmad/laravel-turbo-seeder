@@ -1,19 +1,6 @@
 # A package for laravel to enable High-performance bulk seeding
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/iz-ahmad/laravel-turbo-seeder.svg?style=flat-square)](https://packagist.org/packages/iz-ahmad/laravel-turbo-seeder)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/iz-ahmad/laravel-turbo-seeder/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/iz-ahmad/laravel-turbo-seeder/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/iz-ahmad/laravel-turbo-seeder/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/iz-ahmad/laravel-turbo-seeder/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/iz-ahmad/laravel-turbo-seeder.svg?style=flat-square)](https://packagist.org/packages/iz-ahmad/laravel-turbo-seeder)
-
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
-
-## Support us
-
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/laravel-turbo-seeder.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/laravel-turbo-seeder)
-
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
-
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards).
+Blazing fast database seeder for Laravel - seed millions of records in minutes, or even seconds!
 
 ## Installation
 
@@ -52,8 +39,8 @@ php artisan vendor:publish --tag="laravel-turbo-seeder-views"
 ## Usage
 
 ```php
-$laravelTurboSeeder = new IzAhmad\LaravelTurboSeeder();
-echo $laravelTurboSeeder->echoPhrase('Hello, IzAhmad!');
+$turboSeeder = new IzAhmad\TurboSeeder();
+echo $turboSeeder->echoPhrase('Hello, IzAhmad!');
 ```
 
 ## Testing

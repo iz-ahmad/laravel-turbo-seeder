@@ -1,12 +1,12 @@
 <?php
 
-namespace IzAhmad\LaravelTurboSeeder;
+namespace IzAhmad\TurboSeeder;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use IzAhmad\LaravelTurboSeeder\Commands\LaravelTurboSeederCommand;
+use IzAhmad\TurboSeeder\Commands\TurboSeederCommand;
 
-class LaravelTurboSeederServiceProvider extends PackageServiceProvider
+class TurboSeederServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
@@ -20,6 +20,6 @@ class LaravelTurboSeederServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews()
             ->hasMigration('create_laravel_turbo_seeder_table')
-            ->hasCommand(LaravelTurboSeederCommand::class);
+            ->hasCommand(TurboSeederCommand::class);
     }
 }

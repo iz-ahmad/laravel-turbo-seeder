@@ -1,6 +1,6 @@
 <?php
 
-namespace IzAhmad\LaravelTurboSeeder\Database\Factories;
+namespace IzAhmad\TurboSeeder\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 

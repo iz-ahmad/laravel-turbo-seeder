@@ -1,10 +1,15 @@
 {
     "name": "iz-ahmad/laravel-turbo-seeder",
-    "description": "A package for laravel to enable High-performance bulk seeding",
+    "description": "Blazing fast database seeder for Laravel - seed millions of records in minutes, or even seconds!",
     "keywords": [
         "iz-ahmad",
         "laravel",
-        "laravel-turbo-seeder"
+        "laravel-turbo-seeder",
+        "seeder",
+        "database",
+        "performance",
+        "bulk-insert",
+        "bulk-seeding"
     ],
     "homepage": "https://github.com/iz-ahmad/laravel-turbo-seeder",
     "license": "MIT",
@@ -34,13 +39,13 @@
     },
     "autoload": {
         "psr-4": {
-            "IzAhmad\\LaravelTurboSeeder\\": "src/",
-            "IzAhmad\\LaravelTurboSeeder\\Database\\Factories\\": "database/factories/"
+            "IzAhmad\\TurboSeeder\\": "src/",
+            "IzAhmad\\TurboSeeder\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "IzAhmad\\LaravelTurboSeeder\\Tests\\": "tests/",
+            "IzAhmad\\TurboSeeder\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/"
         }
     },
@@ -62,10 +67,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "IzAhmad\\LaravelTurboSeeder\\LaravelTurboSeederServiceProvider"
+                "IzAhmad\\TurboSeeder\\TurboSeederServiceProvider"
             ],
             "aliases": {
-                "LaravelTurboSeeder": "IzAhmad\\LaravelTurboSeeder\\Facades\\LaravelTurboSeeder"
+                "TurboSeeder": "IzAhmad\\TurboSeeder\\Facades\\TurboSeeder"
             }
         }
     },
