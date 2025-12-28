@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace IzAhmad\LaravelTurboSeeder\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class LaravelTurboSeederCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-turbo-seeder';
 
     public $description = 'My command';
 

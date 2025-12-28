@@ -1,17 +1,17 @@
 {
-    "name": ":vendor_slug/:package_slug",
-    "description": ":package_description",
+    "name": "iz-ahmad/laravel-turbo-seeder",
+    "description": "A package for laravel to enable High-performance bulk seeding",
     "keywords": [
-        ":vendor_name",
+        "iz-ahmad",
         "laravel",
-        ":package_slug"
+        "laravel-turbo-seeder"
     ],
-    "homepage": "https://github.com/:vendor_slug/:package_slug",
+    "homepage": "https://github.com/iz-ahmad/laravel-turbo-seeder",
     "license": "MIT",
     "authors": [
         {
-            "name": ":author_name",
-            "email": "author@domain.com",
+            "name": "iz-ahmad",
+            "email": "n.ahmad.web.cit22@gmail.com",
             "role": "Developer"
         }
     ],
@@ -30,18 +30,17 @@
         "pestphp/pest-plugin-laravel": "^4.0",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan-deprecation-rules": "^2.0",
-        "phpstan/phpstan-phpunit": "^2.0",
-        "spatie/laravel-ray": "^1.35"
+        "phpstan/phpstan-phpunit": "^2.0"
     },
     "autoload": {
         "psr-4": {
-            "VendorName\\Skeleton\\": "src/",
-            "VendorName\\Skeleton\\Database\\Factories\\": "database/factories/"
+            "IzAhmad\\LaravelTurboSeeder\\": "src/",
+            "IzAhmad\\LaravelTurboSeeder\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "VendorName\\Skeleton\\Tests\\": "tests/",
+            "IzAhmad\\LaravelTurboSeeder\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/"
         }
     },
@@ -63,10 +62,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "VendorName\\Skeleton\\SkeletonServiceProvider"
+                "IzAhmad\\LaravelTurboSeeder\\LaravelTurboSeederServiceProvider"
             ],
             "aliases": {
-                "Skeleton": "VendorName\\Skeleton\\Facades\\Skeleton"
+                "LaravelTurboSeeder": "IzAhmad\\LaravelTurboSeeder\\Facades\\LaravelTurboSeeder"
             }
         }
     },
