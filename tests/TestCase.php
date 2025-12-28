@@ -3,8 +3,8 @@
 namespace IzAhmad\TurboSeeder\Tests;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Orchestra\Testbench\TestCase as Orchestra;
 use IzAhmad\TurboSeeder\TurboSeederServiceProvider;
+use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
 {
