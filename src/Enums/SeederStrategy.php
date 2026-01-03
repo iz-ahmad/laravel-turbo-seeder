@@ -17,6 +17,14 @@ enum SeederStrategy: string
         };
     }
 
+    public function getDisplayName(): string
+    {
+        return match ($this) {
+            self::DEFAULT => 'Default',
+            self::CSV => 'CSV',
+        };
+    }
+    
     public function isFileBasedStrategy(): bool
     {
         return $this === self::CSV;
