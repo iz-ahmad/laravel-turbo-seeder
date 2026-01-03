@@ -36,4 +36,3 @@ enum MemoryThreshold: int
         };
     }
 }
-
