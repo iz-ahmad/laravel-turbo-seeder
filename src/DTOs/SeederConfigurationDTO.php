@@ -8,6 +8,10 @@ use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 
 final readonly class SeederConfigurationDTO
 {
+    /**
+     * @param  array<int, string>  $columns
+     * @param  array<string, mixed>  $options
+     */
     public function __construct(
         public string $table,
         public array $columns,
