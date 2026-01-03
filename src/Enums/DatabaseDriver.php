@@ -46,4 +46,3 @@ enum DatabaseDriver: string
         };
     }
 }
-

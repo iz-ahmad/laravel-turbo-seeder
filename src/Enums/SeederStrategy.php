@@ -24,7 +24,7 @@ enum SeederStrategy: string
             self::CSV => 'CSV',
         };
     }
-    
+
     public function isFileBasedStrategy(): bool
     {
         return $this === self::CSV;
