@@ -22,4 +22,3 @@ enum SeederStrategy: string
         return $this === self::CSV;
     }
 }
-

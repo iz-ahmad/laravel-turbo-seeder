@@ -2,9 +2,9 @@
 
 namespace IzAhmad\TurboSeeder;
 
+use IzAhmad\TurboSeeder\Commands\TurboSeederCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use IzAhmad\TurboSeeder\Commands\TurboSeederCommand;
 
 class TurboSeederServiceProvider extends PackageServiceProvider
 {
