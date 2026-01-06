@@ -12,6 +12,7 @@ class TurboSeederCommand extends Command
 
     public function handle(): int
     {
+        // TODO: implement the command
         $this->comment('All done');
 
         return self::SUCCESS;
