@@ -23,7 +23,7 @@ enum DatabaseDriver: string
     public function getOptimalChunkSize(): int
     {
         return match ($this) {
-            self::MYSQL => 5000,
+            self::MYSQL => 4000,
             self::PGSQL => 3000,
             self::SQLITE => 2000,
         };

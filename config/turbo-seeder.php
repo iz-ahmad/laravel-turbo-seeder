@@ -12,7 +12,7 @@ return [
     | overridden by database-specific chunk sizes if not explicitly set.
     |
     */
-    'default_chunk_size' => 5000,
+    'default_chunk_size' => 4000,
 
     /*
     |--------------------------------------------------------------------------
@@ -24,7 +24,7 @@ return [
     |
     */
     'chunk_sizes' => [
-        'mysql' => 5000,
+        'mysql' => 4000,
         'pgsql' => 3000,
         'sqlite' => 2000,
     ],

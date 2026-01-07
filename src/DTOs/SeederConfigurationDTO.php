@@ -51,7 +51,7 @@ final readonly class SeederConfigurationDTO
      */
     public function getChunkSize(?int $default = null): int
     {
-        return $this->options['chunk_size'] ?? $default ?? 5000;
+        return $this->options['chunk_size'] ?? $default ?? 4000;
     }
 
     /**
