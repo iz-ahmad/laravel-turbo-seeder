@@ -59,7 +59,7 @@ final readonly class SeederConfigurationDTO
      */
     public function hasProgressTracking(): bool
     {
-        return $this->options['progress'] ?? true;
+        return $this->options['progress_tracking'] ?? true;
     }
 
     /**
