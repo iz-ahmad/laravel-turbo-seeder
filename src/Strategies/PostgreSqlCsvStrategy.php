@@ -45,7 +45,7 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
             DB::connection($this->dbConnection->name)->statement($sql);
         } catch (\Exception $e) {
             throw new \RuntimeException(
-                'PostgreSQL COPY command failed. Ensure that the DB server has access to the CSV file and the database user has COPY privileges.'.
+                'PostgreSQL COPY command failed. Ensure that the DB server has access to the CSV file and the database user has COPY privileges. '.
                 'Error: '.$e->getMessage(),
                 0,
                 $e

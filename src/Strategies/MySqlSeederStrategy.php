@@ -30,7 +30,7 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
     }
 
     /**
-     * Insert records using a single multi-row INSERT statement for maximum performance.
+     * Insert records using a single multi-row INSERT statement.
      *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
@@ -54,7 +54,16 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
             }
         }
 
-        DB::connection($this->dbConnection->name)->statement($sql, $bindings);
+        try {
+            DB::connection($this->dbConnection->name)->statement($sql, $bindings);
+        } catch (\Exception $e) {
+            throw new \RuntimeException(
+                'Failed to insert records into MySQL database. '.
+                'Error: '.$e->getMessage(),
+                0,
+                $e
+            );
+        }
     }
 
     /**

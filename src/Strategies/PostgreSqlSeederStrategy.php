@@ -31,7 +31,6 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
 
     /**
      * Insert records using multi-row INSERT statement.
-     * PostgreSQL handles this efficiently with its native insert optimizations.
      *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
@@ -55,7 +54,16 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
             }
         }
 
-        DB::connection($this->dbConnection->name)->statement($sql, $bindings);
+        try {
+            DB::connection($this->dbConnection->name)->statement($sql, $bindings);
+        } catch (\Exception $e) {
+            throw new \RuntimeException(
+                'Failed to insert records into PostgreSQL database. '.
+                'Error: '.$e->getMessage(),
+                0,
+                $e
+            );
+        }
     }
 
     /**

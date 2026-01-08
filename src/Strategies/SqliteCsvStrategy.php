@@ -82,7 +82,7 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
             DB::connection($this->dbConnection->name)->statement($sql, $bindings);
         } catch (\Exception $e) {
             throw new \RuntimeException(
-                'Failed to insert chunk into SQLite database.'.
+                'Failed to insert chunk into SQLite database. '.
                 'Error: '.$e->getMessage(),
                 0,
                 $e
