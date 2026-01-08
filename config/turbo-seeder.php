@@ -74,6 +74,7 @@ return [
         'field_enclosure' => '"',
         'batch_size' => 10000,
         'gc_frequency' => 5,
+        'reader_chunk_size_for_sqlite' => 500,
     ],
 
     /*
