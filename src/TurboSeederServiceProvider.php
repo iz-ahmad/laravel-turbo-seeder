@@ -9,6 +9,7 @@ use IzAhmad\TurboSeeder\Actions\CleanupEnvironmentAction;
 use IzAhmad\TurboSeeder\Actions\ExecuteSeederAction;
 use IzAhmad\TurboSeeder\Actions\GenerateCsvAction;
 use IzAhmad\TurboSeeder\Actions\PrepareEnvironmentAction;
+use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\Commands\TurboSeederCommand;
 use IzAhmad\TurboSeeder\Contracts\MemoryManagerInterface;
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
@@ -76,8 +77,16 @@ class TurboSeederServiceProvider extends PackageServiceProvider
             );
         });
 
+        $this->app->bind(TurboSeederBuilder::class, function ($app) {
+            return new TurboSeederBuilder(
+                $app->make(SeederOrchestrator::class)
+            );
+        });
+
         $this->app->singleton('turbo-seeder', function ($app) {
-            return $app->make(SeederOrchestrator::class);
+            return new TurboSeeder(
+                $app->make(SeederOrchestrator::class)
+            );
         });
     }
 
