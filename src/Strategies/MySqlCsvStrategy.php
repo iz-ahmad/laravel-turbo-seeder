@@ -14,6 +14,11 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
         return $driver === DatabaseDriver::MYSQL;
     }
 
+    /**
+     * Import data from a CSV file into the database.
+     *
+     * @param  array<int, string>  $columns
+     */
     protected function importFromCsv(string $table, array $columns): void
     {
         $this->ensureLocalInfileEnabled();
