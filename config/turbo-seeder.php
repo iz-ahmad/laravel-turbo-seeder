@@ -72,6 +72,8 @@ return [
         'line_terminator' => "\n",
         'field_delimiter' => ',',
         'field_enclosure' => '"',
+        'batch_size' => 10000,
+        'gc_frequency' => 5,
     ],
 
     /*
