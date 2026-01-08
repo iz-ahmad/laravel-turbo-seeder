@@ -51,31 +51,29 @@ final class CsvWriter
     }
 
     /**
-     * Write multiple rows at once.
+     * Write a single row to the CSV file.
      *
-     * @param  array<int, array<int|string, mixed>>  $rows
+     * @param  array<int|string, mixed>  $row
      */
-    public function writeRows(array $rows): void
+    public function writeRow(array $row): void
     {
-        foreach ($rows as $row) {
-            if (! $this->handle) {
-                throw new \RuntimeException('File handle not initialized. Call open() first.');
-            }
-
-            $success = fputcsv(
-                $this->handle,
-                $row,
-                $this->delimiter,
-                $this->enclosure,
-                $this->escape
-            );
-
-            if ($success === false) {
-                throw new \RuntimeException('Failed to write CSV row');
-            }
-
-            $this->rowsWritten++;
+        if (! $this->handle) {
+            throw new \RuntimeException('File handle not initialized. Call open() first.');
         }
+
+        $success = fputcsv(
+            $this->handle,
+            $row,
+            $this->delimiter,
+            $this->enclosure,
+            $this->escape
+        );
+
+        if ($success === false) {
+            throw new \RuntimeException('Failed to write CSV row');
+        }
+
+        $this->rowsWritten++;
     }
 
     /**
