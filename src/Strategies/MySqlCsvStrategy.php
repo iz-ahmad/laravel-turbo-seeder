@@ -36,7 +36,16 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
             ({$columnNames})
         ";
 
-        DB::connection($this->dbConnection->name)->statement($sql);
+        try {
+            DB::connection($this->dbConnection->name)->statement($sql);
+        } catch (\Exception $e) {
+            throw new \RuntimeException(
+                'MySQL LOAD DATA LOCAL INFILE command failed. Ensure local_infile is enabled and the database user has LOAD DATA LOCAL INFILE privileges. '.
+                'Error: '.$e->getMessage(),
+                0,
+                $e
+            );
+        }
     }
 
     /**

@@ -77,8 +77,7 @@ abstract class AbstractCsvStrategy extends AbstractSeederStrategy
     }
 
     /**
-     * Get the absolute file path for database import.
-     * Some databases require absolute paths.
+     * Get the absolute path to the temporary CSV file.
      */
     protected function getAbsoluteFilePath(): string
     {
