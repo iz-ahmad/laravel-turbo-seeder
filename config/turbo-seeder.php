@@ -89,4 +89,15 @@ return [
         'enabled' => true,
         'update_frequency' => 1000,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Seeder Classes Namespace
+    |--------------------------------------------------------------------------
+    |
+    | The namespace for seeder classes using the turbo seeder package. This is used to automatically
+    | resolve the seeder class name if it is not fully qualified.
+    |
+    */
+    'seeder_classes_namespace' => 'Database\\Seeders\\',
 ];

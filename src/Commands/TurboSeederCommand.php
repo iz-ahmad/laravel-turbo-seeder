@@ -1,20 +1,115 @@
 <?php
 
+declare(strict_types=1);
+
 namespace IzAhmad\TurboSeeder\Commands;
 
 use Illuminate\Console\Command;
 
 class TurboSeederCommand extends Command
 {
-    public $signature = 'turbo-seeder';
+    public $signature = 'turbo-seeder:run
+                        {seeder? : The seeder class name (optional)}
+                        {--class= : The seeder class name}
+                        {--connection= : Database connection name}
+                        {--strategy=default : Seeding strategy (default or csv)}
+                        {--count=1000 : Number of records to seed}
+                        {--chunk= : Custom chunk size}
+                        {--no-progress : Disable progress bar}
+                        {--no-fk-checks : Disable foreign key checks}
+                        {--no-transactions : Disable transactions}';
 
-    public $description = 'My command';
+    public $description = 'Run TurboSeeder for high-performance and fast database seeding with bulk amount of data';
 
     public function handle(): int
     {
-        // TODO: implement the command
-        $this->comment('All done');
+        if (! $seeder = $this->validateArguments()) {
+            return self::FAILURE;
+        }
 
-        return self::SUCCESS;
+        $this->info('🚀 Starting TurboSeeder...');
+        $this->newLine();
+
+        $startTime = microtime(true);
+        $startMemory = memory_get_usage(true);
+
+        try {
+            $seeder->run();
+
+            $duration = round(microtime(true) - $startTime, 2);
+            $memoryUsed = round((memory_get_peak_usage(true) - $startMemory) / 1024 / 1024, 2);
+
+            $this->newLine();
+            $this->components->info('✅ Seeding completed successfully!');
+
+            $this->displayMetrics($duration, $memoryUsed);
+
+            return self::SUCCESS;
+
+        } catch (\Throwable $e) {
+            $this->newLine();
+            $this->components->error('❌ Seeding failed!');
+            $this->error($e->getMessage());
+
+            if ($this->output->isVerbose()) {
+                $this->newLine();
+                $this->line($e->getTraceAsString());
+            }
+
+            return self::FAILURE;
+        }
+    }
+
+    /**
+     * Validate the arguments and return the seeder class.
+     */
+    private function validateArguments(): ?object
+    {
+        $seederClass = $this->argument('seeder') ?? $this->option('class');
+
+        if (! $seederClass) {
+            $this->error('❌ Seeder class is required!');
+            $this->info('Usage: php artisan turbo-seeder:run YourSeederClass');
+            $this->info('   or: php artisan turbo-seeder:run --class=YourSeederClass');
+
+            return null;
+        }
+
+        if (! str_contains($seederClass, '\\')) {
+            $seederNamespace = config('turbo-seeder.seeder_classes_namespace', 'Database\\Seeders\\');
+            $seederClass = "{$seederNamespace}{$seederClass}";
+        }
+
+        if (! class_exists($seederClass)) {
+            $this->error("❌ Seeder class [{$seederClass}] not found!");
+
+            return null;
+        }
+
+        $seeder = app($seederClass);
+
+        if (! method_exists($seeder, 'run')) {
+            $this->error('❌ Seeder class must have a run() method!');
+
+            return null;
+        }
+
+        return $seeder;
+    }
+
+    /**
+     * display seeding metrics in a formatted table.
+     */
+    private function displayMetrics(float $duration, float $memoryMB): void
+    {
+        $this->newLine();
+
+        $this->table(
+            ['Metric', 'Value'],
+            [
+                ['🕒 Duration', round($duration, 2).' seconds'],
+                ['💾 Peak Memory Usage', round($memoryMB, 2).' MB'],
+            ]
+        );
     }
 }
