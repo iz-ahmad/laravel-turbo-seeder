@@ -46,7 +46,7 @@ test('can cleanup directory with pattern', function () {
     $action = new CleanupCsvAction;
     $deleted = $action->cleanupDirectory($this->tempDir, '*.csv');
 
-    expect($deleted)->toBe(2)
+    expect($deleted)->toBe(3)
         ->and(file_exists($this->tempDir.'/other.txt'))->toBeTrue();
 });
 

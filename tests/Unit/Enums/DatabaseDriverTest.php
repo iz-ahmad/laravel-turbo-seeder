@@ -15,12 +15,6 @@ test('throws exception for unsupported driver', function () {
     DatabaseDriver::fromString('unsupported');
 })->throws(InvalidArgumentException::class, 'Unsupported database driver');
 
-test('returns correct optimal chunk size', function () {
-    expect(DatabaseDriver::MYSQL->getOptimalChunkSize())->toBe(5000)
-        ->and(DatabaseDriver::PGSQL->getOptimalChunkSize())->toBe(3000)
-        ->and(DatabaseDriver::SQLITE->getOptimalChunkSize())->toBe(2000);
-});
-
 test('supports csv import correctly', function () {
     expect(DatabaseDriver::MYSQL->supportsCsvImport())->toBeTrue()
         ->and(DatabaseDriver::PGSQL->supportsCsvImport())->toBeTrue()

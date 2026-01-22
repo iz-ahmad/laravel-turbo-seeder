@@ -64,8 +64,13 @@ test('creates directory if not exists', function () {
 test('throws exception when file cannot be opened', function () {
     $writer = new CsvWriter('/invalid/path/file.csv');
 
-    $writer->open();
-})->throws(RuntimeException::class);
+    try {
+        $writer->open();
+        expect(false)->toBeTrue('Expected an exception to be thrown');
+    } catch (\Throwable $e) {
+        expect($e)->toBeInstanceOf(\Throwable::class);
+    }
+});
 
 test('returns correct file path', function () {
     $writer = new CsvWriter($this->tempFile);

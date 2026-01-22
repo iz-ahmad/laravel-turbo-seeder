@@ -23,7 +23,8 @@ test('handles generator returning wrong columns', function () {
         ->count(10)
         ->run();
 
-    expect($result->success)->toBeTrue();
+    expect($result->success)->toBeFalse()
+        ->and($result->errorMessage)->not->toBeNull();
 });
 
 test('handles empty generator result', function () {
@@ -33,7 +34,8 @@ test('handles empty generator result', function () {
         ->count(10)
         ->run();
 
-    expect($result->success)->toBeTrue();
+    expect($result->success)->toBeFalse()
+        ->and($result->errorMessage)->not->toBeNull();
 });
 
 test('handles null values in generator', function () {

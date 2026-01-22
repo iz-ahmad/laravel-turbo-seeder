@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Tests;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\TurboSeederServiceProvider;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
 class TestCase extends OrchestraTestCase
 {
-    use RefreshDatabase;
-
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
+        $this->artisan('migrate')->run();
+        
+        DB::table('test_posts')->delete();
+        DB::table('test_users')->delete();
     }
 
     protected function getPackageProviders($app): array

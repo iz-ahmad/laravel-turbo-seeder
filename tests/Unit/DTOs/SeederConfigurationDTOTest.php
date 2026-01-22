@@ -96,7 +96,7 @@ test('checks progress tracking setting', function () {
         generator: fn ($i) => ['name' => "User {$i}"],
         count: 100,
         connection: 'mysql',
-        options: ['progress' => true]
+        options: ['progress_tracking' => true]
     );
 
     $configWithoutProgress = new SeederConfigurationDTO(
@@ -105,7 +105,7 @@ test('checks progress tracking setting', function () {
         generator: fn ($i) => ['name' => "User {$i}"],
         count: 100,
         connection: 'mysql',
-        options: ['progress' => false]
+        options: ['progress_tracking' => false]
     );
 
     expect($configWithProgress->hasProgressTracking())->toBeTrue()
