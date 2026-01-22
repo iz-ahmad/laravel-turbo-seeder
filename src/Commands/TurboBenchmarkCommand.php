@@ -25,7 +25,7 @@ class TurboBenchmarkCommand extends Command
 
         $this->info('🏁 Starting TurboSeeder Performance Benchmark...');
         $this->info("Connection: {$connection}");
-        $this->info('Records: '.number_format($records));
+        $this->info('Records: ' . number_format($records));
         $this->newLine();
 
         try {
@@ -33,30 +33,30 @@ class TurboBenchmarkCommand extends Command
             $this->info("Detected Driver: {$driver->getDisplayName()}");
             $this->newLine();
 
-            $this->createBenchmarkTable($table, $connection);
+            $this->createBenchmarkTable($table, $connection, $driver);
 
             $results = [];
 
             $this->line('🔄 Testing DEFAULT strategy...');
             $results['default'] = $this->benchmarkStrategy($table, $records, false, $connection);
 
-            $this->truncateTable($table, $connection);
+            $this->truncateTable($table, $connection, $driver);
 
             if ($driver->supportsCsvImport()) {
                 $this->line('🔄 Testing CSV strategy...');
                 $results['csv'] = $this->benchmarkStrategy($table, $records, true, $connection);
 
-                $this->truncateTable($table, $connection);
+                $this->truncateTable($table, $connection, $driver);
             }
 
             $this->displayResults($results, $records);
 
-            $this->dropBenchmarkTable($table, $connection);
+            $this->dropBenchmarkTable($table, $connection, $driver);
 
             return self::SUCCESS;
 
         } catch (\Throwable $e) {
-            $this->error('✗ Benchmark failed: '.$e->getMessage());
+            $this->error('✗ Benchmark failed: ' . $e->getMessage());
 
             return self::FAILURE;
         }
@@ -69,7 +69,7 @@ class TurboBenchmarkCommand extends Command
 
         $seederBuilder = TurboSeeder::create($table)
             ->columns(['name', 'email', 'value', 'created_at'])
-            ->generate(fn ($i) => [
+            ->generate(fn($i) => [
                 'name' => "User {$i}",
                 'email' => "user{$i}@benchmark.test",
                 'value' => random_int(1, 1000),
@@ -106,18 +106,18 @@ class TurboBenchmarkCommand extends Command
         if (isset($results['default'])) {
             $tableData[] = [
                 'DEFAULT',
-                round($results['default']['duration'], 2).' s',
-                round($results['default']['memory'], 2).' MB',
-                number_format($results['default']['rate']).' rec/s',
+                round($results['default']['duration'], 2) . ' s',
+                round($results['default']['memory'], 2) . ' MB',
+                number_format($results['default']['rate']) . ' rec/s',
             ];
         }
 
         if (isset($results['csv'])) {
             $tableData[] = [
                 'CSV',
-                round($results['csv']['duration'], 2).' s',
-                round($results['csv']['memory'], 2).' MB',
-                number_format($results['csv']['rate']).' rec/s',
+                round($results['csv']['duration'], 2) . ' s',
+                round($results['csv']['memory'], 2) . ' MB',
+                number_format($results['csv']['rate']) . ' rec/s',
             ];
         }
 
@@ -129,7 +129,7 @@ class TurboBenchmarkCommand extends Command
         if (isset($results['default'], $results['csv'])) {
             $speedup = $results['default']['duration'] / $results['csv']['duration'];
             $this->newLine();
-            $this->info('⚡ CSV is '.round($speedup, 2).'x faster than DEFAULT');
+            $this->info('⚡ CSV is ' . round($speedup, 2) . 'x faster than DEFAULT');
         }
     }
 
@@ -140,10 +140,19 @@ class TurboBenchmarkCommand extends Command
         return DatabaseDriver::fromString($driver);
     }
 
-    private function createBenchmarkTable(string $table, string $connection): void
+    private function createBenchmarkTable(string $table, string $connection, DatabaseDriver $driver): void
     {
-        \DB::connection($connection)->statement("DROP TABLE IF EXISTS `{$table}`");
+        $this->dropBenchmarkTable($table, $connection, $driver);
 
+        match ($driver) {
+            DatabaseDriver::MYSQL => $this->createMySqlTable($table, $connection),
+            DatabaseDriver::PGSQL => $this->createPostgreSqlTable($table, $connection),
+            DatabaseDriver::SQLITE => $this->createSqliteTable($table, $connection),
+        };
+    }
+
+    private function createMySqlTable(string $table, string $connection): void
+    {
         \DB::connection($connection)->statement("
             CREATE TABLE `{$table}` (
                 `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -155,13 +164,59 @@ class TurboBenchmarkCommand extends Command
         ");
     }
 
-    private function truncateTable(string $table, string $connection): void
+    private function createPostgreSqlTable(string $table, string $connection): void
     {
-        \DB::connection($connection)->statement("TRUNCATE TABLE `{$table}`");
+        \DB::connection($connection)->statement("
+            CREATE TABLE \"{$table}\" (
+                id BIGSERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                value INTEGER NOT NULL,
+                created_at TIMESTAMP NOT NULL
+            )
+        ");
     }
 
-    private function dropBenchmarkTable(string $table, string $connection): void
+    private function createSqliteTable(string $table, string $connection): void
     {
-        \DB::connection($connection)->statement("DROP TABLE IF EXISTS `{$table}`");
+        \DB::connection($connection)->statement("
+            CREATE TABLE \"{$table}\" (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                value INTEGER NOT NULL,
+                created_at TIMESTAMP NOT NULL
+            )
+        ");
+    }
+
+    private function truncateTable(string $table, string $connection, DatabaseDriver $driver): void
+    {
+        match ($driver) {
+            DatabaseDriver::MYSQL => \DB::connection($connection)->statement("
+                TRUNCATE TABLE `{$table}`
+            "),
+            DatabaseDriver::PGSQL => \DB::connection($connection)->statement("
+                TRUNCATE TABLE \"{$table}\"
+            "),
+            DatabaseDriver::SQLITE => \DB::connection($connection)->statement("
+                DELETE FROM \"{$table}\"
+            "),
+        };
+    }
+
+    private function dropBenchmarkTable(string $table, string $connection, DatabaseDriver $driver): void
+    {
+        match ($driver) {
+            DatabaseDriver::MYSQL => \DB::connection($connection)->statement("
+                DROP TABLE IF EXISTS `{$table}`
+            "),
+            DatabaseDriver::PGSQL => \DB::connection($connection)->statement("
+                DROP TABLE IF EXISTS \"{$table}\"
+            "),
+            DatabaseDriver::SQLITE => \DB::connection($connection)->statement("
+                DROP TABLE IF EXISTS \"{$table}\"
+            "),
+        };
     }
 }
