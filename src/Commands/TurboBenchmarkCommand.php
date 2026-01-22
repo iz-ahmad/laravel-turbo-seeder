@@ -56,7 +56,7 @@ class TurboBenchmarkCommand extends Command
             return self::SUCCESS;
 
         } catch (\Throwable $e) {
-            $this->error('❌ Benchmark failed: '.$e->getMessage());
+            $this->error('✗ Benchmark failed: '.$e->getMessage());
 
             return self::FAILURE;
         }

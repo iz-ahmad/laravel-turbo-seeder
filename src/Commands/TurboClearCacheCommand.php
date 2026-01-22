@@ -32,7 +32,7 @@ class TurboClearCacheCommand extends Command
             $deleted = $cleanupAction->cleanupDirectory($tempPath, '*.csv');
 
             if ($deleted > 0) {
-                $this->components->info("✅ Cleared {$deleted} temporary CSV file(s)");
+                $this->components->info("✓ Cleared {$deleted} temporary CSV file(s)");
             } else {
                 $this->info('ℹ No temporary files found');
             }

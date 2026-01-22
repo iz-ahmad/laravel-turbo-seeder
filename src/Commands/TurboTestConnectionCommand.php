@@ -31,12 +31,12 @@ class TurboTestConnectionCommand extends Command
 
             $this->testStrategies($dbConnection);
 
-            $this->components->info('✅ Connection test completed successfully!');
+            $this->components->info('✓ Connection test completed successfully!');
 
             return self::SUCCESS;
 
         } catch (\Throwable $e) {
-            $this->components->error('❌ Connection test failed!');
+            $this->components->error('✗ Connection test failed!');
             $this->error($e->getMessage());
 
             if ($this->output->isVerbose()) {

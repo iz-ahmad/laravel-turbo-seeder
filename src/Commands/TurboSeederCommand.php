@@ -40,7 +40,7 @@ class TurboSeederCommand extends Command
             $memoryUsed = round((memory_get_peak_usage(true) - $startMemory) / 1024 / 1024, 2);
 
             $this->newLine();
-            $this->components->info('✅ Seeding completed successfully!');
+            $this->components->info('✓ Seeding completed successfully!');
 
             $this->displayMetrics($duration, $memoryUsed);
 
@@ -48,7 +48,7 @@ class TurboSeederCommand extends Command
 
         } catch (\Throwable $e) {
             $this->newLine();
-            $this->components->error('❌ Seeding failed!');
+            $this->components->error('✗ Seeding failed!');
             $this->error($e->getMessage());
 
             if ($this->output->isVerbose()) {
@@ -68,7 +68,7 @@ class TurboSeederCommand extends Command
         $seederClass = $this->argument('seeder') ?? $this->option('class');
 
         if (! $seederClass) {
-            $this->error('❌ Seeder class is required!');
+            $this->error('✗ Seeder class is required!');
             $this->info('Usage: php artisan turbo-seeder:run YourSeederClass');
             $this->info('   or: php artisan turbo-seeder:run --class=YourSeederClass');
 
@@ -81,7 +81,7 @@ class TurboSeederCommand extends Command
         }
 
         if (! class_exists($seederClass)) {
-            $this->error("❌ Seeder class [{$seederClass}] not found!");
+            $this->error("✗ Seeder class [{$seederClass}] not found!");
 
             return null;
         }
@@ -89,7 +89,7 @@ class TurboSeederCommand extends Command
         $seeder = app($seederClass);
 
         if (! method_exists($seeder, 'run')) {
-            $this->error('❌ Seeder class must have a run() method!');
+            $this->error('✗ Seeder class must have a run() method!');
 
             return null;
         }
