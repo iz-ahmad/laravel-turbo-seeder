@@ -10,7 +10,10 @@ use IzAhmad\TurboSeeder\Actions\ExecuteSeederAction;
 use IzAhmad\TurboSeeder\Actions\GenerateCsvAction;
 use IzAhmad\TurboSeeder\Actions\PrepareEnvironmentAction;
 use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
+use IzAhmad\TurboSeeder\Commands\TurboBenchmarkCommand;
+use IzAhmad\TurboSeeder\Commands\TurboClearCacheCommand;
 use IzAhmad\TurboSeeder\Commands\TurboSeederCommand;
+use IzAhmad\TurboSeeder\Commands\TurboTestConnectionCommand;
 use IzAhmad\TurboSeeder\Contracts\MemoryManagerInterface;
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Services\MemoryManager;
@@ -33,7 +36,12 @@ class TurboSeederServiceProvider extends PackageServiceProvider
         $package
             ->name('turbo-seeder')
             ->hasConfigFile('turbo-seeder')
-            ->hasCommand(TurboSeederCommand::class);
+            ->hasCommands([
+                TurboSeederCommand::class,
+                TurboBenchmarkCommand::class,
+                TurboTestConnectionCommand::class,
+                TurboClearCacheCommand::class,
+            ]);
     }
 
     public function packageRegistered(): void

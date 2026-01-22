@@ -11,7 +11,7 @@ use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
 
 /**
- * Example seeder demonstrating various ways to use the TurboSeeder.
+ * Example seeder class demonstrating various ways to use the TurboSeeder.
  */
 class ExampleSeeder extends Seeder
 {
