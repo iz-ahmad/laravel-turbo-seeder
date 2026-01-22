@@ -9,6 +9,13 @@ use IzAhmad\TurboSeeder\DTOs\DatabaseConnectionDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy as SeederStrategyEnum;
 
+/**
+ * Resolves the appropriate seeding strategy based on configuration and database driver.
+ *
+ * This service maintains a registry of available strategies and resolves
+ * the correct strategy implementation for a given database connection and
+ * seeding strategy type (default or CSV).
+ */
 final class StrategyResolver
 {
     /**

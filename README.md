@@ -329,7 +329,7 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## 🔒 Security
 
-If you discover any security-related issues, please email `n.ahmad.web.cit22@gmail.com` instead of using the issue tracker.
+If you discover any security-related issues, please email `n.ahmad.web.cit22@gmail.com` instead of creating a public issue, so that users can't exploit the vulnerability until a fix is released.
 
 ## 📝 Changelog
 

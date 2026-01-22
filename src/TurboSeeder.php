@@ -9,6 +9,12 @@ use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 use IzAhmad\TurboSeeder\Services\SeederOrchestrator;
 
+/**
+ * Main TurboSeeder service class.
+ *
+ * Provides the core seeding functionality and builder factory methods.
+ * This is the primary entry point for the TurboSeeder package.
+ */
 class TurboSeeder
 {
     public function __construct(

@@ -9,6 +9,13 @@ use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 use IzAhmad\TurboSeeder\Services\SeederOrchestrator;
 
+/**
+ * Fluent builder for configuring and executing TurboSeeder operations.
+ *
+ * Provides a chainable interface for setting up seeding operations with
+ * various configuration options. Supports method chaining for intuitive
+ * and readable configuration.
+ */
 final class TurboSeederBuilder
 {
     private ?string $table = null;

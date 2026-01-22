@@ -9,6 +9,13 @@ use IzAhmad\TurboSeeder\DTOs\DatabaseConnectionDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 
+/**
+ * orchestrates the seeding operation by coordinating strategy resolution and execution.
+ *
+ * This class acts as the main coordinator for the seeding process, resolving
+ * the appropriate strategy based on the configuration and database connection,
+ * then executing the seeding operation.
+ */
 final class SeederOrchestrator
 {
     public function __construct(
