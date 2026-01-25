@@ -89,11 +89,12 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
     protected function determineOptimalChunkSize(): int
     {
         $configuredSize = $this->config->getChunkSize();
+        $defaultSize = config('turbo-seeder.chunk_sizes.pgsql', 3000);
 
-        if ($configuredSize !== 3000) {
+        if ($configuredSize !== $defaultSize) {
             return $configuredSize;
         }
 
-        return config('turbo-seeder.chunk_sizes.pgsql', 3000);
+        return $defaultSize;
     }
 }
