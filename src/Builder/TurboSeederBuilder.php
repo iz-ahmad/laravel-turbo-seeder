@@ -275,7 +275,15 @@ final class TurboSeederBuilder
             options: $this->options
         );
 
-        return $this->orchestrator->execute($config);
+        $result = $this->orchestrator->execute($config);
+
+        if (! $result->success) {
+            throw new \RuntimeException(
+                $result->errorMessage ?? 'Seeding operation failed without error message'
+            );
+        }
+
+        return $result;
     }
 
     /**
