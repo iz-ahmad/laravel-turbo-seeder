@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Commands;
 
 use Illuminate\Console\Command;
+use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
+use IzAhmad\TurboSeeder\Services\ConsoleProgressTracker;
 
 class TurboSeederCommand extends Command
 {
@@ -29,6 +31,11 @@ class TurboSeederCommand extends Command
 
         $this->info('🚀 Starting TurboSeeder...');
         $this->newLine();
+
+        // rebind ProgressTrackerInterface to use console output
+        app()->singleton(ProgressTrackerInterface::class, function () {
+            return new ConsoleProgressTracker($this->output);
+        });
 
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
@@ -92,6 +99,10 @@ class TurboSeederCommand extends Command
             $this->error('✗ Seeder class must have a run() method!');
 
             return null;
+        }
+        
+        if (method_exists($seeder, 'setCommand')) {
+            $seeder->setCommand($this);
         }
 
         return $seeder;
