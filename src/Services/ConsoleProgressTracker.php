@@ -16,6 +16,8 @@ final class ConsoleProgressTracker implements ProgressTrackerInterface
 
     private int $total = 0;
 
+    private int $lastRateUpdate = 0;
+
     public function __construct(
         private readonly ?OutputInterface $output = null
     ) {}
@@ -33,12 +35,12 @@ final class ConsoleProgressTracker implements ProgressTrackerInterface
 
         $this->progressBar->setFormat(
             " %current%/%max% [%bar%] %percent:3s%%\n".
-            " ⏱  %elapsed:6s% | 💾 %memory:6s% | ⚡ %rate% records/s | ⏳ ~%estimated:-6s%"
+            ' 🕐 %elapsed:6s% | 💾 %memory:6s% | ⚡ %rate% records/s | ⏳ ~%eta:6s%'
         );
 
-        $this->progressBar->setBarCharacter('<fg=green>●</>');
-        $this->progressBar->setEmptyBarCharacter('<fg=red>○</>');
-        $this->progressBar->setProgressCharacter('<fg=green>▶</>');
+        $this->progressBar->setBarCharacter('<fg=green>█</>');
+        $this->progressBar->setEmptyBarCharacter('<fg=gray>░</>');
+        $this->progressBar->setProgressCharacter('<fg=green>█</>');
 
         $this->progressBar->start();
     }
@@ -50,8 +52,7 @@ final class ConsoleProgressTracker implements ProgressTrackerInterface
         if ($this->progressBar) {
             $this->progressBar->advance($step);
 
-            $rate = $this->calculateRate();
-            $this->progressBar->setMessage((string) $rate, 'rate');
+            $this->updateProgress();
         }
     }
 
@@ -97,5 +98,38 @@ final class ConsoleProgressTracker implements ProgressTrackerInterface
         }
 
         return (int) round($this->current / $elapsed);
+    }
+
+    private function calculateRemaining(): string
+    {
+        if (! $this->progressBar || $this->current === 0) {
+            return 'calculating...';
+        }
+
+        $elapsed = microtime(true) - $this->progressBar->getStartTime();
+        $rate = $this->current / $elapsed;
+
+        if ($rate <= 0) {
+            return 'calculating...';
+        }
+
+        $remainingRecords = $this->total - $this->current;
+        $remainingSeconds = (int) ($remainingRecords / $rate);
+
+        return gmdate('i:s', $remainingSeconds);
+    }
+
+    private function updateProgress(): void
+    {
+        $now = time();
+
+        if ($this->current % 100 === 0 || $now > $this->lastRateUpdate) {
+            $rate = $this->calculateRate();
+            $this->progressBar->setMessage((string) $rate, 'rate');
+            $this->lastRateUpdate = $now;
+
+            $remaining = $this->calculateRemaining();
+            $this->progressBar->setMessage($remaining, 'eta');
+        }
     }
 }
