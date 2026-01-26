@@ -32,10 +32,11 @@ class TurboSeederCommand extends Command
         $this->info('🚀 Starting TurboSeeder...');
         $this->newLine();
 
-        // rebind ProgressTrackerInterface to use console output
-        app()->singleton(ProgressTrackerInterface::class, function () {
-            return new ConsoleProgressTracker($this->output);
-        });
+        // bind console progress tracker
+        app()->instance(
+            ProgressTrackerInterface::class,
+            new ConsoleProgressTracker($this->output)
+        );
 
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
@@ -64,6 +65,8 @@ class TurboSeederCommand extends Command
             }
 
             return self::FAILURE;
+        } finally {
+            app()->forgetInstance(ProgressTrackerInterface::class);
         }
     }
 
@@ -100,7 +103,7 @@ class TurboSeederCommand extends Command
 
             return null;
         }
-        
+
         if (method_exists($seeder, 'setCommand')) {
             $seeder->setCommand($this);
         }
