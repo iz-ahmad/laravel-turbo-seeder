@@ -89,4 +89,27 @@ final class StrategyResolver
     {
         return $this->strategies;
     }
+
+    /**
+     * Resolve the default strategy for the given database connection.
+     */
+    public function resolveDefault(
+        DatabaseConnectionDTO $dbConnection,
+        SeederConfigurationDTO $config
+    ): SeederStrategyInterface {
+        $strategyKey = 'default.'.$dbConnection->driver->value;
+
+        if (! isset($this->strategies[$strategyKey])) {
+            throw new \RuntimeException(
+                "No default strategy registered for: {$dbConnection->driver->value}"
+            );
+        }
+
+        $strategyClass = $this->strategies[$strategyKey];
+
+        return app($strategyClass, [
+            'dbConnection' => $dbConnection,
+            'config' => $config,
+        ]);
+    }
 }
