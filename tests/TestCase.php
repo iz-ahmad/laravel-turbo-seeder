@@ -16,7 +16,7 @@ class TestCase extends OrchestraTestCase
 
         $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
         $this->artisan('migrate')->run();
-        
+
         DB::table('test_posts')->delete();
         DB::table('test_users')->delete();
     }
@@ -33,9 +33,15 @@ class TestCase extends OrchestraTestCase
         $app['config']->set('database.default', 'testing');
 
         $app['config']->set('database.connections.testing', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
+            // 'driver' => 'sqlite',
+            // 'database' => ':memory:',
+            // 'prefix' => '',
+            'driver' => 'mysql',
+            'host' => '127.0.0.1',
+            'port' => '3306',
+            'database' => 'test_database',
+            'username' => 'root',
+            'password' => 'pass',
         ]);
 
         $app['config']->set('turbo-seeder', [
@@ -91,6 +97,27 @@ class TestCase extends OrchestraTestCase
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Safely truncate a table by disabling foreign key checks.
+     */
+    protected function truncateTable(string $table): void
+    {
+        $defaultConnection = config('database.default');
+        $driver = config('database.connections.'.$defaultConnection.'.driver');
+
+        if ($driver === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+            DB::table($table)->truncate();
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        } elseif ($driver === 'pgsql') {
+            DB::statement('SET session_replication_role = replica');
+            DB::table($table)->truncate();
+            DB::statement('SET session_replication_role = DEFAULT');
+        } else {
+            DB::table($table)->delete();
         }
     }
 }
