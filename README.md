@@ -389,6 +389,7 @@ Configure error reporting:
 
 ```php
 'get_error_trace_on_console' => false, // Show full stack trace in console on errors, note that errors are always fully logged to Laravel logs regardless of this setting.
+'max_error_message_length_in_console' => 600, // Max characters of error message shown in console before truncation
 ```
 
 ### Seeder Namespace
