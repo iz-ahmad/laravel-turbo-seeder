@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Examples;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
@@ -12,6 +13,8 @@ use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
 
 /**
  * Example seeder class demonstrating various ways to use the TurboSeeder.
+ * 
+ * @see \IzAhmad\TurboSeeder\Traits\UsesTurboSeeder
  */
 class ExampleSeeder extends Seeder
 {
@@ -23,11 +26,14 @@ class ExampleSeeder extends Seeder
     public function run(): void
     {
         // example 1: Basic fluent API usage
+
+        $uniqueEmail = $this->uniqueEmail('user'); // method comes from the trait UsesTurboSeeder
+
         TurboSeeder::create('users')
             ->columns(['name', 'email', 'password', 'remember_token', 'created_at'])
             ->generate(fn ($index) => [
                 'name' => "User {$index}",
-                'email' => "user{$index}@example.com",
+                'email' => $uniqueEmail($index),
                 'password' => Hash::make("password{$index}"),
                 'remember_token' => Str::random(10),
                 'created_at' => now(),
@@ -93,5 +99,27 @@ class ExampleSeeder extends Seeder
             ],
             1000
         );
+
+        // example 6: Using unique value generators for tables with unique constraints
+        // You can clear table before seeding to avoid duplicate entry errors
+        DB::table('users')->delete();
+
+        // generate unique value generators
+        $uniqueEmail = $this->uniqueEmail('user');
+        $uniqueUsername = $this->uniqueValue('username');
+        $uniqueCode = $this->uniqueUuid('code_');
+
+        TurboSeeder::create('users')
+            ->columns(['name', 'email', 'username', 'verification_code', 'created_at'])
+            ->generate(fn ($index) => [
+                'name' => "User {$index}",
+                'email' => $uniqueEmail($index),
+                'username' => $uniqueUsername($index),
+                'verification_code' => $uniqueCode(),
+                'created_at' => now(),
+            ])
+            ->count(50000)
+            ->withProgressTracking()
+            ->run();
     }
 }
