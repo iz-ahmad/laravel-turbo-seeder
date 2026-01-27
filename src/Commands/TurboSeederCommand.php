@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Services\ConsoleProgressTracker;
 
@@ -55,14 +56,7 @@ class TurboSeederCommand extends Command
             return self::SUCCESS;
 
         } catch (\Throwable $e) {
-            $this->newLine();
-            $this->components->error('✗ Seeding failed!');
-            $this->error($e->getMessage());
-
-            if ($this->output->isVerbose()) {
-                $this->newLine();
-                $this->line($e->getTraceAsString());
-            }
+            $this->handleException($e);
 
             return self::FAILURE;
         } finally {
@@ -125,5 +119,24 @@ class TurboSeederCommand extends Command
                 ['💾 Peak Memory Usage', round($memoryMB, 2).' MB'],
             ]
         );
+    }
+
+    private function handleException(\Throwable $e): void
+    {
+        $this->newLine();
+        $this->components->error('✗ Seeding failed!');
+        $this->error($e->getMessage());
+
+        Log::error('TurboSeeder Command Failed: '.$e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        if ($this->output->isVerbose() || config('turbo-seeder.get_error_trace_on_console', false)) {
+            $this->newLine();
+            $this->line($e->getTraceAsString());
+        }
+
+        $this->newLine();
+        $this->line('Check the logs for more details.');
     }
 }
