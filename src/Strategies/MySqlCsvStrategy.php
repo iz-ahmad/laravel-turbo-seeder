@@ -6,6 +6,7 @@ namespace IzAhmad\TurboSeeder\Strategies;
 
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
+use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 
 final class MySqlCsvStrategy extends AbstractCsvStrategy
 {
@@ -44,9 +45,21 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
         try {
             DB::connection($this->dbConnection->name)->statement($sql);
         } catch (\Exception $e) {
+            $errorMessage = $e->getMessage();
+
+            if ($this->isLocalInfileError($errorMessage)) {
+                $shouldFallback = config('turbo-seeder.csv_strategy.fallback_to_default_strategy_on_config_error', true);
+
+                throw new CsvImportFailedException(
+                    $this->getLocalInfileErrorMessage($errorMessage),
+                    $shouldFallback,
+                    $e
+                );
+            }
+
             throw new \RuntimeException(
-                'MySQL LOAD DATA LOCAL INFILE command failed. Ensure local_infile is enabled and the database user has LOAD DATA LOCAL INFILE privileges. '.
-                'Error: '.$e->getMessage(),
+                'MySQL LOAD DATA LOCAL INFILE command failed. '.
+                'Error: '.$errorMessage,
                 0,
                 $e
             );
@@ -65,15 +78,47 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
             try {
                 DB::connection($this->dbConnection->name)
                     ->statement('SET GLOBAL local_infile = 1');
-            } catch (\Exception $e) {
-                throw new \RuntimeException(
-                    'MySQL local_infile is disabled and cannot be enabled. '.
-                    'Please enable it in your MySQL configuration or use the `default` seeding strategy.',
-                    0,
-                    $e
-                );
+            } catch (\Exception) {
+                // letting the actual import attempt fail and trigger fallback
             }
         }
+    }
+
+    /**
+     * Check if error is related to LOCAL_INFILE configuration.
+     */
+    private function isLocalInfileError(string $errorMessage): bool
+    {
+        $localInfilePatterns = [
+            'LOAD DATA LOCAL INFILE is forbidden',
+            'local_infile',
+            'MYSQL_ATTR_LOCAL_INFILE',
+            'mysqli.allow_local_infile',
+            'mysqli.local_infile_directory',
+            'PDO::MYSQL_ATTR_LOCAL_INFILE',
+            'PDO::MYSQL_ATTR_LOCAL_INFILE_DIRECTORY',
+            'LOCAL INFILE',
+        ];
+
+        foreach ($localInfilePatterns as $pattern) {
+            if (stripos($errorMessage, $pattern) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get user-friendly error message for LOCAL_INFILE errors.
+     */
+    private function getLocalInfileErrorMessage(string $originalError): string
+    {
+        return sprintf(
+            'MySQL LOAD DATA LOCAL INFILE not available. The PDO connection must have `PDO::MYSQL_ATTR_LOCAL_INFILE` enabled for CSV strategy. See README.md for detailed configuration instructions.'.
+            'Original error: %s',
+            $originalError
+        );
     }
 
     protected function determineOptimalChunkSize(): int
