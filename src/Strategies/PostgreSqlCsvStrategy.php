@@ -6,6 +6,7 @@ namespace IzAhmad\TurboSeeder\Strategies;
 
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
+use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 
 final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
 {
@@ -44,9 +45,21 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
         try {
             DB::connection($this->dbConnection->name)->statement($sql);
         } catch (\Exception $e) {
+            $errorMessage = $e->getMessage();
+
+            if ($this->isCopyCommandError($errorMessage)) {
+                $shouldFallback = config('turbo-seeder.csv_strategy.fallback_to_default_strategy_on_config_error', true);
+
+                throw new CsvImportFailedException(
+                    $this->getCopyCommandErrorMessage($errorMessage),
+                    $shouldFallback,
+                    $e
+                );
+            }
+
             throw new \RuntimeException(
-                'PostgreSQL COPY command failed. Ensure that the DB server has access to the CSV file and the database user has COPY privileges. '.
-                'Error: '.$e->getMessage(),
+                'PostgreSQL COPY command failed. '.
+                'Error: '.$errorMessage,
                 0,
                 $e
             );
@@ -61,5 +74,40 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
     protected function insertChunk(string $table, array $columns, array $records): void
     {
         // not used in CSV strategy, but required by abstract parent. will refactor later.
+    }
+
+    /**
+     * Check if error is related to COPY command access/permissions.
+     */
+    private function isCopyCommandError(string $errorMessage): bool
+    {
+        $copyErrorPatterns = [
+            'permission denied',
+            'could not open file',
+            'must be superuser',
+            'COPY',
+            'access denied',
+            'file not found',
+        ];
+
+        foreach ($copyErrorPatterns as $pattern) {
+            if (stripos($errorMessage, $pattern) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get user-friendly error message for COPY command errors.
+     */
+    private function getCopyCommandErrorMessage(string $originalError): string
+    {
+        return sprintf(
+            'PostgreSQL COPY command failed. The database server must have read access to the CSV file and the user must have COPY privileges. '.
+            'Original error: %s',
+            $originalError
+        );
     }
 }
