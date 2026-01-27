@@ -8,25 +8,25 @@ return [
     | Default Chunk Size
     |--------------------------------------------------------------------------
     |
-    | The default number of records to insert per chunk. This will be
-    | overridden by database-specific chunk sizes if not explicitly set.
+    | The default number of records to insert per chunk regardles of the database driver. This will be
+    | used as a fallback when database-specific chunk sizes are not set.
     |
     */
-    'default_chunk_size' => 4000,
+    'default_chunk_size' => 1000,
 
     /*
     |--------------------------------------------------------------------------
     | Database-Specific Chunk Sizes
     |--------------------------------------------------------------------------
     |
-    | Optimal chunk sizes for each database driver. These values are tuned
-    | for maximum performance based on each database's characteristics.
+    | Optimal chunk sizes for each database driver. These values will get priority over the default chunk size.
+    | And these will be overridden if custom chunk size is set in the seeder class.
     |
     */
     'chunk_sizes' => [
-        'mysql' => 4000,
-        'pgsql' => 3000,
-        'sqlite' => 2000,
+        'mysql' => 1000,
+        'pgsql' => 800,
+        'sqlite' => 500,
     ],
 
     /*

@@ -68,7 +68,7 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
 
     protected function determineOptimalChunkSize(): int
     {
-        return config('turbo-seeder.chunk_sizes.pgsql', 3000);
+        return config('turbo-seeder.chunk_sizes.pgsql', config('turbo-seeder.default_chunk_size', 500));
     }
 
     protected function insertChunk(string $table, array $columns, array $records): void

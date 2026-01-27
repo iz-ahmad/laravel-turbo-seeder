@@ -89,12 +89,8 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
     protected function determineOptimalChunkSize(): int
     {
         $configuredSize = $this->config->getChunkSize();
-        $defaultSize = config('turbo-seeder.chunk_sizes.mysql', 4000);
+        $defaultSize = config('turbo-seeder.chunk_sizes.mysql', config('turbo-seeder.default_chunk_size', 500));
 
-        if ($configuredSize !== $defaultSize) {
-            return $configuredSize;
-        }
-
-        return $defaultSize;
+        return $configuredSize ?? $defaultSize;
     }
 }

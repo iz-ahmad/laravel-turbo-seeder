@@ -314,17 +314,44 @@ php artisan turbo-seeder:clear-cache
 
 ### Chunk Sizes
 
-Optimal chunk sizes for each database driver:
+Chunk size determines how many records are inserted (processed in memory) at once. This directly impacts memory usage and performance.
+
+**Config Priority Order:**
+1. **Custom chunk size** (set via `->chunkSize()` in the seeder class using our fluent API) - Highest priority
+2. **Database-specific chunk size** (from `chunk_sizes.{database_driver}` config) - Medium priority
+3. **Default chunk size** (from `default_chunk_size` config) - Fallback
 
 ```php
-'default_chunk_size' => 4000, // Default chunk size
+'default_chunk_size' => 1000, // Fallback when database-specific size not set
 
 'chunk_sizes' => [
-    'mysql' => 4000,   // Optimal for MySQL
-    'pgsql' => 3000,   // Optimal for PostgreSQL
-    'sqlite' => 2000,  // Optimal for SQLite
-],
+    'mysql' => 1000,   // Optimal for MySQL
+    'pgsql' => 800,    // Optimal for PostgreSQL
+    'sqlite' => 500,   // Optimal for SQLite
+], // these values take priority over the default_chunk_size
 ```
+
+**Why Chunk Size Matters:**
+
+Chunk size directly affects memory consumption. Each chunk loads all records into memory before inserting them into the database. The memory usage formula is approximately:
+
+```
+Memory ≈ (chunk_size × number_of_columns × average_value_size) + overhead
+```
+
+**Key Considerations:**
+
+- **More columns = smaller chunk size needed**: Tables with 15+ columns or large fields require smaller chunks to stay within memory limits
+- **Fewer columns = larger chunk size possible**: Simple tables (3-5 columns) can handle larger chunks efficiently
+- **Default strategy**: More memory-intensive than CSV strategy, so consider smaller chunks for large datasets
+- **CSV strategy**: More memory-efficient, can handle larger chunks even with many columns. Because it uses the database's native CSV import command.
+
+**Recommendations for chunk size:**
+
+- **Simple tables (3-5 columns)**: 1000 - 5000
+- **Medium tables (6-10 columns)**: ~ 1000
+- **Complex tables (15+ columns, large text/JSON)**: 200 - 1000
+- **For very large datasets (1M+ records)**: Consider CSV strategy or reduce chunk size to smaller values if memory limit is exhausted.
 
 ### Memory Management
 

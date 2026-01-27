@@ -123,7 +123,7 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
 
     protected function determineOptimalChunkSize(): int
     {
-        return config('turbo-seeder.chunk_sizes.mysql', 4000);
+        return config('turbo-seeder.chunk_sizes.mysql', config('turbo-seeder.default_chunk_size', 500));
     }
 
     protected function insertChunk(string $table, array $columns, array $records): void

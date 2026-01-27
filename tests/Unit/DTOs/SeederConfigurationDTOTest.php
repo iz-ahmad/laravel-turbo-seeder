@@ -77,18 +77,6 @@ test('returns correct chunk size', function () {
     expect($config->getChunkSize())->toBe(300);
 });
 
-test('returns default chunk size when not set', function () {
-    $config = new SeederConfigurationDTO(
-        table: 'users',
-        columns: ['name'],
-        generator: fn ($i) => ['name' => "User {$i}"],
-        count: 100,
-        connection: 'mysql'
-    );
-
-    expect($config->getChunkSize())->toBe(4000);
-});
-
 test('checks progress tracking setting', function () {
     $configWithProgress = new SeederConfigurationDTO(
         table: 'users',
