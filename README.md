@@ -24,9 +24,11 @@ Laravel Turbo Seeder is a high-performance database seeding package that allows 
 - [API Documentation](#-api-documentation)
   - [Fluent API Methods](#fluent-api-methods)
   - [Using in Seeders](#using-in-seeders)
+    - [Generating Unique Values](#generating-unique-values)
   - [Artisan Commands](#artisan-commands)
 - [Configuration Reference](#%EF%B8%8F-configuration-reference)
   - [Chunk Sizes](#chunk-sizes)
+
   - [Memory Management](#memory-management)
   - [Performance Optimizations](#performance-optimizations)
   - [CSV Strategy](#csv-strategy-configuration)
@@ -258,6 +260,60 @@ class DatabaseSeeder extends Seeder
     }
 }
 ```
+
+### Generating Unique Values
+
+When seeding tables with unique constraints (like `email`, `username`, etc.), you need to ensure values are unique. TurboSeeder provides helper methods to generate unique values:
+
+**Available Methods:**
+
+- `uniqueEmail(?string $prefix = null)` - Generates unique email addresses
+- `uniqueValue(?string $prefix = null)` - Generates unique string values
+- `uniqueUuid(string $prefix = '')` - Generates unique UUID-based values
+
+**Example Usage:**
+
+```php
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
+use IzAhmad\TurboSeeder\Facades\TurboSeeder;
+
+class UserSeeder extends Seeder
+{
+    use UsesTurboSeeder;
+
+    public function run(): void
+    {
+        // You can clear table before seeding to avoid duplicate entry errors
+        DB::table('users')->delete();
+
+        // Generate unique email generator
+        $uniqueEmail = $this->uniqueEmail('user');
+        $uniqueUsername = $this->uniqueValue('username');
+
+        TurboSeeder::create('users')
+            ->columns(['name', 'email', 'username', 'created_at'])
+            ->generate(fn($index) => [
+                'name' => "User {$index}",
+                'email' => $uniqueEmail($index),        // Always unique!
+                'username' => $uniqueUsername($index),   // Always unique!
+                'created_at' => now(),
+            ])
+            ->count(100000)
+            ->run();
+    }
+}
+```
+
+**How It Works:**
+
+- `uniqueEmail()` generates emails like: `user0_1234567890_abcd@test.com`
+- `uniqueValue()` generates values like: `unique_0_1234567890_abcd`
+- Both use timestamp + random string to ensure uniqueness
+- `uniqueUuid()` generates full UUIDs for maximum uniqueness, with or without prefix
+
+**Tip:** You can also clear the table before seeding using `DB::table('table_name')->delete()` or `DB::table('table_name')->truncate()` to avoid duplicate entry errors, especially useful when re-running seeders during development.
 
 ### Artisan Commands
 
