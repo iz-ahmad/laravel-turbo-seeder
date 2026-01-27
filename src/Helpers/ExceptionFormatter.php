@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IzAhmad\TurboSeeder\Services;
+namespace IzAhmad\TurboSeeder\Helpers;
 
 final class ExceptionFormatter
 {

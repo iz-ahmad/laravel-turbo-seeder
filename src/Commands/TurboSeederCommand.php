@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Services\ConsoleProgressTracker;
+use IzAhmad\TurboSeeder\Helpers\ExceptionFormatter;
 
 class TurboSeederCommand extends Command
 {
@@ -125,18 +126,25 @@ class TurboSeederCommand extends Command
     {
         $this->newLine();
         $this->components->error('✗ Seeding failed!');
-        $this->error($e->getMessage());
+        
+        $formattedMessage = ExceptionFormatter::format($e);
+        $this->error($formattedMessage);
 
-        Log::error('TurboSeeder Command Failed: '.$e->getMessage(), [
+        Log::error('TurboSeeder Command Failed', [
+            'message' => $e->getMessage(),
+            'exception' => get_class($e),
+            'code' => $e->getCode(),
+            'file' => $e->getFile(),
             'trace' => $e->getTraceAsString(),
         ]);
 
         if ($this->output->isVerbose() || config('turbo-seeder.get_error_trace_on_console', false)) {
             $this->newLine();
+            $this->line('<comment>Full error details with stack trace:</comment>');
             $this->line($e->getTraceAsString());
         }
 
         $this->newLine();
-        $this->line('Check the logs for more details.');
+        $this->line('💡 Tip: Check the logs for more details.');
     }
 }

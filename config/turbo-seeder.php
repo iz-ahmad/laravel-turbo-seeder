@@ -120,5 +120,5 @@ return [
     | Configure the maximum length of the error message shown in the console output.
     |
     */
-    'max_error_message_length_in_console' => 700,
+    'max_error_message_length_in_console' => 600,
 ];
