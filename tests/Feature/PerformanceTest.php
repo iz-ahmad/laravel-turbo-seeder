@@ -49,7 +49,7 @@ test('maintains consistent performance across multiple runs', function () {
     $durations = [];
 
     for ($run = 0; $run < 3; $run++) {
-        DB::table('test_users')->truncate();
+        test()->truncateTable('test_users');
 
         $start = microtime(true);
 

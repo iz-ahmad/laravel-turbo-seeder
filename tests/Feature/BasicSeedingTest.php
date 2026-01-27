@@ -118,13 +118,13 @@ test('can seed large datasets efficiently', function () {
 });
 
 test('handles empty table gracefully', function () {
-    DB::table('test_users')->truncate();
+    test()->truncateTable('test_users');
 
     $result = TurboSeeder::create('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
-            'email' => "user{$i}@test.com"
+            'email' => "user{$i}@test.com",
         ])
         ->count(10)
         ->run();

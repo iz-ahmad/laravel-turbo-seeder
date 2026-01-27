@@ -27,7 +27,7 @@ test('can seed multiple tables in sequence', function () {
 });
 
 test('can seed with different strategies in same test', function () {
-    DB::table('test_users')->truncate();
+    test()->truncateTable('test_users');
 
     TurboSeeder::create('test_users')
         ->columns(['name', 'email'])
@@ -38,7 +38,7 @@ test('can seed with different strategies in same test', function () {
 
     expect(DB::table('test_users')->count())->toBe(50);
 
-    DB::table('test_users')->truncate();
+    test()->truncateTable('test_users');
 
     TurboSeeder::create('test_users')
         ->columns(['name', 'email'])

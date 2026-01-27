@@ -39,7 +39,7 @@ test('csv strategy handles large datasets', function () {
 });
 
 test('can switch between default and csv strategies', function () {
-    DB::table('test_users')->truncate();
+    test()->truncateTable('test_users');
 
     $defaultResult = TurboSeeder::create('test_users')
         ->columns(['name', 'email'])
@@ -48,7 +48,7 @@ test('can switch between default and csv strategies', function () {
         ->useDefaultStrategy()
         ->run();
 
-    DB::table('test_users')->truncate();
+    test()->truncateTable('test_users');
 
     $csvResult = TurboSeeder::create('test_users')
         ->columns(['name', 'email'])

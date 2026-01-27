@@ -15,7 +15,7 @@ test('test connection command shows driver info', function () {
 
     $output = Artisan::output();
 
-    expect($output)->toContain('SQLite')
+    expect($output)->toMatch('/MySQL|PostgreSQL|SQLite/')
         ->and($output)->toContain('DEFAULT strategy');
 });
 
