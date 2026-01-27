@@ -25,7 +25,7 @@ class TurboBenchmarkCommand extends Command
 
         $this->info('🏁 Starting TurboSeeder Performance Benchmark...');
         $this->info("Connection: {$connection}");
-        $this->info('Records: ' . number_format($records));
+        $this->info('Records: '.number_format($records));
         $this->newLine();
 
         try {
@@ -56,7 +56,7 @@ class TurboBenchmarkCommand extends Command
             return self::SUCCESS;
 
         } catch (\Throwable $e) {
-            $this->error('✗ Benchmark failed: ' . $e->getMessage());
+            $this->error('✗ Benchmark failed: '.$e->getMessage());
 
             return self::FAILURE;
         }
@@ -69,7 +69,7 @@ class TurboBenchmarkCommand extends Command
 
         $seederBuilder = TurboSeeder::create($table)
             ->columns(['name', 'email', 'value', 'created_at'])
-            ->generate(fn($i) => [
+            ->generate(fn ($i) => [
                 'name' => "User {$i}",
                 'email' => "user{$i}@benchmark.test",
                 'value' => random_int(1, 1000),
@@ -106,18 +106,18 @@ class TurboBenchmarkCommand extends Command
         if (isset($results['default'])) {
             $tableData[] = [
                 'DEFAULT',
-                round($results['default']['duration'], 2) . ' s',
-                round($results['default']['memory'], 2) . ' MB',
-                number_format($results['default']['rate']) . ' rec/s',
+                round($results['default']['duration'], 2).' s',
+                round($results['default']['memory'], 2).' MB',
+                number_format($results['default']['rate']).' rec/s',
             ];
         }
 
         if (isset($results['csv'])) {
             $tableData[] = [
                 'CSV',
-                round($results['csv']['duration'], 2) . ' s',
-                round($results['csv']['memory'], 2) . ' MB',
-                number_format($results['csv']['rate']) . ' rec/s',
+                round($results['csv']['duration'], 2).' s',
+                round($results['csv']['memory'], 2).' MB',
+                number_format($results['csv']['rate']).' rec/s',
             ];
         }
 
@@ -129,7 +129,7 @@ class TurboBenchmarkCommand extends Command
         if (isset($results['default'], $results['csv'])) {
             $speedup = $results['default']['duration'] / $results['csv']['duration'];
             $this->newLine();
-            $this->info('⚡ CSV is ' . round($speedup, 2) . 'x faster than DEFAULT');
+            $this->info('⚡ CSV is '.round($speedup, 2).'x faster than DEFAULT');
         }
     }
 

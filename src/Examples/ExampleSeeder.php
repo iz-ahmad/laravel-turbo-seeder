@@ -13,7 +13,7 @@ use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
 
 /**
  * Example seeder class demonstrating various ways to use the TurboSeeder.
- * 
+ *
  * @see \IzAhmad\TurboSeeder\Traits\UsesTurboSeeder
  */
 class ExampleSeeder extends Seeder
