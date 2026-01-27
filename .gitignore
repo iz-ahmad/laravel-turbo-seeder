@@ -24,9 +24,12 @@ _ide_helper_models.php
 /.fleet
 /.vscode
 
+.DS_Store
+
 # Misc
 phpunit.xml
 phpstan.neon
 testbench.yaml
 /docs
 /coverage
+composer.json

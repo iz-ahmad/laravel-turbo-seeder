@@ -2,6 +2,8 @@ name: Fix PHP code style issues
 
 on:
   push:
+    branches:
+      - master
     paths:
       - '**.php'
 
@@ -10,6 +12,7 @@ permissions:
 
 jobs:
   php-code-styling:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
