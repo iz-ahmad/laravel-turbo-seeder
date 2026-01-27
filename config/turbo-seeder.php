@@ -31,6 +31,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Seeder Classes Namespace
+    |--------------------------------------------------------------------------
+    |
+    | The namespace for seeder classes using the turbo seeder package. This is used to automatically
+    | resolve the seeder class name if it is not fully qualified.
+    |
+    */
+    'seeder_classes_namespace' => 'Database\\Seeders\\',
+
+    /*
+    |--------------------------------------------------------------------------
     | Memory Management
     |--------------------------------------------------------------------------
     |
@@ -103,12 +114,11 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Seeder Classes Namespace
+    | Max Error Message Length in Console
     |--------------------------------------------------------------------------
     |
-    | The namespace for seeder classes using the turbo seeder package. This is used to automatically
-    | resolve the seeder class name if it is not fully qualified.
+    | Configure the maximum length of the error message shown in the console output.
     |
     */
-    'seeder_classes_namespace' => 'Database\\Seeders\\',
+    'max_error_message_length_in_console' => 700,
 ];
