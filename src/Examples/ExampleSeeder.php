@@ -59,7 +59,7 @@ class ExampleSeeder extends Seeder
                 'created_at' => now(),
             ])
             ->count(50000)
-            ->chunkSize(3000)
+            ->chunkSize(2000)
             ->withProgressTracking()
             ->disableForeignKeyChecks()
             ->run();
