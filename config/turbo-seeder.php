@@ -75,6 +75,7 @@ return [
         'batch_size' => 10000,
         'gc_frequency' => 5,
         'reader_chunk_size_for_sqlite' => 500,
+        'fallback_to_default_strategy_on_config_error' => true,
     ],
 
     /*
@@ -89,6 +90,16 @@ return [
         'enabled' => true,
         'update_frequency' => 1000,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Get Error Trace on Console
+    |--------------------------------------------------------------------------
+    |
+    | Configure whether to get error trace on console.
+    |
+    */
+    'get_error_trace_on_console' => false,
 
     /*
     |--------------------------------------------------------------------------
