@@ -42,7 +42,9 @@ final class ConsoleProgressTracker implements ProgressTrackerInterface
         $this->progressBar->setEmptyBarCharacter('<fg=gray>░</>');
         $this->progressBar->setProgressCharacter('<fg=green>█</>');
 
-        $this->progressBar->start();
+        if ($this->progressBar->getProgress() > 0) {
+            $this->progressBar->start();
+        }
     }
 
     public function advance(int $step = 1): void
@@ -58,13 +60,15 @@ final class ConsoleProgressTracker implements ProgressTrackerInterface
 
     public function finish(): void
     {
+        $this->current = $this->total;
+
         if ($this->progressBar) {
+            $this->updateProgress();
+
             $this->progressBar->finish();
             $this->output?->writeln('');
             $this->output?->writeln('');
         }
-
-        $this->current = $this->total;
     }
 
     public function setMessage(string $message): void
@@ -97,7 +101,9 @@ final class ConsoleProgressTracker implements ProgressTrackerInterface
             return 0;
         }
 
-        return (int) round($this->current / $elapsed);
+        $rate = (int) round($this->current / $elapsed);
+
+        return $rate > 0 ? $rate : 0;
     }
 
     private function calculateRemaining(): string
@@ -123,7 +129,11 @@ final class ConsoleProgressTracker implements ProgressTrackerInterface
     {
         $now = time();
 
-        if ($this->current % 100 === 0 || $now > $this->lastRateUpdate) {
+        if (
+            $this->current % 100 === 0 ||
+            $now > $this->lastRateUpdate ||
+            $this->current === $this->total
+        ) {
             $rate = $this->calculateRate();
             $this->progressBar->setMessage((string) $rate, 'rate');
             $this->lastRateUpdate = $now;
