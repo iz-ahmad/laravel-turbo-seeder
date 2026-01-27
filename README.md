@@ -68,7 +68,7 @@ No coffee breaks. No tab-switching. No "I'll test later". So you can:
 
 ### How We Achieve This Speed:
 
-1. **Bypassing Eloquent** - Uses raw database queries instead of ORM overhead
+1. **Bypassing Eloquent** - Uses raw database queries instead of ORM overhead, avoiding usage of Faker and other libraries that slow down the process.
 2. **Bulk Operations** - Multi-row INSERT statements instead of individual inserts
 3. **Database Optimizations** - Disables constraints, uses transactions efficiently
 4. **CSV Import** - For maximum speed, uses native database CSV import commands

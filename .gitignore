@@ -32,4 +32,3 @@ phpstan.neon
 testbench.yaml
 /docs
 /coverage
-composer.json

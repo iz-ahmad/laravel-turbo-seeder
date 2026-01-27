@@ -33,15 +33,15 @@ class TestCase extends OrchestraTestCase
         $app['config']->set('database.default', 'testing');
 
         $app['config']->set('database.connections.testing', [
-            // 'driver' => 'sqlite',
-            // 'database' => ':memory:',
-            // 'prefix' => '',
-            'driver' => 'mysql',
-            'host' => '127.0.0.1',
-            'port' => '3306',
-            'database' => 'test_database',
-            'username' => 'root',
-            'password' => 'pass',
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+            // 'driver' => 'mysql',
+            // 'host' => '127.0.0.1',
+            // 'port' => '3306',
+            // 'database' => 'test_database',
+            // 'username' => 'root',
+            // 'password' => '',
         ]);
 
         $app['config']->set('turbo-seeder', [

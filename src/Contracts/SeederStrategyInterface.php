@@ -31,6 +31,8 @@ interface SeederStrategyInterface
 
     /**
      * Clean up and restore database environment after seeding.
+     *
+     * @param  bool  $fromException  Whether the cleanup is due to an exception.
      */
-    public function cleanup(): void;
+    public function cleanup(bool $fromException = false): void;
 }
