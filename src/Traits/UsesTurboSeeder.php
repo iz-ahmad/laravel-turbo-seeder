@@ -7,13 +7,15 @@ namespace IzAhmad\TurboSeeder\Traits;
 use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
+use IzAhmad\TurboSeeder\Helpers\UniqueValueGenerator;
 
 /**
- * Trait to use TurboSeeder in your seeders.
- * It provides helper methods to use Turbo Seeder easily and quickly.
+ * Trait to use TurboSeeder in your seeder classes.
+ * It provides helper methods to use Turbo Seeder easily and quickly with various options.
  *
  * @see \IzAhmad\TurboSeeder\Builder\TurboSeederBuilder
  * @see \IzAhmad\TurboSeeder\Facades\TurboSeeder
+ * @see \IzAhmad\TurboSeeder\Examples\ExampleSeeder
  */
 trait UsesTurboSeeder
 {
@@ -60,5 +62,29 @@ trait UsesTurboSeeder
             ->count($count)
             ->useCsvStrategy()
             ->run();
+    }
+
+    /**
+     * Generate a unique email for a table.
+     */
+    protected function uniqueEmail(?string $prefix = null): \Closure
+    {
+        return UniqueValueGenerator::uniqueEmail($prefix);
+    }
+
+    /**
+     * Generate a unique value for any column.
+     */
+    protected function uniqueValue(?string $prefix = null): \Closure
+    {
+        return UniqueValueGenerator::uniqueValue($prefix);
+    }
+
+    /**
+     * Generate a unique UUID-based value.
+     */
+    protected function uniqueUuid(string $prefix = ''): \Closure
+    {
+        return UniqueValueGenerator::uniqueUuid($prefix);
     }
 }
