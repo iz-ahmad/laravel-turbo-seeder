@@ -7,8 +7,8 @@ namespace IzAhmad\TurboSeeder\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
-use IzAhmad\TurboSeeder\Services\ConsoleProgressTracker;
 use IzAhmad\TurboSeeder\Helpers\ExceptionFormatter;
+use IzAhmad\TurboSeeder\Services\ConsoleProgressTracker;
 
 class TurboSeederCommand extends Command
 {
@@ -126,7 +126,7 @@ class TurboSeederCommand extends Command
     {
         $this->newLine();
         $this->components->error('✗ Seeding failed!');
-        
+
         $formattedMessage = ExceptionFormatter::format($e);
         $this->error($formattedMessage);
 

@@ -23,7 +23,7 @@ final readonly class DatabaseConnectionDTO
         $connection = \DB::connection($name)
             ?? throw new \RuntimeException("Database connection '{$name}' not found");
         $driverName = $connection->getDriverName();
-        
+
         $driver = DatabaseDriver::fromString($driverName);
 
         return new self($name, $driver, $connection);

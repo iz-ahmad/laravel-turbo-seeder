@@ -37,4 +37,3 @@ test('exception formatter respects default length when config not set', function
     expect(strlen($formatted))->toBeGreaterThan(600)
         ->and($formatted)->toEndWith('... (truncated)');
 });
-

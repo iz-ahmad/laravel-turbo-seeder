@@ -15,7 +15,7 @@ final class ExceptionFormatter
         $maxErrorMessageLength = config('turbo-seeder.max_error_message_length_in_console', 600);
 
         if (strlen($message) > $maxErrorMessageLength) {
-            return substr($message, 0, $maxErrorMessageLength) . '... (truncated)';
+            return substr($message, 0, $maxErrorMessageLength).'... (truncated)';
         }
 
         return $message;
