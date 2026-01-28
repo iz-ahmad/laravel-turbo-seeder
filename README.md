@@ -75,10 +75,19 @@ No coffee breaks. No tab-switching. No "I'll test later". So you can:
 5. **Memory Management** - Efficient chunking and garbage collection
 6. **Streaming** - CSV files are written/read in streams, not loaded into memory
 
-### Performance Comparison:
+### Performance Snapshot (Real Measurements)
 
-- **Default Strategy (Bulk Insert)**: ~2-3 minutes for 1M records
-- **CSV Strategy (File Import)**: ~1-2 minutes for 1M records
+For a local setup with MySQL and sensible chunk sizes:
+
+- **Simple tables (~5 columns, 1M rows)**  
+  - Default strategy: **~16 seconds**, **~50 MB** peak memory  
+  - CSV strategy: **~9 seconds**, **~0 MB** additional memory  
+
+- **Complex tables (~15–20 columns, 1M rows)**  
+  - Default strategy: **~60 seconds**, **~160 MB** peak memory  
+  - CSV strategy: **~40 seconds**, **~0 MB** additional memory  
+
+> **Note:** Results may vary based on hardware, DB engine/type, connection (local vs remote), and the chosen chunk size.
 
 ---
 
@@ -368,6 +377,8 @@ php artisan turbo-seeder:clear-cache
 <details>
 <summary><h2>⚙️ Configuration Reference</h2></summary>
 
+We have provided an optimal configuration for you to use. You can override it by adding your own configuration in your `config/turbo-seeder.php` file, if you need to.
+
 ### Chunk Sizes
 
 Chunk size determines how many records are inserted (processed in memory) at once. This directly impacts memory usage and performance.
@@ -543,22 +554,21 @@ The default strategy works without any additional configuration and is still ver
 <details>
 <summary><h2>📊 Performance Benchmarks</h2></summary>
 
-All benchmarks are approximate and may vary based on hardware and configuration.
+These benchmarks are based on real runs on a modern local machine with MySQL, PGSQL and optimized (default) chunk sizes.
 
 ### Default Strategy (Bulk Insert)
 
-- **1M simple records**: ~2-3 minutes
-- **1M records with 10 columns**: ~3-4 minutes
-- **Memory usage**: < 256MB
-- **Best for**: General use, remote databases
+- **Simple tables (~5 columns, 1M rows)**: ~**16 seconds**, ~**50 MB** peak memory  
+- **Complex tables (~15–20 columns, 1M rows)**: ~**60 seconds**, ~**160 MB** peak memory  
+- **Best for**: General use, remote databases, when you can't enable CSV imports
 
 ### CSV Strategy (File Import)
 
-- **1M simple records**: ~1-2 minutes
-- **1M records with 10 columns**: ~2-3 minutes
-- **Memory usage**: < 200MB
-- **Speedup**: 2-3x faster than default
-- **Best for**: Local databases, maximum speed
+- **Simple tables (~5 columns, 1M rows)**: ~**9 seconds**, ~**0 MB** additional memory  
+- **Complex tables (~15–20 columns, 1M rows)**: ~**40 seconds**, ~**0 MB** additional memory  
+- **Best for**: Local databases and high‑throughput seeding where you can enable `LOAD DATA` / `COPY`
+
+> **Note:** These are indicative numbers based on our tests. Your exact results may differ depending on hardware, database engine/version, network latency (local vs remote DB), and the configured chunk size.
 
 </details>
 
