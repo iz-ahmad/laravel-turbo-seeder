@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Actions;
+use Illuminate\Support\Facades\Log;
 
 final class CleanupCsvAction
 {
@@ -13,6 +14,10 @@ final class CleanupCsvAction
     {
         if (file_exists($filepath)) {
             if (! unlink($filepath)) {
+                Log::error('Failed to delete CSV file', [
+                    'filepath' => $filepath,
+                ]);
+
                 throw new \RuntimeException("Failed to delete CSV file: {$filepath}");
             }
         }

@@ -79,13 +79,13 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
         $this->environmentPrepared = true;
     }
 
-    public function cleanup(): void
+    public function cleanup(bool $fromException = false): void
     {
         if (! $this->environmentPrepared) {
             return;
         }
 
-        if ($this->config->options['use_transactions'] ?? true) {
+        if ($this->config->options['use_transactions'] ?? true && ! $fromException) {
             $connection = DB::connection($this->dbConnection->name);
 
             if ($connection->transactionLevel() > 0) {

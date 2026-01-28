@@ -58,7 +58,7 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
             }
 
             throw new \RuntimeException(
-                'PostgreSQL COPY command failed. '.
+                'PostgreSQL COPY command failed. Ensure the PostgreSQL server has read access to the CSV file and the database user has COPY privileges. '.
                 'Error: '.$errorMessage,
                 0,
                 $e

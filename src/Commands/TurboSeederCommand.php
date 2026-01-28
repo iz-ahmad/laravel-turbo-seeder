@@ -31,7 +31,7 @@ class TurboSeederCommand extends Command
             return self::FAILURE;
         }
 
-        $this->info('🚀 Starting TurboSeeder...');
+        $this->info('🏁 Starting TurboSeeder...');
         $this->newLine();
 
         // bind console progress tracker

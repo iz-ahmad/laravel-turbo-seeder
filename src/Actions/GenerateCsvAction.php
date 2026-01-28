@@ -56,6 +56,10 @@ final class GenerateCsvAction
                 $writer->writeRow($row);
             }
 
+            if ($config->hasProgressTracking()) {
+                $this->progressTracker->advance($recordsInBatch);
+            }
+
             if ($batch > 0 && ($batch % ($csvConfig['gc_frequency'] ?? 5)) === 0) {
                 $this->memoryManager->forceCleanup();
             }
@@ -71,8 +75,9 @@ final class GenerateCsvAction
      */
     private function formatValue(mixed $value): string
     {
+        $nullValue = '\\N';
         if ($value === null) {
-            return '\\N';
+            return $nullValue;
         }
 
         if ($value instanceof \DateTimeInterface) {
