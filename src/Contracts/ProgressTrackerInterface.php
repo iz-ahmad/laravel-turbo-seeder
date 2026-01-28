@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Contracts;
 
+use IzAhmad\TurboSeeder\Enums\SeederStrategy;
+
 interface ProgressTrackerInterface
 {
     /**
      * Start tracking progress for the given total.
      */
-    public function start(int $total): void;
+    public function start(int $total, SeederStrategy $strategy = SeederStrategy::DEFAULT): void;
 
     /**
      * Advance the progress by the given step.

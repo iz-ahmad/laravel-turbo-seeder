@@ -29,7 +29,7 @@ final class ExecuteSeederAction
             $strategy->prepareEnvironment();
 
             if ($config->hasProgressTracking()) {
-                $this->progressTracker->start($config->count);
+                $this->progressTracker->start($config->count, $config->strategy);
             }
 
             $recordsInserted = $strategy->seed($config);
