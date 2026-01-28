@@ -11,7 +11,6 @@ use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\StrategyResolver;
 use Symfony\Component\Console\Output\OutputInterface;
-use IzAhmad\TurboSeeder\Actions\ExecuteSeederAction;
 
 abstract class AbstractCsvStrategy extends AbstractSeederStrategy
 {
@@ -27,6 +26,11 @@ abstract class AbstractCsvStrategy extends AbstractSeederStrategy
         try {
             $this->displayStep1Message();
             $this->generateCsvFile($config);
+
+            if ($config->hasProgressTracking()) {
+                $this->progressTracker->finish();
+            }
+
             $this->displayStep2Message();
 
             return $this->performCsvImport($config);
@@ -61,7 +65,11 @@ abstract class AbstractCsvStrategy extends AbstractSeederStrategy
      */
     protected function performCsvImport(SeederConfigurationDTO $config): int
     {
-        $this->importFromCsv($config->table, $config->columns);
+        try {
+            $this->importFromCsv($config->table, $config->columns);
+        } finally {
+            $this->hideLoadingIndicator();
+        }
 
         $this->displayImportSuccessMessage();
 
@@ -137,17 +145,25 @@ abstract class AbstractCsvStrategy extends AbstractSeederStrategy
         $strategyResolver = app(StrategyResolver::class);
         $defaultStrategy = $strategyResolver->resolveDefault($this->dbConnection, $config);
 
-        // $defaultStrategy->prepareEnvironment();
-        // $recordsInserted = $defaultStrategy->seed($config);
+        try {
+            $defaultStrategy->prepareEnvironment();
+            $recordsInserted = $defaultStrategy->seed($config);
 
-        // $defaultStrategy->cleanup();
+            $defaultStrategy->cleanup();
 
-        // return $recordsInserted;
+            return $recordsInserted;
+        } catch (\Throwable $e) {
+            Log::error('Failed to execute default strategy', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'table' => $config->table,
+                'driver' => $this->dbConnection->driver->value,
+            ]);
 
-        $executeSeederAction = app(ExecuteSeederAction::class);
-        $result = $executeSeederAction($defaultStrategy, $config);
+            $defaultStrategy->cleanup(fromException: true);
 
-        return $result->recordsInserted;
+            throw new \RuntimeException('Failed to execute default strategy', previous: $e);
+        }
     }
 
     /**
@@ -219,7 +235,8 @@ abstract class AbstractCsvStrategy extends AbstractSeederStrategy
         }
 
         $output->writeln('');
-        $output->writeln('<comment>📝 Step 1/2: Generating CSV file...</comment>');
+        $output->writeln('<comment> 📝 Step 1/2: Generating CSV file...</comment>');
+        $output->writeln('');
     }
 
     /**
@@ -233,9 +250,10 @@ abstract class AbstractCsvStrategy extends AbstractSeederStrategy
             return;
         }
 
+        $output->writeln('');
         $output->writeln('<info>   ✓ CSV file generated successfully</info>');
         $output->writeln('');
-        $output->writeln('<comment>📥 Step 2/2: Importing data from CSV...</comment>');
+        $output->write('<comment> 📥 Step 2/2: Importing data from CSV. Wait a bit...<fg=cyan>⏳</></comment>');
     }
 
     /**
@@ -250,7 +268,9 @@ abstract class AbstractCsvStrategy extends AbstractSeederStrategy
         }
 
         $output->writeln('');
-        $output->writeln('<info>   ✓ Data imported successfully from CSV</info>');
+        $output->writeln('');
+        $output->writeln('<info>   ✓ Done! Data imported successfully from CSV</info>');
+
     }
 
     /**
@@ -361,6 +381,25 @@ abstract class AbstractCsvStrategy extends AbstractSeederStrategy
             throw new \RuntimeException('Temp file path not set');
         }
 
+        if (! file_exists($this->tempFilePath)) {
+            throw new \RuntimeException('Temp file does not exist: '.$this->tempFilePath);
+        }
+
         return realpath($this->tempFilePath) ?: $this->tempFilePath;
+    }
+
+    /**
+     * Hide the loading indicator emoji
+     */
+    protected function hideLoadingIndicator(): void
+    {
+        $output = $this->getConsoleOutput();
+
+        if (! $output) {
+            return;
+        }
+
+        // `\033[1D` moves cursor back 1 position
+        $output->write("\033[2D ");
     }
 }
