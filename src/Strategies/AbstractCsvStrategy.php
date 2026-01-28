@@ -235,7 +235,7 @@ abstract class AbstractCsvStrategy extends AbstractSeederStrategy
         }
 
         $output->writeln('');
-        $output->writeln('<comment> 📝 Step 1/2: Generating CSV file...</comment>');
+        $output->writeln('<comment> ➤ Step 1/2: Generating CSV file...</comment>');
         $output->writeln('');
     }
 
@@ -253,7 +253,7 @@ abstract class AbstractCsvStrategy extends AbstractSeederStrategy
         $output->writeln('');
         $output->writeln('<info>   ✓ CSV file generated successfully</info>');
         $output->writeln('');
-        $output->write('<comment> 📥 Step 2/2: Importing data from CSV. Wait a bit...<fg=cyan>⏳</></comment>');
+        $output->write('<comment> ➤ Step 2/2: Importing data from CSV. Wait a bit...<fg=cyan>⏳</></comment>');
     }
 
     /**
