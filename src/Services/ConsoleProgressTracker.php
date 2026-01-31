@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Services;
 
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
+use IzAhmad\TurboSeeder\Contracts\ResettableOutputAwareProgressTracker as ResettableOutputAwareProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\OutputInterface;
 
-final class ConsoleProgressTracker implements ProgressTrackerInterface
+final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrackerInterface
 {
     private ?ProgressBar $progressBar = null;
 
@@ -163,6 +164,27 @@ final class ConsoleProgressTracker implements ProgressTrackerInterface
             $memoryUsed = $currentMemory - $this->startMemory;
             $memoryUsedMB = round($memoryUsed / 1024 / 1024, 1);
             $this->progressBar->setMessage($memoryUsedMB.' MiB', 'memory_used');
+        }
+    }
+
+    /**
+     * Get the console output instance if available.
+     */
+    public function getOutput(): ?OutputInterface
+    {
+        return $this->output;
+    }
+
+    /**
+     * Reset the progress tracker state to initial values.
+     */
+    public function reset(): void
+    {
+        $this->current = 0;
+        $this->finished = false;
+
+        if ($this->progressBar !== null) {
+            $this->progressBar->setProgress(0);
         }
     }
 }

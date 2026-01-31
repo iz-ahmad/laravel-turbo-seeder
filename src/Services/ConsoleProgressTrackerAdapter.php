@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Services;
 
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
-use Symfony\Component\Console\Helper\ProgressBar;
+use IzAhmad\TurboSeeder\Contracts\ResettableOutputAwareProgressTracker;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * Adapter to access extended functionality of progress trackers
+ * that support output access and reset operations.
+ */
 final class ConsoleProgressTrackerAdapter
 {
     /**
@@ -16,18 +20,8 @@ final class ConsoleProgressTrackerAdapter
     public function getOutput(ProgressTrackerInterface $tracker): ?OutputInterface
     {
         try {
-            if ($tracker instanceof ConsoleProgressTracker) {
-                $reflection = new \ReflectionClass($tracker);
-
-                if ($reflection->hasProperty('output')) {
-                    $property = $reflection->getProperty('output');
-                    $property->setAccessible(true);
-                    $output = $property->getValue($tracker);
-
-                    if ($output instanceof OutputInterface) {
-                        return $output;
-                    }
-                }
+            if ($tracker instanceof ResettableOutputAwareProgressTracker) {
+                return $tracker->getOutput();
             }
 
             if (app()->bound('Illuminate\Console\OutputStyle')) {
@@ -46,26 +40,8 @@ final class ConsoleProgressTrackerAdapter
      */
     public function reset(ProgressTrackerInterface $tracker): void
     {
-        if (! $tracker instanceof ConsoleProgressTracker) {
-            return;
-        }
-
-        $reflection = new \ReflectionClass($tracker);
-
-        if ($reflection->hasProperty('current')) {
-            $currentProperty = $reflection->getProperty('current');
-            $currentProperty->setAccessible(true);
-            $currentProperty->setValue($tracker, 0);
-        }
-
-        if ($reflection->hasProperty('progressBar')) {
-            $progressBarProperty = $reflection->getProperty('progressBar');
-            $progressBarProperty->setAccessible(true);
-            $progressBar = $progressBarProperty->getValue($tracker);
-
-            if ($progressBar instanceof ProgressBar) {
-                $progressBar->setProgress(0);
-            }
+        if ($tracker instanceof ResettableOutputAwareProgressTracker) {
+            $tracker->reset();
         }
     }
 }
