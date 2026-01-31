@@ -51,14 +51,10 @@ Laravel Turbo Seeder is a high-performance database seeding package that allows 
 ---
 
 ## 💡 Why Turbo Seeder?
-
-Because waiting **40+ minutes** for seeders to finish is not "testing" - it's nearly a **punishment**!
-
 When you need to test your app with **real, production-scale data** (hundreds of thousands or millions of rows), traditional Laravel seeders crawl… and your flow dies with them.
 
 **Turbo Seeder makes seeding great again (in a good way) ;-).**
-What used to take **40+ minutes** now finishes in **2–3 minutes** for ~**1M records**.
-And what used to take 5-10 minutes now finishes in **1-2 minutes** for ~**100K records**. ...Approximately.
+What used to take **~30 minutes** now finishes in **~15-60 seconds** for ~**1M records**... approximately.
 
 No coffee breaks. No tab-switching. No "I'll test later". So you can:
 
@@ -77,7 +73,7 @@ No coffee breaks. No tab-switching. No "I'll test later". So you can:
 
 ### Performance Snapshot (Real Measurements)
 
-For a local setup with MySQL and sensible chunk sizes:
+For a local setup with MySQL and default chunk sizes:
 
 - **Simple tables (~5 columns, 1M rows)**  
   - Default strategy: **~16 seconds**, **~50 MB** peak memory  
@@ -93,14 +89,14 @@ For a local setup with MySQL and sensible chunk sizes:
 
 ## 🚀 Main Features
 
-- ⚡ **Lightning Fast** - Seed 1M records in 2-3 minutes
-- 💾 **Memory Efficient** - Uses less than 256MB peak memory
+- ⚡ **Lightning Fast** - Seed 1M records in ~15-60 seconds (depending on the table complexity)
+- 💾 **Memory Efficient** - Uses less than 200MB memory
 - 🗄️ **Multi-Database Support** - MySQL, PostgreSQL, SQLite
 - 📊 **Two Strategies** - Default (bulk insert) and CSV (file-based import)
 - 🎯 **Fluent API** - Beautiful, chainable interface
 - 📈 **Progress Tracking** - Real-time progress bars with metrics
 - 🔧 **Highly Configurable** - Fine-tune performance settings
-- ✅ **Fully Tested** - 110+ tests with Pest PHP
+- ✅ **Fully Tested** - with Pest PHP
 - 🎨 **Laravel 11/12 Compatible** - Works with latest Laravel versions
 
 **Perfect for:**
@@ -545,7 +541,7 @@ If you see a warning about CSV strategy falling back to default:
 2. **PostgreSQL** - Check file permissions and COPY privileges
 3. **Both** - Review application logs for detailed error messages
 
-The default strategy works without any additional configuration and is still very fast (2-3 minutes for 1M records).
+The default strategy works without any additional configuration and is still very fast.
 
 </details>
 
