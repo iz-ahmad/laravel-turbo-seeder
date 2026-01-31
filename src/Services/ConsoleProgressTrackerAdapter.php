@@ -26,6 +26,7 @@ final class ConsoleProgressTrackerAdapter
 
             if (app()->bound('Illuminate\Console\OutputStyle')) {
                 $outputStyle = app('Illuminate\Console\OutputStyle');
+
                 return $outputStyle->getOutput();
             }
         } catch (\Throwable) {

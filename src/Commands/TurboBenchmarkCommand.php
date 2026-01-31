@@ -39,7 +39,7 @@ class TurboBenchmarkCommand extends Command
 
             $results = [];
 
-            $this->info("<fg=yellow>Please wait while we proceed with the testing... ⏳<fg=cyan>");
+            $this->info('<fg=yellow>Please wait while we proceed with the testing... ⏳<fg=cyan>');
             $this->newLine();
             $this->line('🔄 Testing DEFAULT strategy...');
             $results['default'] = $this->benchmarkStrategy($table, $records, false, $connection);

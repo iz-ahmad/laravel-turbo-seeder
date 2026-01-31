@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Services;
 
-use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Contracts\ResettableOutputAwareProgressTracker as ResettableOutputAwareProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 use Symfony\Component\Console\Helper\ProgressBar;

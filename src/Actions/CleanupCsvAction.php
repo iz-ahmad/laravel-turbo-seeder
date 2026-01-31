@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Actions;
+
 use Illuminate\Support\Facades\Log;
 
 final class CleanupCsvAction
