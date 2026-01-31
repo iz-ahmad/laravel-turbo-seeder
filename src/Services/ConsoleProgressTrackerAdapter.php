@@ -32,14 +32,7 @@ final class ConsoleProgressTrackerAdapter
 
             if (app()->bound('Illuminate\Console\OutputStyle')) {
                 $outputStyle = app('Illuminate\Console\OutputStyle');
-
-                if (method_exists($outputStyle, 'getOutput')) {
-                    $output = $outputStyle->getOutput();
-
-                    if ($output instanceof OutputInterface) {
-                        return $output;
-                    }
-                }
+                return $outputStyle->getOutput();
             }
         } catch (\Throwable) {
             // failing silently, as console output is optional.

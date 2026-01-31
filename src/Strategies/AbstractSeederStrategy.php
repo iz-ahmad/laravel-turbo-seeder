@@ -85,7 +85,7 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
             return;
         }
 
-        if ($this->config->options['use_transactions'] ?? true && ! $fromException) {
+        if (($this->config->options['use_transactions'] ?? true) && ! $fromException) {
             $connection = DB::connection($this->dbConnection->name);
 
             if ($connection->transactionLevel() > 0) {
