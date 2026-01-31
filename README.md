@@ -9,6 +9,8 @@
 
 Laravel Turbo Seeder is a high-performance database seeding package that allows you to seed massive amounts of data (1M+ records) in just seconds. Perfect for testing applications with realistic data volumes.
 
+![Laravel Turbo Seeder Demo](images/banner.png)
+
 ---
 
 ## 📑 Table of Contents
