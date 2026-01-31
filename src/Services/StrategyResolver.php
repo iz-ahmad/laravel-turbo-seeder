@@ -30,6 +30,7 @@ final class StrategyResolver
      */
     public function register(string $key, string $strategyClass): void
     {
+        // @phpstan-ignore-next-line
         if (! is_subclass_of($strategyClass, SeederStrategyInterface::class)) {
             throw new \InvalidArgumentException(
                 'Strategy class must implement SeederStrategyInterface'
