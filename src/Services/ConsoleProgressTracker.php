@@ -54,6 +54,10 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
         $this->progressBar->setEmptyBarCharacter('<fg=gray>░</>');
         $this->progressBar->setProgressCharacter('<fg=green>█</>');
 
+        $this->progressBar->setMessage('0 MiB', 'memory_used');
+        $this->progressBar->setMessage('0', 'rate');
+        $this->progressBar->setMessage('calculating..', 'eta');
+
         if ($this->progressBar->getProgress() > 0) {
             $this->progressBar->start();
         }
