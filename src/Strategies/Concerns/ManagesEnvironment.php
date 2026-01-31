@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\DB;
  * Trait to manage database environment preparation and cleanup.
  *
  * Requires the following properties in the using class:
- * - DatabaseConnectionDTO $dbConnection
- * - SeederConfigurationDTO $config
- * - PrepareEnvironmentAction $prepareAction
- * - CleanupEnvironmentAction $cleanupAction
+ * - \IzAhmad\TurboSeeder\DTOs\DatabaseConnectionDTO $dbConnection
+ * - \IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO $config
+ * - \IzAhmad\TurboSeeder\Actions\PrepareEnvironmentAction $prepareAction
+ * - \IzAhmad\TurboSeeder\Actions\CleanupEnvironmentAction $cleanupAction
  */
 trait ManagesEnvironment
 {

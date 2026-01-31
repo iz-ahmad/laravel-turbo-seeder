@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Strategies;
 
-use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Actions\CleanupEnvironmentAction;
 use IzAhmad\TurboSeeder\Actions\PrepareEnvironmentAction;
 use IzAhmad\TurboSeeder\Contracts\MemoryManagerInterface;
@@ -12,12 +11,13 @@ use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface;
 use IzAhmad\TurboSeeder\DTOs\DatabaseConnectionDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
+use IzAhmad\TurboSeeder\Strategies\Concerns\ManagesEnvironment;
 
 abstract class AbstractSeederStrategy implements SeederStrategyInterface
 {
-    protected int $chunkSize;
+    use ManagesEnvironment;
 
-    protected bool $environmentPrepared = false;
+    protected int $chunkSize;
 
     public function __construct(
         protected readonly DatabaseConnectionDTO $dbConnection,
@@ -62,40 +62,6 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
         }
 
         return $recordsInserted;
-    }
-
-    public function prepareEnvironment(): void
-    {
-        if ($this->environmentPrepared) {
-            return;
-        }
-
-        ($this->prepareAction)($this->dbConnection, $this->config);
-
-        if ($this->config->options['use_transactions'] ?? true) {
-            DB::connection($this->dbConnection->name)->beginTransaction();
-        }
-
-        $this->environmentPrepared = true;
-    }
-
-    public function cleanup(bool $fromException = false): void
-    {
-        if (! $this->environmentPrepared) {
-            return;
-        }
-
-        if (($this->config->options['use_transactions'] ?? true) && ! $fromException) {
-            $connection = DB::connection($this->dbConnection->name);
-
-            if ($connection->transactionLevel() > 0) {
-                $connection->commit();
-            }
-        }
-
-        ($this->cleanupAction)($this->dbConnection, $this->config);
-
-        $this->environmentPrepared = false;
     }
 
     public function getOptimalChunkSize(): int
