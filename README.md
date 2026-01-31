@@ -5,9 +5,9 @@
 [![Tests](https://github.com/iz-ahmad/laravel-turbo-seeder/actions/workflows/run-tests.yml/badge.svg)](https://github.com/iz-ahmad/laravel-turbo-seeder/actions/workflows/run-tests.yml)
 [![License](https://img.shields.io/packagist/l/iz-ahmad/laravel-turbo-seeder.svg?style=flat-square)](LICENSE.md) -->
 
-**Blazing fast database seeder for Laravel - seed millions of records in minutes, or even seconds!**
+**Blazing fast database seeder for Laravel - seed millions of records in less than a minute, or even seconds!**
 
-Laravel Turbo Seeder is a high-performance database seeding package that allows you to seed massive amounts of data (1M+ records) in just 2-3 minutes, compared to the traditional 40+ minutes. Perfect for testing applications with realistic data volumes.
+Laravel Turbo Seeder is a high-performance database seeding package that allows you to seed massive amounts of data (1M+ records) in just seconds. Perfect for testing applications with realistic data volumes.
 
 ---
 
