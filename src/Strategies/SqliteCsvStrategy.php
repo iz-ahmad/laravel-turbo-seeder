@@ -110,9 +110,4 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
     {
         return config('turbo-seeder.chunk_sizes.sqlite', config('turbo-seeder.default_chunk_size', 500));
     }
-
-    protected function insertChunk(string $table, array $columns, array $records): void
-    {
-        // not used in CSV strategy, but required by abstract parent. will refactor later.
-    }
 }

@@ -71,11 +71,6 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
         return config('turbo-seeder.chunk_sizes.pgsql', config('turbo-seeder.default_chunk_size', 500));
     }
 
-    protected function insertChunk(string $table, array $columns, array $records): void
-    {
-        // not used in CSV strategy, but required by abstract parent. will refactor later.
-    }
-
     /**
      * Check if error is related to COPY command access/permissions.
      */

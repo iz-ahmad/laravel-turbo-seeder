@@ -4,20 +4,42 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Strategies;
 
+use IzAhmad\TurboSeeder\Actions\CleanupEnvironmentAction;
 use IzAhmad\TurboSeeder\Actions\GenerateCsvAction;
+use IzAhmad\TurboSeeder\Actions\PrepareEnvironmentAction;
+use IzAhmad\TurboSeeder\Contracts\MemoryManagerInterface;
+use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
+use IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface;
+use IzAhmad\TurboSeeder\DTOs\DatabaseConnectionDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
+use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Strategies\Concerns\HandlesCsvConsoleOutput;
 use IzAhmad\TurboSeeder\Strategies\Concerns\HandlesCsvFallback;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ManagesCsvTempFiles;
+use IzAhmad\TurboSeeder\Strategies\Concerns\ManagesEnvironment;
 
-abstract class AbstractCsvStrategy extends AbstractSeederStrategy
+abstract class AbstractCsvStrategy implements SeederStrategyInterface
 {
     use HandlesCsvConsoleOutput;
     use HandlesCsvFallback;
     use ManagesCsvTempFiles;
+    use ManagesEnvironment;
 
     protected ?string $tempFilePath = null;
+
+    protected int $chunkSize;
+
+    public function __construct(
+        protected readonly DatabaseConnectionDTO $dbConnection,
+        protected readonly SeederConfigurationDTO $config,
+        protected readonly MemoryManagerInterface $memoryManager,
+        protected readonly ProgressTrackerInterface $progressTracker,
+        protected readonly PrepareEnvironmentAction $prepareAction,
+        protected readonly CleanupEnvironmentAction $cleanupAction,
+    ) {
+        $this->chunkSize = $this->determineOptimalChunkSize();
+    }
 
     /**
      * Seed the database using a CSV file.
@@ -86,4 +108,22 @@ abstract class AbstractCsvStrategy extends AbstractSeederStrategy
      * @param  array<int, string>  $columns
      */
     abstract protected function importFromCsv(string $table, array $columns): void;
+
+    /**
+     * Check if this strategy supports the given database driver.
+     */
+    abstract public function supports(DatabaseDriver $driver): bool;
+
+    /**
+     * Get the optimal chunk size for this strategy.
+     */
+    public function getOptimalChunkSize(): int
+    {
+        return $this->chunkSize;
+    }
+
+    /**
+     * Determine the optimal chunk size for this strategy.
+     */
+    abstract protected function determineOptimalChunkSize(): int;
 }
