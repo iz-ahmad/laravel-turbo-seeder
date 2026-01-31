@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Actions;
 
-use IzAhmad\TurboSeeder\Contracts\MemoryManagerInterface;
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
@@ -13,7 +12,6 @@ use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 final class ExecuteSeederAction
 {
     public function __construct(
-        private readonly MemoryManagerInterface $memoryManager,
         private readonly ProgressTrackerInterface $progressTracker,
     ) {}
 
@@ -31,7 +29,7 @@ final class ExecuteSeederAction
             $strategy->prepareEnvironment();
 
             if ($config->hasProgressTracking()) {
-                $this->progressTracker->start($config->count);
+                $this->progressTracker->start($config->count, $config->strategy);
             }
 
             $recordsInserted = $strategy->seed($config);
@@ -53,7 +51,7 @@ final class ExecuteSeederAction
             );
 
         } catch (\Throwable $e) {
-            $strategy->cleanup();
+            $strategy->cleanup(fromException: true);
 
             return new SeederResultDTO(
                 success: false,

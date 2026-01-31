@@ -58,7 +58,7 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
             }
 
             throw new \RuntimeException(
-                'PostgreSQL COPY command failed. '.
+                'PostgreSQL COPY command failed. Ensure the PostgreSQL server has read access to the CSV file and the database user has COPY privileges. '.
                 'Error: '.$errorMessage,
                 0,
                 $e
@@ -69,11 +69,6 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
     protected function determineOptimalChunkSize(): int
     {
         return config('turbo-seeder.chunk_sizes.pgsql', config('turbo-seeder.default_chunk_size', 500));
-    }
-
-    protected function insertChunk(string $table, array $columns, array $records): void
-    {
-        // not used in CSV strategy, but required by abstract parent. will refactor later.
     }
 
     /**

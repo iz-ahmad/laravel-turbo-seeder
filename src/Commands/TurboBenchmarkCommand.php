@@ -22,9 +22,11 @@ class TurboBenchmarkCommand extends Command
         $connection = $this->option('connection') ?? config('database.default');
         $table = $this->option('table');
         $records = (int) $this->option('records');
+        $columnCount = 5;
 
         $this->info('🏁 Starting TurboSeeder Performance Benchmark...');
         $this->info("Connection: {$connection}");
+        $this->info("Table: {$table} (containing {$columnCount} columns)");
         $this->info('Records: '.number_format($records));
         $this->newLine();
 
@@ -37,6 +39,8 @@ class TurboBenchmarkCommand extends Command
 
             $results = [];
 
+            $this->info("<fg=yellow>Please wait while we proceed with the testing... ⏳<fg=cyan>");
+            $this->newLine();
             $this->line('🔄 Testing DEFAULT strategy...');
             $results['default'] = $this->benchmarkStrategy($table, $records, false, $connection);
 

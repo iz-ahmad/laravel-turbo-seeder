@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Services;
 
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
+use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 
 /**
  * Null Object implementation of ProgressTrackerInterface.
@@ -16,7 +17,7 @@ final class NullProgressTracker implements ProgressTrackerInterface
 
     private int $total = 0;
 
-    public function start(int $total): void
+    public function start(int $total, SeederStrategy $strategy = SeederStrategy::DEFAULT): void
     {
         $this->total = $total;
         $this->current = 0;
