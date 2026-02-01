@@ -1,15 +1,12 @@
 # Laravel Turbo Seeder
 
-<!-- [![Latest Version on Packagist](https://img.shields.io/packagist/v/iz-ahmad/laravel-turbo-seeder.svg?style=flat-square)](https://packagist.org/packages/iz-ahmad/laravel-turbo-seeder)
-[![Total Downloads](https://img.shields.io/packagist/dt/iz-ahmad/laravel-turbo-seeder.svg?style=flat-square)](https://packagist.org/packages/iz-ahmad/laravel-turbo-seeder)
 [![Tests](https://github.com/iz-ahmad/laravel-turbo-seeder/actions/workflows/run-tests.yml/badge.svg)](https://github.com/iz-ahmad/laravel-turbo-seeder/actions/workflows/run-tests.yml)
-[![License](https://img.shields.io/packagist/l/iz-ahmad/laravel-turbo-seeder.svg?style=flat-square)](LICENSE.md) -->
 
 **Blazing fast database seeder for Laravel - seed millions of records in less than a minute, or even seconds!**
 
 Laravel Turbo Seeder is a high-performance database seeding package that allows you to seed massive amounts of data (1M+ records) in just seconds. Perfect for testing applications with realistic data volumes.
 
-![Laravel Turbo Seeder Demo](images/banner.png)
+![Laravel Turbo Seeder Demo](https://raw.githubusercontent.com/iz-ahmad/laravel-turbo-seeder/master/images/banner.png)
 
 ---
 
@@ -30,7 +27,6 @@ Laravel Turbo Seeder is a high-performance database seeding package that allows 
   - [Artisan Commands](#artisan-commands)
 - [Configuration Reference](#%EF%B8%8F-configuration-reference)
   - [Chunk Sizes](#chunk-sizes)
-
   - [Memory Management](#memory-management)
   - [Performance Optimizations](#performance-optimizations)
   - [CSV Strategy](#csv-strategy-configuration)
@@ -330,15 +326,20 @@ class UserSeeder extends Seeder
 php artisan turbo-seeder:run YourSeederClass
 ```
 
+**Arguments:**
+- `seeder` - The seeder class name
+
 **Options:**
-- `--class=` - Seeder class name
-- `--connection=` - Database connection
+- `--class=` - Seeder class name (no need if you use the `seeder` argument)
+<!-- - `--connection=` - Database connection
 - `--strategy=` - Strategy (default or csv)
 - `--count=` - Number of records
 - `--chunk=` - Custom chunk size
 - `--no-progress` - Disable progress bar
 - `--no-fk-checks` - Disable foreign key checks
-- `--no-transactions` - Disable transactions
+- `--no-transactions` - Disable transactions -->
+
+You can still use Laravel’s native `php artisan db:seed` command when using this package — it remains fully compatible. However, the `turbo-seeder:run` command provided by this package offers additional benefits: you can easily customize options, view detailed performance metrics, and monitor real-time progress, making it ideal for large-scale or advanced seeding operations.
 
 #### Benchmark Performance
 
