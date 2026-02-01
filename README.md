@@ -192,7 +192,7 @@ See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) for more ex
 ---
 
 <details>
-<summary><h2>📚 API Documentation</h2></summary>
+<summary><h3>📚 API Documentation</h3></summary>
 
 ### Fluent API Methods
 
@@ -374,7 +374,7 @@ php artisan turbo-seeder:clear-cache
 ---
 
 <details>
-<summary><h2>⚙️ Configuration Reference</h2></summary>
+<summary><h3>⚙️ Configuration Reference</h3></summary>
 
 We have provided an optimal configuration for you to use. You can override it by adding your own configuration in your `config/turbo-seeder.php` file, if you need to.
 
@@ -500,7 +500,7 @@ Default namespace for seeder classes:
 ---
 
 <details>
-<summary><h2>🔧 CSV Strategy Setup</h2></summary>
+<summary><h3>🔧 CSV Strategy Setup</h3></summary>
 
 The CSV strategy provides the fastest seeding performance but requires additional database configuration.
 
@@ -551,7 +551,7 @@ The default strategy works without any additional configuration and is still ver
 ---
 
 <details>
-<summary><h2>📊 Performance Benchmarks</h2></summary>
+<summary><h3>📊 Performance Benchmarks</h3></summary>
 
 These benchmarks are based on real runs on a modern local machine with MySQL, PGSQL and optimized (default) chunk sizes.
 
@@ -574,7 +574,7 @@ These benchmarks are based on real runs on a modern local machine with MySQL, PG
 ---
 
 <details>
-<summary><h2>🧪 Testing</h2></summary>
+<summary><h3>🧪 Testing</h3></summary>
 
 Run the test suite:
 
@@ -593,7 +593,7 @@ composer test-coverage
 ---
 
 <details>
-<summary><h2>🤝 Contributing</h2></summary>
+<summary><h3>🤝 Contributing</h3></summary>
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
@@ -602,7 +602,7 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 ---
 
 <details>
-<summary><h2>🔒 Security</h2></summary>
+<summary><h3>🔒 Security</h3></summary>
 
 If you discover any security-related issues, please email `n.ahmad.web.cit22@gmail.com` instead of creating a public issue.
 
@@ -611,7 +611,7 @@ If you discover any security-related issues, please email `n.ahmad.web.cit22@gma
 ---
 
 <details>
-<summary><h2>📝 Changelog</h2></summary>
+<summary><h3>📝 Changelog</h3></summary>
 
 Please see [CHANGELOG.md](CHANGELOG.md) for more information on recent changes.
 
@@ -620,7 +620,7 @@ Please see [CHANGELOG.md](CHANGELOG.md) for more information on recent changes.
 ---
 
 <details>
-<summary><h2>📄 License</h2></summary>
+<summary><h3>📄 License</h3></summary>
 
 The MIT License (MIT). Please see [LICENSE.md](LICENSE.md) for more information.
 
@@ -629,7 +629,7 @@ The MIT License (MIT). Please see [LICENSE.md](LICENSE.md) for more information.
 ---
 
 <details>
-<summary><h2>🙏 Credits</h2></summary>
+<summary><h3>🙏 Credits</h3></summary>
 
 <!-- - [iz-ahmad](https://github.com/iz-ahmad) -->
 - All Contributors
