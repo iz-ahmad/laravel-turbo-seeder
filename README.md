@@ -95,7 +95,7 @@ For a local setup with MySQL and default chunk sizes:
 - 📈 **Progress Tracking** - Real-time progress bars with metrics
 - 🔧 **Highly Configurable** - Fine-tune performance settings
 - ✅ **Fully Tested** - with Pest PHP
-- 🎨 **Laravel 11/12 Compatible** - Works with latest Laravel versions
+- 🎨 **Laravel 10–13 Compatible** - Works with latest Laravel versions
 
 **Perfect for:**
 - ✅ Performance testing with realistic data volumes
@@ -108,8 +108,8 @@ For a local setup with MySQL and default chunk sizes:
 
 ## 📋 Requirements
 
-- PHP 8.1 or higher
-- Laravel 10.x, 11.x, or 12.x
+- PHP 8.1 or higher (including 8.5)
+- Laravel 10.x, 11.x, 12.x, or 13.x
 - MySQL 5.7+, PostgreSQL 9.6+, or SQLite 3.8+
 
 ---
