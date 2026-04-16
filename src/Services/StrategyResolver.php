@@ -26,11 +26,10 @@ final class StrategyResolver
     /**
      * Register a seeder strategy.
      *
-     * @param  class-string<\IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface>  $strategyClass
+     * @param  string  $strategyClass  Fully-qualified class name implementing SeederStrategyInterface
      */
     public function register(string $key, string $strategyClass): void
     {
-        // @phpstan-ignore-next-line
         if (! is_subclass_of($strategyClass, SeederStrategyInterface::class)) {
             throw new \InvalidArgumentException(
                 'Strategy class must implement SeederStrategyInterface'

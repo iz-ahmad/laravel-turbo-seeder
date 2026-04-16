@@ -14,9 +14,6 @@ use Illuminate\Support\Str;
  */
 final class TurboData
 {
-    /** @var array<string, mixed> */
-    private static array $poolCache = [];
-
     private static ?string $cachedNow = null;
 
     // -------------------------------------------------------------------------
