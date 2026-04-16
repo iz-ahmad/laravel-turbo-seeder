@@ -3,20 +3,23 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 test('can run turbo seeder test connection command', function () {
-    Artisan::call('turbo-seeder:test-connection');
+    $output = new BufferedOutput;
+    Artisan::call('turbo-seeder:test-connection', [], $output);
 
-    expect(Artisan::output())->toContain('Testing connection');
+    expect($output->fetch())->toContain('Testing connection');
 });
 
 test('test connection command shows driver info', function () {
-    Artisan::call('turbo-seeder:test-connection', ['connection' => 'testing']);
+    $output = new BufferedOutput;
+    Artisan::call('turbo-seeder:test-connection', ['connection' => 'testing'], $output);
 
-    $output = Artisan::output();
+    $text = $output->fetch();
 
-    expect($output)->toMatch('/MySQL|PostgreSQL|SQLite/')
-        ->and($output)->toContain('DEFAULT strategy');
+    expect($text)->toMatch('/MySQL|PostgreSQL|SQLite/')
+        ->and($text)->toContain('DEFAULT strategy');
 });
 
 test('clear cache command works', function () {
@@ -28,18 +31,20 @@ test('clear cache command works', function () {
 
     file_put_contents($tempPath.'/test.csv', 'test data');
 
-    Artisan::call('turbo-seeder:clear-cache');
+    $output = new BufferedOutput;
+    Artisan::call('turbo-seeder:clear-cache', [], $output);
 
-    expect(Artisan::output())->toContain('Clearing TurboSeeder cache');
+    expect($output->fetch())->toContain('Clearing TurboSeeder cache');
 });
 
 test('benchmark command validates connection', function () {
+    $output = new BufferedOutput;
     Artisan::call('turbo-seeder:benchmark', [
         '--connection' => 'testing',
         '--records' => 100,
-    ]);
+    ], $output);
 
-    $output = Artisan::output();
+    $text = $output->fetch();
 
-    expect($output)->toContain('Starting TurboSeeder Performance Benchmark');
+    expect($text)->toContain('Starting TurboSeeder Performance Benchmark');
 });
