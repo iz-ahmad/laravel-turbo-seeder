@@ -82,7 +82,7 @@ final class ValueFormatter
             return $nullMarker;
         }
 
-        return (string) $formatted;
+        return is_bool($formatted) ? ($formatted ? '1' : '0') : (string) $formatted;
     }
 
     private static function encodeJson(mixed $value): string
