@@ -27,7 +27,7 @@ test('csv import failed exception can disable fallback', function () {
 });
 
 test('csv import failed exception preserves original exception', function () {
-    $originalException = new \RuntimeException('Original error');
+    $originalException = new RuntimeException('Original error');
 
     $exception = new CsvImportFailedException(
         'Wrapped error',

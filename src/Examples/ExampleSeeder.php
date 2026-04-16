@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Examples;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
@@ -12,8 +13,8 @@ use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
 /**
  * Example seeder class demonstrating various ways to use TurboSeeder.
  *
- * @see \IzAhmad\TurboSeeder\Traits\UsesTurboSeeder
- * @see \IzAhmad\TurboSeeder\Helpers\TurboData
+ * @see UsesTurboSeeder
+ * @see TurboData
  */
 class ExampleSeeder extends Seeder
 {
@@ -69,7 +70,7 @@ class ExampleSeeder extends Seeder
         // TurboData::fromPool() loads existing IDs once from the DB, then cycles
         // through them. This is safe with gaps, UUIDs, and soft-deleted records.
 
-        $userIds = TurboData::fromPool(fn () => \Illuminate\Support\Facades\DB::table('users')->pluck('id')->toArray());
+        $userIds = TurboData::fromPool(fn () => DB::table('users')->pluck('id')->toArray());
 
         TurboSeeder::create('orders')
             ->columns(['user_id', 'total', 'status', 'payment_method', 'created_at'])

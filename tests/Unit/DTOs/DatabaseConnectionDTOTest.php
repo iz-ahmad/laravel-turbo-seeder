@@ -22,7 +22,7 @@ test('can create default database connection', function () {
 test('can get pdo connection', function () {
     $connection = DatabaseConnectionDTO::fromName('testing');
 
-    expect($connection->getPdo())->toBeInstanceOf(\PDO::class);
+    expect($connection->getPdo())->toBeInstanceOf(PDO::class);
 });
 
 test('can get database name', function () {

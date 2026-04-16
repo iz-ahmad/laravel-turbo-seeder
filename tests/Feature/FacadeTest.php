@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
+use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 test('facade can create builder', function () {
     $builder = TurboSeeder::create('test_users');
 
-    expect($builder)->toBeInstanceOf(\IzAhmad\TurboSeeder\Builder\TurboSeederBuilder::class);
+    expect($builder)->toBeInstanceOf(TurboSeederBuilder::class);
 });
 
 test('facade can create builder with table name', function () {
