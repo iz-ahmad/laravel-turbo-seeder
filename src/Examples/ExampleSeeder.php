@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Examples;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
@@ -12,8 +13,8 @@ use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
 /**
  * Example seeder class demonstrating various ways to use TurboSeeder.
  *
- * @see \IzAhmad\TurboSeeder\Traits\UsesTurboSeeder
- * @see \IzAhmad\TurboSeeder\Helpers\TurboData
+ * @see UsesTurboSeeder
+ * @see TurboData
  */
 class ExampleSeeder extends Seeder
 {
@@ -31,13 +32,14 @@ class ExampleSeeder extends Seeder
         // records share the same "imported at" timestamp, which is realistic and fast.
 
         $uniqueEmail = TurboData::uniqueEmail();
+        $hashedPassword = bcrypt('password'); // hashed once,then reused across all records
 
         TurboSeeder::create('users')
             ->columns(['name', 'email', 'password', 'remember_token', 'created_at'])
             ->generate(fn ($index) => [
                 'name' => "User {$index}",
                 'email' => $uniqueEmail($index),
-                'password' => 'hashed_password', // use a pre-hashed string for bulk seeding
+                'password' => $hashedPassword,
                 'remember_token' => bin2hex(random_bytes(5)),
                 'created_at' => TurboData::nowOnce(),
             ])
@@ -47,7 +49,7 @@ class ExampleSeeder extends Seeder
         // Example 2: CSV strategy for maximum speed with weighted distribution
         //
         // TurboData::weightedFrom() generates realistic non-uniform distributions.
-        // Use ->useCsvStrategy() for datasets over 100K rows.
+        // you can use ->useCsvStrategy() for datasets over 100K rows or more to achieve faster seeding.
 
         $now = TurboData::nowOnce();
 
@@ -69,7 +71,7 @@ class ExampleSeeder extends Seeder
         // TurboData::fromPool() loads existing IDs once from the DB, then cycles
         // through them. This is safe with gaps, UUIDs, and soft-deleted records.
 
-        $userIds = TurboData::fromPool(fn () => \Illuminate\Support\Facades\DB::table('users')->pluck('id')->toArray());
+        $userIds = TurboData::fromPool(fn () => DB::table('users')->pluck('id')->toArray());
 
         TurboSeeder::create('orders')
             ->columns(['user_id', 'total', 'status', 'payment_method', 'created_at'])
