@@ -64,3 +64,25 @@ test('returns correct file path', function () {
 
     expect($reader->getFilePath())->toBe($this->tempFile);
 });
+
+test('file handle is closed when generator is abandoned mid-stream', function () {
+    $writer = new CsvWriter($this->tempFile);
+    $writer->open();
+    for ($i = 1; $i <= 10; $i++) {
+        $writer->writeRow(["User {$i}", "user{$i}@test.com"]);
+    }
+    $writer->close();
+
+    $reader = new CsvReader($this->tempFile);
+    $reader->open();
+
+    $gen = $reader->readRows();
+    $gen->current(); // read first row
+    $gen = null;     // abandon generator — triggers finally block
+
+    // File handle should be closed; opening for read again must succeed
+    $reader2 = new CsvReader($this->tempFile);
+    $reader2->open();
+    $rows = iterator_to_array($reader2->readRows());
+    expect($rows)->toHaveCount(10);
+});
