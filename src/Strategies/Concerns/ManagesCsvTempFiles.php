@@ -16,13 +16,13 @@ trait ManagesCsvTempFiles
      */
     protected function generateTempFilePath(string $table): string
     {
-        $tempDir = config('turbo-seeder.csv_strategy.temp_path', storage_path('app/turbo-seeder'));
+        $configuredPath = config('turbo-seeder.csv_strategy.temp_path', storage_path('app/turbo-seeder'));
+        $tempDir = rtrim((string) $configuredPath, '/\\');
 
         $filename = sprintf(
-            '%s_%s_%s.csv',
-            $table,
-            uniqid('', true),
-            time()
+            '%s_%s.csv',
+            preg_replace('/[^a-zA-Z0-9_\-]/', '_', $table),
+            bin2hex(random_bytes(16))
         );
 
         return $tempDir.'/'.$filename;
