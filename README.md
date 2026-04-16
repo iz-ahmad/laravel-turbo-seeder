@@ -92,10 +92,12 @@ For a local setup with MySQL and default chunk sizes:
 - 🗄️ **Multi-Database Support** - MySQL, PostgreSQL, SQLite
 - 📊 **Two Strategies** - Default (bulk insert) and CSV (file-based import)
 - 🎯 **Fluent API** - Beautiful, chainable interface
+- 🧩 **TurboData Helpers** - Faker-free data helpers: weighted distributions, date ranges, FK pools, unique values
 - 📈 **Progress Tracking** - Real-time progress bars with metrics
 - 🔧 **Highly Configurable** - Fine-tune performance settings
 - ✅ **Fully Tested** - with Pest PHP
 - 🎨 **Laravel 10–13 Compatible** - Works with latest Laravel versions
+- 🔒 **Secure** - Temp CSV files are restricted to owner-only permissions (0600)
 
 **Perfect for:**
 - ✅ Performance testing with realistic data volumes
@@ -140,13 +142,14 @@ This creates `config/turbo-seeder.php` in your project.
 
 ```php
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
+use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 TurboSeeder::create('users')
     ->columns(['name', 'email', 'created_at'])
     ->generate(fn ($index) => [
         'name' => "User {$index}",
         'email' => "user{$index}@example.com",
-        'created_at' => now(),
+        'created_at' => TurboData::nowOnce(), // computed once, not 100K times
     ])
     ->count(100000)
     ->run();
@@ -155,13 +158,15 @@ TurboSeeder::create('users')
 ### Using CSV Strategy (Fastest)
 
 ```php
+use IzAhmad\TurboSeeder\Helpers\TurboData;
+
 TurboSeeder::create('posts')
     ->columns(['user_id', 'title', 'content', 'created_at'])
     ->generate(fn ($index) => [
-        'user_id' => ($index % 10000) + 1,
+        'user_id' => TurboData::randomInt(1, 10000),
         'title' => "Post {$index}",
         'content' => "Content for post {$index}",
-        'created_at' => now(),
+        'created_at' => TurboData::nowOnce(),
     ])
     ->count(1000000)
     ->useCsvStrategy()
@@ -171,13 +176,15 @@ TurboSeeder::create('posts')
 ### Advanced Configuration
 
 ```php
+use IzAhmad\TurboSeeder\Helpers\TurboData;
+
 TurboSeeder::create('orders')
     ->columns(['user_id', 'total', 'status', 'created_at'])
     ->generate(fn ($index) => [
-        'user_id' => ($index % 10000) + 1,
-        'total' => random_int(1000, 99999) / 100,
-        'status' => ['pending', 'completed', 'cancelled'][random_int(0, 2)],
-        'created_at' => now(),
+        'user_id' => TurboData::randomInt(1, 10000),
+        'total' => TurboData::randomFloat(2, 10.00, 999.99),
+        'status' => TurboData::weightedFrom(['pending' => 50, 'completed' => 40, 'cancelled' => 10]),
+        'created_at' => TurboData::dateRange('2023-01-01', '2024-12-31'),
     ])
     ->count(50000)
     ->chunkSize(3000)
@@ -317,6 +324,100 @@ class UserSeeder extends Seeder
 - `uniqueUuid()` generates full UUIDs for maximum uniqueness, with or without prefix
 
 **Tip:** You can also clear the table before seeding using `DB::table('table_name')->delete()` or `DB::table('table_name')->truncate()` to avoid duplicate entry errors, especially useful when re-running seeders during development.
+
+### TurboData Helpers
+
+`TurboData` is a Faker-free data generation utility designed for high-volume seeding. Every method is safe to call 1M+ times.
+
+```php
+use IzAhmad\TurboSeeder\Helpers\TurboData;
+```
+
+#### Value Selection
+
+```php
+// Round-robin cycling — replaces the fragile ($index % N) pattern
+$role = TurboData::cycleFrom(['admin', 'editor', 'viewer']);
+// Returns a closure: $role($index)
+
+// Weighted random — realistic non-uniform distributions
+$status = TurboData::weightedFrom(['active' => 70, 'pending' => 20, 'banned' => 10]);
+// Returns the selected value directly (not a closure)
+
+// Uniform random
+$method = TurboData::randomFrom(['paypal', 'bank_transfer', 'credit_card']);
+```
+
+#### Scalars
+
+```php
+$age   = TurboData::randomInt(18, 65);
+$price = TurboData::randomFloat(2, 9.99, 999.99);
+$flag  = TurboData::randomBool(0.8); // 80% true
+```
+
+#### Dates & Timestamps
+
+```php
+// Random date within a range
+$date = TurboData::dateRange('2022-01-01', '2024-12-31');
+
+// Sequential timestamps (good for analytics/time-series data)
+$ts = TurboData::sequentialDate('2024-01-01', 'hour', $index);
+
+// ⚠️ Avoid calling now() inside the generator — use nowOnce() instead
+// BAD:  'created_at' => now(),          // calls now() 1M times — all same timestamp
+// GOOD: 'created_at' => TurboData::nowOnce(), // called once, reused
+$now = TurboData::nowOnce();
+```
+
+#### Nullable Values
+
+```php
+// 15% chance of null; value is only evaluated when not null
+$deletedAt = TurboData::nullable(0.15, fn () => now());
+```
+
+#### Foreign Key Pools
+
+```php
+// Load IDs once from the DB, cycle through them safely
+// Works with UUID PKs, soft-deleted records, and ID gaps
+$userIds = TurboData::fromPool(
+    fn () => DB::table('users')->pluck('id')->toArray()
+);
+
+TurboSeeder::create('posts')
+    ->columns(['user_id', 'title'])
+    ->generate(fn ($i) => [
+        'user_id' => $userIds($i), // loads IDs once, cycles deterministically
+        'title'   => "Post {$i}",
+    ])
+    ->count(1_000_000)
+    ->run();
+```
+
+#### Unique Values
+
+```php
+// Better-looking unique values than the legacy UniqueValueGenerator
+$email = TurboData::uniqueEmail();          // u_a3f9b2c1_0@turbo.test
+$user  = TurboData::uniqueUsername('usr');  // usr_a3f9b2c1_0
+$slug  = TurboData::uniqueSlug('My Post');  // my-post-a3f9b2c1-0
+$uuid  = TurboData::uniqueUuid('ref_');     // ref_xxxxxxxx-xxxx-...
+// All return closures: $email($index)
+```
+
+#### Custom Type Formatters
+
+Register custom type handlers for your own value objects:
+
+```php
+use IzAhmad\TurboSeeder\Services\ValueFormatter;
+
+// In a service provider or seeder
+ValueFormatter::extend(Money::class, fn ($money) => $money->getAmount());
+```
 
 ### Artisan Commands
 
@@ -459,11 +560,13 @@ Settings for CSV-based seeding:
     'gc_frequency' => 5,                                 // Run GC every N batches
     'reader_chunk_size_for_sqlite' => 500,               // SQLite CSV read chunk size
     'fallback_to_default_strategy_on_config_error' => true, // Auto fallback to default strategy (bulk insert) if CSV fails due to missing configuration.
+    'null_marker' => '\\N',                              // Sentinel used for NULL values in CSV files
 ],
 ```
 
 **Key Settings:**
 - `fallback_to_default_strategy_on_config_error` - Automatically switches to bulk insert if CSV import fails due to missing database configuration. Ensures seeding completes successfully.
+- `null_marker` - The string written to CSV for `null` values. The default `\N` matches MySQL and PostgreSQL native CSV null conventions. Only change this if your data legitimately contains the literal string `\N`.
 
 ### Progress Tracking
 
