@@ -6,6 +6,7 @@ namespace IzAhmad\TurboSeeder\Strategies;
 
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
+use IzAhmad\TurboSeeder\Services\ValueFormatter;
 
 final class SqliteSeederStrategy extends AbstractSeederStrategy
 {
@@ -56,7 +57,7 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
 
         try {
             DB::connection($this->dbConnection->name)->statement($sql, $bindings);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             throw new \RuntimeException(
                 'Failed to insert records into SQLite database. '.
                 'Error: '.$e->getMessage(),
@@ -66,24 +67,9 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
         }
     }
 
-    /**
-     * Format value for database insertion.
-     */
     protected function formatValue(mixed $value): mixed
     {
-        if ($value instanceof \DateTimeInterface) {
-            return $value->format('Y-m-d H:i:s');
-        }
-
-        if (is_bool($value)) {
-            return (int) $value;
-        }
-
-        if (is_array($value) || is_object($value)) {
-            return json_encode($value);
-        }
-
-        return $value;
+        return ValueFormatter::format($value);
     }
 
     protected function determineOptimalChunkSize(): int

@@ -14,7 +14,10 @@ final class CsvImportFailedException extends RuntimeException
     public function __construct(
         string $message,
         private readonly bool $shouldFallback = true,
-        ?\Throwable $previous = null
+        ?\Throwable $previous = null,
+        private readonly ?string $driver = null,
+        private readonly ?string $table = null,
+        private readonly ?string $filepath = null,
     ) {
         parent::__construct($message, 0, $previous);
     }
@@ -25,6 +28,30 @@ final class CsvImportFailedException extends RuntimeException
     public function shouldFallback(): bool
     {
         return $this->shouldFallback;
+    }
+
+    /**
+     * Get the database driver that triggered the failure.
+     */
+    public function getDriver(): ?string
+    {
+        return $this->driver;
+    }
+
+    /**
+     * Get the table name that was being seeded.
+     */
+    public function getTable(): ?string
+    {
+        return $this->table;
+    }
+
+    /**
+     * Get the CSV filepath that was being imported.
+     */
+    public function getFilepath(): ?string
+    {
+        return $this->filepath;
     }
 
     /**

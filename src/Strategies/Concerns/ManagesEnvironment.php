@@ -19,6 +19,8 @@ trait ManagesEnvironment
 {
     protected bool $environmentPrepared = false;
 
+    protected bool $transactionStartedByUs = false;
+
     /**
      * Prepare the database environment for seeding.
      */
@@ -31,7 +33,10 @@ trait ManagesEnvironment
         ($this->prepareAction)($this->dbConnection, $this->config);
 
         if ($this->config->options['use_transactions'] ?? true) {
-            DB::connection($this->dbConnection->name)->beginTransaction();
+            $connection = DB::connection($this->dbConnection->name);
+            $levelBefore = $connection->transactionLevel();
+            $connection->beginTransaction();
+            $this->transactionStartedByUs = $connection->transactionLevel() > $levelBefore;
         }
 
         $this->environmentPrepared = true;
@@ -48,12 +53,20 @@ trait ManagesEnvironment
             return;
         }
 
-        if (($this->config->options['use_transactions'] ?? true) && ! $fromException) {
+        if (($this->config->options['use_transactions'] ?? true) && $this->transactionStartedByUs) {
             $connection = DB::connection($this->dbConnection->name);
 
-            if ($connection->transactionLevel() > 0) {
-                $connection->commit();
+            if ($fromException) {
+                if ($connection->transactionLevel() > 0) {
+                    $connection->rollBack();
+                }
+            } else {
+                if ($connection->transactionLevel() > 0) {
+                    $connection->commit();
+                }
             }
+
+            $this->transactionStartedByUs = false;
         }
 
         ($this->cleanupAction)($this->dbConnection, $this->config);

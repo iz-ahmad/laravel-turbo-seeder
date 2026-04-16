@@ -6,6 +6,11 @@ namespace IzAhmad\TurboSeeder\Helpers;
 
 use Illuminate\Support\Str;
 
+/**
+ * Generates unique values for seeded columns.
+ *
+ * @deprecated Use TurboData::uniqueEmail(), TurboData::uniqueUsername(), or TurboData::uniqueUuid() instead.
+ */
 final class UniqueValueGenerator
 {
     /**
@@ -17,9 +22,7 @@ final class UniqueValueGenerator
         $timestamp = time();
         $randomStr = Str::random(4);
 
-        $generator = fn ($index) => "{$prefix}{$index}_{$timestamp}_{$randomStr}@test.com";
-
-        return $generator;
+        return fn ($index) => "{$prefix}{$index}_{$timestamp}_{$randomStr}@test.com";
     }
 
     /**
@@ -31,9 +34,7 @@ final class UniqueValueGenerator
         $timestamp = time();
         $randomStr = Str::random(4);
 
-        $generator = fn ($index) => "{$prefix}_{$index}_{$timestamp}_{$randomStr}";
-
-        return $generator;
+        return fn ($index) => "{$prefix}_{$index}_{$timestamp}_{$randomStr}";
     }
 
     /**

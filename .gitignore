@@ -25,3 +25,5 @@ phpstan.neon
 testbench.yaml
 /docs
 /coverage
+
+/temp-docs

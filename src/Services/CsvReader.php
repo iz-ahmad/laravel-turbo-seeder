@@ -64,16 +64,20 @@ final class CsvReader
         $this->enclosure = $this->config['field_enclosure'] ?? '"';
         $this->escape = $this->config['escape_char'] ?? '\\';
 
-        while (
-            ($row = fgetcsv(
-                $this->handle,
-                0,
-                $this->delimiter,
-                $this->enclosure,
-                $this->escape
-            )) !== false
-        ) {
-            yield $row;
+        try {
+            while (
+                ($row = fgetcsv(
+                    $this->handle,
+                    0,
+                    $this->delimiter,
+                    $this->enclosure,
+                    $this->escape
+                )) !== false
+            ) {
+                yield $row;
+            }
+        } finally {
+            $this->close();
         }
     }
 

@@ -7,7 +7,7 @@ namespace IzAhmad\TurboSeeder\Traits;
 use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
-use IzAhmad\TurboSeeder\Helpers\UniqueValueGenerator;
+use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 /**
  * Trait to use TurboSeeder in your seeder classes.
@@ -65,26 +65,26 @@ trait UsesTurboSeeder
     }
 
     /**
-     * Generate a unique email for a table.
+     * Generate a unique email address closure.
      */
-    protected function uniqueEmail(?string $prefix = null): \Closure
+    protected function uniqueEmail(string $domain = 'turbo.test'): \Closure
     {
-        return UniqueValueGenerator::uniqueEmail($prefix);
+        return TurboData::uniqueEmail($domain);
     }
 
     /**
-     * Generate a unique value for any column.
+     * Generate a unique username closure.
      */
-    protected function uniqueValue(?string $prefix = null): \Closure
+    protected function uniqueValue(string $prefix = 'usr'): \Closure
     {
-        return UniqueValueGenerator::uniqueValue($prefix);
+        return TurboData::uniqueUsername($prefix);
     }
 
     /**
-     * Generate a unique UUID-based value.
+     * Generate a unique UUID-based value closure.
      */
     protected function uniqueUuid(string $prefix = ''): \Closure
     {
-        return UniqueValueGenerator::uniqueUuid($prefix);
+        return TurboData::uniqueUuid($prefix);
     }
 }

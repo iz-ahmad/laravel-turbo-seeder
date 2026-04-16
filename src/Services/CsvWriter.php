@@ -42,6 +42,8 @@ final class CsvWriter
             throw new \RuntimeException("Cannot open file for writing: {$this->filepath}");
         }
 
+        chmod($this->filepath, 0600);
+
         $this->delimiter = $this->config['field_delimiter'] ?? ',';
         $this->enclosure = $this->config['field_enclosure'] ?? '"';
         $this->escape = $this->config['escape_char'] ?? '\\';
