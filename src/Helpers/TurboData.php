@@ -22,7 +22,6 @@ final class TurboData
 
     /**
      * Return a value by cycling through the array in round-robin order.
-     * Replaces the fragile $values[$index % count($values)] pattern.
      *
      * @param  array<int, mixed>  $values
      */
@@ -80,10 +79,6 @@ final class TurboData
         return $values[array_rand($values)];
     }
 
-    // -------------------------------------------------------------------------
-    // Scalars
-    // -------------------------------------------------------------------------
-
     /**
      * Return a random integer between $min and $max (inclusive).
      */
@@ -111,10 +106,6 @@ final class TurboData
         return ((float) mt_rand() / mt_getrandmax()) < $probability;
     }
 
-    // -------------------------------------------------------------------------
-    // Null / optional
-    // -------------------------------------------------------------------------
-
     /**
      * Return null with the given probability, otherwise return the value.
      * Accepts a callable so the value is not evaluated when null is returned.
@@ -131,10 +122,6 @@ final class TurboData
 
         return $produce instanceof \Closure ? ($produce)() : $produce;
     }
-
-    // -------------------------------------------------------------------------
-    // Dates
-    // -------------------------------------------------------------------------
 
     /**
      * Return a random Carbon date between two date strings.
@@ -200,10 +187,6 @@ final class TurboData
         self::$cachedNow = null;
     }
 
-    // -------------------------------------------------------------------------
-    // Foreign key pool
-    // -------------------------------------------------------------------------
-
     /**
      * Load values once via $loader callable, then cycle through them using the index.
      * Solves the fragile ($index % N) + 1 pattern for foreign key assignment.
@@ -220,7 +203,6 @@ final class TurboData
      */
     public static function fromPool(callable $loader): \Closure
     {
-        $poolKey = spl_object_id((object) []);
         $pool = null;
 
         return static function (int $index) use ($loader, &$pool): mixed {
@@ -235,10 +217,6 @@ final class TurboData
             return $pool[$index % count($pool)];
         };
     }
-
-    // -------------------------------------------------------------------------
-    // Unique values
-    // -------------------------------------------------------------------------
 
     /**
      * Generate a unique email address with realistic format.
