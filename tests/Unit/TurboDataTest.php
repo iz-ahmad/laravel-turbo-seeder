@@ -12,7 +12,7 @@ beforeEach(function () {
 // ── cycleFrom() ───────────────────────────────────────────────────────────────
 
 test('cycleFrom returns a closure', function () {
-    expect(TurboData::cycleFrom(['a', 'b']))->toBeInstanceOf(\Closure::class);
+    expect(TurboData::cycleFrom(['a', 'b']))->toBeInstanceOf(Closure::class);
 });
 
 test('cycleFrom cycles through values by index', function () {
@@ -33,7 +33,7 @@ test('cycleFrom works with single value', function () {
 
 test('cycleFrom throws on empty array', function () {
     TurboData::cycleFrom([]);
-})->throws(\InvalidArgumentException::class);
+})->throws(InvalidArgumentException::class);
 
 // ── weightedFrom() ────────────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ test('weightedFrom returns the only value when weight is 100%', function () {
 
 test('weightedFrom throws on zero-sum weights', function () {
     TurboData::weightedFrom(['a' => 0, 'b' => 0]);
-})->throws(\InvalidArgumentException::class);
+})->throws(InvalidArgumentException::class);
 
 // ── randomFrom() ─────────────────────────────────────────────────────────────
 
@@ -66,7 +66,7 @@ test('randomFrom returns a value from the array', function () {
 
 test('randomFrom throws on empty array', function () {
     TurboData::randomFrom([]);
-})->throws(\InvalidArgumentException::class);
+})->throws(InvalidArgumentException::class);
 
 // ── randomInt() ───────────────────────────────────────────────────────────────
 
@@ -207,7 +207,7 @@ test('resetNowOnce allows new value to be generated', function () {
 test('fromPool returns a closure', function () {
     $pool = TurboData::fromPool(fn () => [1, 2, 3]);
 
-    expect($pool)->toBeInstanceOf(\Closure::class);
+    expect($pool)->toBeInstanceOf(Closure::class);
 });
 
 test('fromPool cycles through loaded values', function () {
@@ -228,7 +228,7 @@ test('fromPool cycles through loaded values', function () {
 test('fromPool throws when loader returns empty array', function () {
     $pool = TurboData::fromPool(fn () => []);
     $pool(0);
-})->throws(\RuntimeException::class);
+})->throws(RuntimeException::class);
 
 // ── uniqueEmail() / uniqueUsername() / uniqueSlug() ──────────────────────────
 
