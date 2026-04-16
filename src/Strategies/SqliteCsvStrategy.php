@@ -24,33 +24,36 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
         $reader->open();
 
         $chunkSize = $csvConfig['reader_chunk_size_for_sqlite'] ?? 500;
+        $nullMarker = $csvConfig['null_marker'] ?? '\\N';
 
-        foreach ($reader->readChunks($chunkSize) as $chunk) {
-            $records = [];
+        try {
+            foreach ($reader->readChunks($chunkSize) as $chunk) {
+                $records = [];
 
-            foreach ($chunk as $row) {
-                if (count($row) !== count($columns)) {
-                    continue;
+                foreach ($chunk as $row) {
+                    if (count($row) !== count($columns)) {
+                        continue;
+                    }
+
+                    $record = [];
+                    foreach ($columns as $index => $column) {
+                        $record[$column] = $this->parseValue($row[$index] ?? null, $nullMarker);
+                    }
+
+                    $records[] = $record;
                 }
 
-                $record = [];
-                foreach ($columns as $index => $column) {
-                    $record[$column] = $this->parseValue($row[$index] ?? null);
+                if (! empty($records)) {
+                    $this->insertChunkFromCsv($table, $columns, $records);
                 }
 
-                $records[] = $record;
+                unset($records);
+
+                $this->memoryManager->forceCleanup();
             }
-
-            if (! empty($records)) {
-                $this->insertChunkFromCsv($table, $columns, $records);
-            }
-
-            unset($records);
-
-            $this->memoryManager->forceCleanup();
+        } finally {
+            $reader->close();
         }
-
-        $reader->close();
     }
 
     /**
@@ -93,9 +96,9 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
     /**
      * Parse CSV value back to appropriate type.
      */
-    private function parseValue(?string $value): mixed
+    private function parseValue(?string $value, string $nullMarker = '\\N'): mixed
     {
-        if ($value === null || $value === '\\N') {
+        if ($value === null || $value === $nullMarker) {
             return null;
         }
 
