@@ -56,7 +56,7 @@ trait ManagesEnvironment
         if (($this->config->options['use_transactions'] ?? true) && $this->transactionStartedByUs) {
             $connection = DB::connection($this->dbConnection->name);
 
-            if ($fromException) {
+            if ($fromException || $this->config->isDryRun()) {
                 if ($connection->transactionLevel() > 0) {
                     $connection->rollBack();
                 }
