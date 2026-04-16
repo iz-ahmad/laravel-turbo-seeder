@@ -97,7 +97,7 @@ For a local setup with MySQL and default chunk sizes:
 - 🔧 **Highly Configurable** - Fine-tune performance settings
 - ✅ **Fully Tested** - with Pest PHP
 - 🎨 **Laravel 10–13 Compatible** - Works with latest Laravel versions
-- 🔒 **Secure** - Temp CSV files are restricted to owner-only permissions (0600)
+- 🔒 **Secure** - Temp CSV files are handled in a sucure way
 
 **Perfect for:**
 - ✅ Performance testing with realistic data volumes
@@ -149,7 +149,7 @@ TurboSeeder::create('users')
     ->generate(fn ($index) => [
         'name' => "User {$index}",
         'email' => "user{$index}@example.com",
-        'created_at' => TurboData::nowOnce(), // computed once, not 100K times
+        'created_at' => TurboData::nowOnce(), // computed once only
     ])
     ->count(100000)
     ->run();
