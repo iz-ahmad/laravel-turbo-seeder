@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Examples;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
+use IzAhmad\TurboSeeder\Helpers\TurboData;
 use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
 
 /**
- * Example seeder class demonstrating various ways to use the TurboSeeder.
+ * Example seeder class demonstrating various ways to use TurboSeeder.
  *
  * @see \IzAhmad\TurboSeeder\Traits\UsesTurboSeeder
+ * @see \IzAhmad\TurboSeeder\Helpers\TurboData
  */
 class ExampleSeeder extends Seeder
 {
@@ -25,44 +24,61 @@ class ExampleSeeder extends Seeder
      */
     public function run(): void
     {
-        // example 1: Basic fluent API usage
+        // Example 1: Basic fluent API with TurboData helpers
+        //
+        // TurboData::uniqueEmail() generates realistic unique emails without Faker.
+        // TurboData::nowOnce() calls now() once for the whole seeding run — all
+        // records share the same "imported at" timestamp, which is realistic and fast.
 
-        $uniqueEmail = $this->uniqueEmail('user'); // method comes from the trait UsesTurboSeeder
+        $uniqueEmail = TurboData::uniqueEmail();
 
         TurboSeeder::create('users')
             ->columns(['name', 'email', 'password', 'remember_token', 'created_at'])
             ->generate(fn ($index) => [
                 'name' => "User {$index}",
                 'email' => $uniqueEmail($index),
-                'password' => Hash::make("password{$index}"),
-                'remember_token' => Str::random(10),
-                'created_at' => now(),
+                'password' => 'hashed_password', // use a pre-hashed string for bulk seeding
+                'remember_token' => bin2hex(random_bytes(5)),
+                'created_at' => TurboData::nowOnce(),
             ])
             ->count(10000)
             ->run();
 
-        // example 2: Using CSV strategy for maximum speed
+        // Example 2: CSV strategy for maximum speed with weighted distribution
+        //
+        // TurboData::weightedFrom() generates realistic non-uniform distributions.
+        // Use ->useCsvStrategy() for datasets over 100K rows.
+
+        $now = TurboData::nowOnce();
+
         TurboSeeder::create('posts')
-            ->columns(['user_id', 'title', 'content', 'created_at'])
+            ->columns(['user_id', 'title', 'status', 'content', 'created_at'])
             ->generate(fn ($index) => [
-                'user_id' => ($index % 10000) + 1,
+                'user_id' => TurboData::randomInt(1, 10000),
                 'title' => "Post Title {$index}",
+                'status' => TurboData::weightedFrom(['published' => 60, 'draft' => 30, 'archived' => 10]),
                 'content' => "This is the content for post {$index}",
-                'created_at' => now(),
+                'created_at' => $now,
             ])
             ->count(100000)
             ->useCsvStrategy()
             ->run();
 
-        // example 3: Custom configuration
+        // Example 3: Using a pool for correct FK assignment
+        //
+        // TurboData::fromPool() loads existing IDs once from the DB, then cycles
+        // through them. This is safe with gaps, UUIDs, and soft-deleted records.
+
+        $userIds = TurboData::fromPool(fn () => \Illuminate\Support\Facades\DB::table('users')->pluck('id')->toArray());
+
         TurboSeeder::create('orders')
             ->columns(['user_id', 'total', 'status', 'payment_method', 'created_at'])
             ->generate(fn ($index) => [
-                'user_id' => ($index % 10000) + 1,
-                'total' => random_int(1000, 99999) / 100,
-                'status' => ['pending', 'completed', 'cancelled'][random_int(0, 2)],
-                'payment_method' => ['paypal', 'bank_transfer'][random_int(0, 1)],
-                'created_at' => now(),
+                'user_id' => $userIds($index),
+                'total' => TurboData::randomFloat(2, 10.00, 999.99),
+                'status' => TurboData::weightedFrom(['pending' => 50, 'completed' => 40, 'cancelled' => 10]),
+                'payment_method' => TurboData::randomFrom(['paypal', 'bank_transfer', 'credit_card']),
+                'created_at' => TurboData::dateRange('2023-01-01', '2024-12-31'),
             ])
             ->count(50000)
             ->chunkSize(2000)
@@ -70,15 +86,19 @@ class ExampleSeeder extends Seeder
             ->disableForeignKeyChecks()
             ->run();
 
-        // example 4: Conditional execution
+        // Example 4: Conditional execution with nullable values
+        //
+        // TurboData::nullable() returns null with a given probability.
+
         TurboSeeder::create('products')
-            ->columns(['name', 'price', 'stock', 'description', 'created_at'])
+            ->columns(['name', 'price', 'stock', 'description', 'deleted_at', 'created_at'])
             ->generate(fn ($index) => [
                 'name' => "Product {$index}",
-                'price' => random_int(100, 9999) / 100,
-                'stock' => random_int(0, 1000),
-                'description' => "This is the description for product {$index}",
-                'created_at' => now(),
+                'price' => TurboData::randomFloat(2, 1.00, 9999.99),
+                'stock' => TurboData::randomInt(0, 1000),
+                'description' => "Description for product {$index}",
+                'deleted_at' => TurboData::nullable(0.05, TurboData::nowOnce()),
+                'created_at' => TurboData::nowOnce(),
             ])
             ->count(5000)
             ->when(
@@ -87,39 +107,34 @@ class ExampleSeeder extends Seeder
             )
             ->run();
 
-        // example 5: Using the trait helper
+        // Example 5: Using the trait shorthand
+        //
+        // quickSeed() is a convenience wrapper around TurboSeeder::create().
+
         $this->quickSeed(
             'categories',
             ['name', 'slug', 'description', 'created_at'],
             fn ($index) => [
                 'name' => "Category {$index}",
                 'slug' => "category-{$index}",
-                'description' => "This is the description for category {$index}",
-                'created_at' => now(),
+                'description' => "Description for category {$index}",
+                'created_at' => TurboData::nowOnce(),
             ],
             1000
         );
 
-        // example 6: Using unique value generators for tables with unique constraints
-        // You can clear table before seeding to avoid duplicate entry errors
-        DB::table('users')->delete();
+        // Example 6: Sequential dates for realistic time-series data
+        //
+        // TurboData::sequentialDate() increments by a fixed step per index,
+        // producing realistic time-series data for analytics seeding.
 
-        // generate unique value generators
-        $uniqueEmail = $this->uniqueEmail('user');
-        $uniqueUsername = $this->uniqueValue('username');
-        $uniqueCode = $this->uniqueUuid('code_');
-
-        TurboSeeder::create('users')
-            ->columns(['name', 'email', 'username', 'verification_code', 'created_at'])
+        TurboSeeder::create('events')
+            ->columns(['name', 'occurred_at'])
             ->generate(fn ($index) => [
-                'name' => "User {$index}",
-                'email' => $uniqueEmail($index),
-                'username' => $uniqueUsername($index),
-                'verification_code' => $uniqueCode(),
-                'created_at' => now(),
+                'name' => "Event {$index}",
+                'occurred_at' => TurboData::sequentialDate('2024-01-01', '1 hour', $index),
             ])
-            ->count(50000)
-            ->withProgressTracking()
+            ->count(1000)
             ->run();
     }
 }
