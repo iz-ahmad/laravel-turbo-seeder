@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Actions;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
+use IzAhmad\TurboSeeder\Events\TurboSeederCompleted;
 
 final class ExecuteSeederAction
 {
@@ -26,6 +29,8 @@ final class ExecuteSeederAction
         $startMemory = memory_get_usage(true);
 
         try {
+            $this->validateColumns($config);
+
             $strategy->prepareEnvironment();
 
             if ($config->hasProgressTracking()) {
@@ -43,12 +48,17 @@ final class ExecuteSeederAction
             $duration = microtime(true) - $startTime;
             $peakMemory = memory_get_peak_usage(true) - $startMemory;
 
-            return new SeederResultDTO(
+            $result = new SeederResultDTO(
                 success: true,
                 recordsInserted: $recordsInserted,
                 durationSeconds: $duration,
                 peakMemoryBytes: $peakMemory,
+                isDryRun: $config->isDryRun(),
             );
+
+            Event::dispatch(new TurboSeederCompleted($config->table, $result));
+
+            return $result;
 
         } catch (\Throwable $e) {
             $strategy->cleanup(fromException: true);
@@ -58,6 +68,37 @@ final class ExecuteSeederAction
                 recordsInserted: 0,
                 errorMessage: $e->getMessage(),
             );
+        }
+    }
+
+    /**
+     * Validate that all declared columns exist on the target table.
+     * Skipped when shouldValidateColumns() returns false or the table has no columns
+     * (e.g. the schema builder cannot introspect the driver).
+     */
+    private function validateColumns(SeederConfigurationDTO $config): void
+    {
+        if (! $config->shouldValidateColumns()) {
+            return;
+        }
+
+        $tableColumns = DB::connection($config->connection)
+            ->getSchemaBuilder()
+            ->getColumnListing($config->table);
+
+        if (empty($tableColumns)) {
+            return;
+        }
+
+        $missingColumns = array_diff($config->columns, $tableColumns);
+
+        if (! empty($missingColumns)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Column(s) [%s] do not exist on table [%s]. Available columns: [%s].',
+                implode(', ', $missingColumns),
+                $config->table,
+                implode(', ', $tableColumns),
+            ));
         }
     }
 }
