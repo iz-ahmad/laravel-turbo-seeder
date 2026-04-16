@@ -44,7 +44,7 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
 
         try {
             DB::connection($this->dbConnection->name)->statement($sql);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $errorMessage = $e->getMessage();
 
             if ($this->isLocalInfileError($errorMessage)) {
@@ -53,7 +53,10 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
                 throw new CsvImportFailedException(
                     $this->getLocalInfileErrorMessage($errorMessage),
                     $shouldFallback,
-                    $e
+                    $e,
+                    'mysql',
+                    $table,
+                    $filepath,
                 );
             }
 
