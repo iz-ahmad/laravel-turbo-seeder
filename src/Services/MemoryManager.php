@@ -46,8 +46,6 @@ final class MemoryManager implements MemoryManagerInterface
 
     public function shouldGarbageCollect(): bool
     {
-        $this->gcCounter++;
-
         if ($this->gcCounter >= $this->forceGcAfterChunks) {
             return true;
         }
@@ -57,6 +55,8 @@ final class MemoryManager implements MemoryManagerInterface
 
     public function forceCleanup(): void
     {
+        $this->gcCounter++;
+
         if ($this->shouldGarbageCollect()) {
             gc_collect_cycles();
             $this->gcCounter = 0;
