@@ -10,6 +10,8 @@ use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
 class TestCase extends OrchestraTestCase
 {
+    public static mixed $latestResponse = null;
+
     protected function setUp(): void
     {
         parent::setUp();
