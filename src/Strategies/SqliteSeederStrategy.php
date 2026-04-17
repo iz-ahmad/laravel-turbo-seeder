@@ -35,12 +35,12 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
     }
 
     /**
-     * Upsert records using INSERT OR REPLACE INTO.
-     * SQLite replaces the whole row when a unique constraint is violated.
+     * Upsert records using INSERT ... ON CONFLICT (...) DO UPDATE SET / DO NOTHING.
+     * Requires SQLite 3.24+ (released 2018). Avoids the destructive DELETE+INSERT of INSERT OR REPLACE.
      *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
-     * @param  array<int, string>  $upsertKeys  Accepted but unused (SQLite handles conflict via table constraints)
+     * @param  array<int, string>  $upsertKeys
      */
     protected function upsertUsingMultiRowStatement(string $table, array $columns, array $records, array $upsertKeys): void
     {
@@ -49,10 +49,24 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
 
         $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
 
-        $singleRowPlaceholders = '('.str_repeat('?,', $columnCount - 1).'?)';
+        $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));
 
-        $sql = "INSERT OR REPLACE INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders}";
+        $conflictTarget = implode(', ', array_map(fn ($col) => "\"{$col}\"", $upsertKeys));
+        $updateColumns = array_diff($columns, $upsertKeys);
+
+        if (empty($updateColumns)) {
+            $this->insertUsingMultiRowStatement($table, $columns, $records);
+
+            return;
+        }
+
+        $updateClause = implode(', ', array_map(
+            fn ($col) => "\"{$col}\" = EXCLUDED.\"{$col}\"",
+            $updateColumns,
+        ));
+
+        $sql = "INSERT INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) DO UPDATE SET {$updateClause}";
 
         $bindings = [];
         foreach ($records as $record) {
@@ -86,7 +100,7 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
 
         $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
 
-        $singleRowPlaceholders = '('.str_repeat('?,', $columnCount - 1).'?)';
+        $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));
 
         $sql = "INSERT INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders}";

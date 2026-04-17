@@ -54,12 +54,17 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
         $conflictTarget = implode(', ', array_map(fn ($col) => "\"{$col}\"", $upsertKeys));
 
         $updateColumns = array_diff($columns, $upsertKeys);
-        $updateClause = implode(', ', array_map(
-            fn ($col) => "\"{$col}\" = EXCLUDED.\"{$col}\"",
-            $updateColumns,
-        ));
 
-        $sql = "INSERT INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) DO UPDATE SET {$updateClause}";
+        if (empty($updateColumns)) {
+            $sql = "INSERT INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) DO NOTHING";
+        } else {
+            $updateClause = implode(', ', array_map(
+                fn ($col) => "\"{$col}\" = EXCLUDED.\"{$col}\"",
+                $updateColumns,
+            ));
+
+            $sql = "INSERT INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) DO UPDATE SET {$updateClause}";
+        }
 
         $bindings = [];
         foreach ($records as $record) {

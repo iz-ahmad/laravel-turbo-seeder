@@ -279,6 +279,14 @@ final class TurboSeederBuilder
             throw new \InvalidArgumentException('upsert() requires at least one unique key column.');
         }
 
+        foreach ($uniqueBy as $column) {
+            if (! preg_match('/^[a-zA-Z0-9_]+$/', (string) $column)) {
+                throw new \InvalidArgumentException(
+                    "Invalid upsert key column name [{$column}]. Column names must only contain letters, digits, and underscores."
+                );
+            }
+        }
+
         $this->options['upsert_keys'] = array_values($uniqueBy);
 
         return $this;

@@ -52,6 +52,13 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
         $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));
 
         $updateColumns = array_diff($columns, $upsertKeys);
+
+        if (empty($updateColumns)) {
+            $this->insertUsingMultiRowStatement($table, $columns, $records);
+
+            return;
+        }
+
         $updateClause = implode(', ', array_map(
             fn ($col) => "`{$col}` = VALUES(`{$col}`)",
             $updateColumns,
