@@ -15,6 +15,15 @@ test('retryAttempts sets the option on the builder', function () {
         ->and($builder->getOptions()['retry_attempts'])->toBe(5);
 });
 
+test('retryAttempts cannot exceed 10', function () {
+    expect(fn () => TurboSeeder::create('test_users')
+        ->columns(['name', 'email'])
+        ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@r.test"])
+        ->count(1)
+        ->retryAttempts(11))
+        ->toThrow(InvalidArgumentException::class);
+});
+
 test('retryAttempts must be at least 1', function () {
     expect(fn () => TurboSeeder::create('test_users')
         ->columns(['name', 'email'])

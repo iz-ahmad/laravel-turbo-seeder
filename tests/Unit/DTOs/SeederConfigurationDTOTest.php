@@ -201,3 +201,28 @@ test('checks progress tracking setting', function () {
     expect($configWithProgress->hasProgressTracking())->toBeTrue()
         ->and($configWithoutProgress->hasProgressTracking())->toBeFalse();
 });
+
+test('shouldUseTransactions returns true by default', function () {
+    $config = new SeederConfigurationDTO(
+        table: 'users',
+        columns: ['name'],
+        generator: fn ($i) => ['name' => "User {$i}"],
+        count: 1,
+        connection: 'mysql',
+    );
+
+    expect($config->shouldUseTransactions())->toBeTrue();
+});
+
+test('shouldUseTransactions returns false when disabled', function () {
+    $config = new SeederConfigurationDTO(
+        table: 'users',
+        columns: ['name'],
+        generator: fn ($i) => ['name' => "User {$i}"],
+        count: 1,
+        connection: 'mysql',
+        options: ['use_transactions' => false],
+    );
+
+    expect($config->shouldUseTransactions())->toBeFalse();
+});

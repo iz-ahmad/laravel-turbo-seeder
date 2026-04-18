@@ -227,6 +227,34 @@ See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) for more ex
 - `useTransactions()` / `withoutTransactions()` - Transaction control
 - `options(array $options)` - Set custom options
 
+#### Advanced Methods
+
+- `dryRun(bool $enabled = true)` — Generate and validate data without committing. Uses transaction rollback to discard inserts; `$result->isDryRun` will be `true`. **Do not combine with `withoutTransactions()`** — without a transaction there is nothing to roll back and rows will be permanently written.
+- `upsert(array $uniqueBy)` — Enable upsert mode. On conflict, non-key columns are updated with the new values. Uses `ON DUPLICATE KEY UPDATE` (MySQL), `ON CONFLICT DO UPDATE SET` (PostgreSQL / SQLite 3.24+). Keys must be a subset of the declared columns and must form a unique constraint on the table.
+- `retryAttempts(int $attempts)` — Retry on transient deadlock / lock-timeout failures (SQLSTATE 40001, MySQL 1205) with exponential backoff. Accepts 1–10 attempts; defaults to 3.
+- `withoutColumnValidation()` — Skip the pre-seed schema check that validates declared columns exist on the table. Useful when the schema builder cannot introspect the driver.
+
+#### Events
+
+After every successful seed (including dry-runs), `TurboSeederCompleted` is dispatched:
+
+```php
+use IzAhmad\TurboSeeder\Events\TurboSeederCompleted;
+
+Event::listen(TurboSeederCompleted::class, function (TurboSeederCompleted $event) {
+    // $event->table  — the seeded table name
+    // $event->result — SeederResultDTO with metrics and isDryRun flag
+
+    if ($event->result->isDryRun) {
+        return; // no rows were committed, skip post-seed actions
+    }
+
+    Cache::forget("table:{$event->table}");
+});
+```
+
+> **Note:** The event fires even on dry-run. Always check `$event->result->isDryRun` before acting on the assumption that rows were committed. The event is **not** dispatched when seeding fails.
+
 #### Conditional Methods
 
 - `when(bool|callable $condition, callable $callback, ?callable $default = null)` - Conditional execution

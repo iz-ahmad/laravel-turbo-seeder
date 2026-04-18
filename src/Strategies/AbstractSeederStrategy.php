@@ -139,7 +139,7 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
         return str_contains($message, 'deadlock')
             || str_contains($message, 'lock wait timeout')
             || (string) $e->getCode() === '40001'
-            || $e->getCode() === 1205;
+            || (int) $e->getCode() === 1205;
     }
 
     /**

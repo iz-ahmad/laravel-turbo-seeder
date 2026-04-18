@@ -259,6 +259,12 @@ final class TurboSeederBuilder
     /**
      * Enable dry-run mode: data is generated and validated but not committed.
      * The result will report how many records would have been inserted.
+     *
+     * WARNING: Dry-run discards inserts by rolling back a transaction.
+     * If you also call withoutTransactions(), the rollback cannot happen and
+     * rows WILL be permanently written to the database even though
+     * $result->isDryRun will be true. Do not combine dryRun() with
+     * withoutTransactions() unless you intentionally want this behaviour.
      */
     public function dryRun(bool $enabled = true): self
     {
@@ -279,6 +285,14 @@ final class TurboSeederBuilder
             throw new \InvalidArgumentException('upsert() requires at least one unique key column.');
         }
 
+        foreach ($uniqueBy as $column) {
+            if (! preg_match('/^[a-zA-Z0-9_]+$/', (string) $column)) {
+                throw new \InvalidArgumentException(
+                    "Invalid upsert key column name [{$column}]. Column names must only contain letters, digits, and underscores."
+                );
+            }
+        }
+
         $this->options['upsert_keys'] = array_values($uniqueBy);
 
         return $this;
@@ -291,6 +305,10 @@ final class TurboSeederBuilder
     {
         if ($attempts < 1) {
             throw new \InvalidArgumentException('retryAttempts() must be at least 1.');
+        }
+
+        if ($attempts > 10) {
+            throw new \InvalidArgumentException('retryAttempts() cannot exceed 10.');
         }
 
         $this->options['retry_attempts'] = $attempts;
@@ -387,11 +405,21 @@ final class TurboSeederBuilder
                 );
             }
 
-            $this->columns = array_values(array_keys($firstRecord));
+            $this->columns = array_keys($firstRecord);
         }
 
         if ($this->count < 1) {
             throw new \InvalidArgumentException('Count must be at least 1 for seeding. Use count() method.');
+        }
+
+        $upsertKeys = $this->options['upsert_keys'] ?? [];
+        if (! empty($upsertKeys)) {
+            $invalidKeys = array_diff($upsertKeys, $this->columns);
+            if (! empty($invalidKeys)) {
+                throw new \InvalidArgumentException(
+                    'Upsert key column(s) ['.implode(', ', $invalidKeys).'] are not in the declared columns. Upsert keys must be a subset of the seeded columns.'
+                );
+            }
         }
     }
 

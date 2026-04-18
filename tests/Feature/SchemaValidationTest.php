@@ -5,6 +5,15 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
+test('seeding throws with a clear message when the table does not exist', function () {
+    expect(fn () => TurboSeeder::create('nonexistent_table')
+        ->columns(['name'])
+        ->generate(fn ($i) => ['name' => "User {$i}"])
+        ->count(1)
+        ->run())
+        ->toThrow(RuntimeException::class, 'nonexistent_table');
+});
+
 test('seeding throws when a declared column does not exist on the table', function () {
     expect(fn () => TurboSeeder::create('test_users')
         ->columns(['name', 'email', 'nonexistent_column'])

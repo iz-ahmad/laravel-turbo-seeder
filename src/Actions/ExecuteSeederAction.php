@@ -73,8 +73,10 @@ final class ExecuteSeederAction
 
     /**
      * Validate that all declared columns exist on the target table.
-     * Skipped when shouldValidateColumns() returns false or the table has no columns
-     * (e.g. the schema builder cannot introspect the driver).
+     * Skipped when shouldValidateColumns() returns false.
+     * Throws when the table itself does not exist.
+     * Silently skips column-level checks only when the schema builder cannot
+     * introspect the driver (getColumnListing returns empty on an existing table).
      */
     private function validateColumns(SeederConfigurationDTO $config): void
     {
@@ -82,9 +84,15 @@ final class ExecuteSeederAction
             return;
         }
 
-        $tableColumns = DB::connection($config->connection)
-            ->getSchemaBuilder()
-            ->getColumnListing($config->table);
+        $schemaBuilder = DB::connection($config->connection)->getSchemaBuilder();
+
+        if (! $schemaBuilder->hasTable($config->table)) {
+            throw new \InvalidArgumentException(
+                "Table [{$config->table}] does not exist on connection [{$config->connection}]."
+            );
+        }
+
+        $tableColumns = $schemaBuilder->getColumnListing($config->table);
 
         if (empty($tableColumns)) {
             return;

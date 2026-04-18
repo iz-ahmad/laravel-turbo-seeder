@@ -119,4 +119,12 @@ final readonly class SeederConfigurationDTO
     {
         return $this->options['validate_columns'] ?? true;
     }
+
+    /**
+     * Check if database transactions should be used during seeding.
+     */
+    public function shouldUseTransactions(): bool
+    {
+        return $this->options['use_transactions'] ?? true;
+    }
 }
