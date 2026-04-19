@@ -27,6 +27,8 @@ final class TurboSeederBuilder
 
     private ?\Closure $generator = null;
 
+    private ?\Closure $batchGenerator = null;
+
     private int $count = 1000;
 
     private ?string $connection = null;
@@ -74,10 +76,33 @@ final class TurboSeederBuilder
 
     /**
      * Set the data generator closure.
+     * Generator receives $index and returns a single record array.
      */
     public function generate(\Closure $generator): self
     {
+        if ($this->batchGenerator !== null) {
+            throw new \InvalidArgumentException('Cannot use both generate() and generateBatch(). Choose one.');
+        }
+
         $this->generator = $generator;
+
+        return $this;
+    }
+
+    /**
+     * Set the batch data generator closure.
+     * Batch generator receives ($startIndex, $batchSize) and returns array of records.
+     * More efficient for large datasets as it reduces PHP function call overhead.
+     *
+     * @param  \Closure(int, int): array<int, array<string, mixed>>  $batchGenerator
+     */
+    public function generateBatch(\Closure $batchGenerator): self
+    {
+        if ($this->generator !== null) {
+            throw new \InvalidArgumentException('Cannot use both generate() and generateBatch(). Choose one.');
+        }
+
+        $this->batchGenerator = $batchGenerator;
 
         return $this;
     }
@@ -374,11 +399,11 @@ final class TurboSeederBuilder
         return new SeederConfigurationDTO(
             table: $this->table,
             columns: $this->columns,
-            generator: $this->generator,
+            generator: $this->generator ?? $this->batchGenerator,
             count: $this->count,
             connection: $this->connection ?? config('database.default'),
             strategy: $this->strategy,
-            options: $this->options
+            options: array_merge($this->options, ['use_batch_generator' => $this->batchGenerator !== null])
         );
     }
 
@@ -392,20 +417,32 @@ final class TurboSeederBuilder
             throw new \InvalidArgumentException('Table name is required for seeding. Use table() method.');
         }
 
-        if ($this->generator === null) {
-            throw new \InvalidArgumentException('Data generator is required for seeding. Use generate() method.');
+        if ($this->generator === null && $this->batchGenerator === null) {
+            throw new \InvalidArgumentException('Data generator is required for seeding. Use generate() or generateBatch() method.');
         }
 
         if (empty($this->columns)) {
-            $firstRecord = ($this->generator)(0);
+            if ($this->generator !== null) {
+                $firstRecord = ($this->generator)(0);
 
-            if (! is_array($firstRecord) || empty($firstRecord)) {
-                throw new \InvalidArgumentException(
-                    'Columns could not be inferred from the generator. Use columns() method or ensure generate() returns a non-empty associative array.'
-                );
+                if (! is_array($firstRecord) || empty($firstRecord)) {
+                    throw new \InvalidArgumentException(
+                        'Columns could not be inferred from the generator. Use columns() method or ensure generate() returns a non-empty associative array.'
+                    );
+                }
+
+                $this->columns = array_keys($firstRecord);
+            } elseif ($this->batchGenerator !== null) {
+                $batch = ($this->batchGenerator)(0, 1);
+
+                if (! is_array($batch) || empty($batch) || ! is_array($batch[0])) {
+                    throw new \InvalidArgumentException(
+                        'Columns could not be inferred from the batch generator. Use columns() method or ensure generateBatch() returns a non-empty array of record arrays.'
+                    );
+                }
+
+                $this->columns = array_keys($batch[0]);
             }
-
-            $this->columns = array_keys($firstRecord);
         }
 
         if ($this->count < 1) {
