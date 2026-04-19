@@ -5,7 +5,6 @@ declare(strict_types=1);
 use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
-use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 test('builder validates required fields', function () {
     TurboSeeder::create()->run();
@@ -168,14 +167,14 @@ test('generateBatch requires a batch generator', function () {
 test('batch generator reduces closure call overhead', function () {
     $singleCallCount = 0;
     $batchCallCount = 0;
-    $timestamp = time();
+    $suffix = bin2hex(random_bytes(4));
 
     $singleResult = TurboSeeder::create('test_users')
         ->columns(['name', 'email'])
-        ->generate(function ($i) use (&$singleCallCount, $timestamp) {
+        ->generate(function ($i) use (&$singleCallCount, $suffix) {
             $singleCallCount++;
 
-            return ['name' => "User {$i}", 'email' => "u{$i}_{$timestamp}@overhead.test"];
+            return ['name' => "User {$i}", 'email' => "u{$i}_{$suffix}@overhead.test"];
         })
         ->count(50)
         ->withoutProgressTracking()
@@ -183,12 +182,12 @@ test('batch generator reduces closure call overhead', function () {
 
     $batchResult = TurboSeeder::create('test_users')
         ->columns(['name', 'email'])
-        ->generateBatch(function ($start, $size) use (&$batchCallCount, $timestamp) {
+        ->generateBatch(function ($start, $size) use (&$batchCallCount, $suffix) {
             $batchCallCount++;
 
             $records = [];
             for ($i = 0; $i < $size; $i++) {
-                $records[] = ['name' => "User ".($start + $i), 'email' => "b".($start + $i)."_{$timestamp}@overhead.test"];
+                $records[] = ['name' => "User ".($start + $i), 'email' => "b".($start + $i)."_{$suffix}@overhead.test"];
             }
 
             return $records;

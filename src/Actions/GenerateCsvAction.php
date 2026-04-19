@@ -52,9 +52,10 @@ final class GenerateCsvAction
      * Generate CSV using single-record generator.
      *
      * @param  array<int, string>  $columns
+     * @param  array<string, mixed>  $csvConfig
      */
     private function generateFromSingleGenerator(
-        \IzAhmad\TurboSeeder\Services\CsvWriter $writer,
+        CsvWriter $writer,
         \Closure $generator,
         array $columns,
         int $count,
@@ -94,9 +95,10 @@ final class GenerateCsvAction
      * Generate CSV using batch generator.
      *
      * @param  array<int, string>  $columns
+     * @param  array<string, mixed>  $csvConfig
      */
     private function generateFromBatchGenerator(
-        \IzAhmad\TurboSeeder\Services\CsvWriter $writer,
+        CsvWriter $writer,
         \Closure $batchGenerator,
         array $columns,
         int $count,
