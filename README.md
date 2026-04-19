@@ -14,10 +14,10 @@ Laravel Turbo Seeder is a high-performance database seeding package that allows 
 
 Traditional Laravel seeders crawl at scale. When you need 500K–1M+ rows for realistic performance testing, they really become a productivity killer.
 
-**Turbo Seeder makes seeding great again (in a good way)! ;-).**
-What used to take **~30 minutes** now finishes in **~15-60 seconds** for ~**1M records**.
+**Turbo Seeder makes seeding great again! ;-).**
+What used to take **~30 minutes** (for **1M** records) - now finishes in literally **~15-60 seconds**.
 
-No coffee breaks. No tab-switching. No "I'll test later". So you can:
+No more coffee breaks, tab-switching, or "I'll test later"! So you now can:
 - Test at production-scale data volumes
 - Catch slow queries before users do
 - Iterate fast without seeding being a bottleneck
@@ -35,7 +35,7 @@ No coffee breaks. No tab-switching. No "I'll test later". So you can:
 
 ## Features At A Glance
 
-- **Lightning Fast** — ~1M records in 15–60 seconds (depending on the table complexity)
+- **Lightning Fast** — 1M records in 15–60 seconds (depending on the table complexity)
 - **Memory Efficient** — under 200 MB peak
 - **Multi-Database** — MySQL, PostgreSQL, SQLite
 - **Two Strategies** — bulk insert and native CSV import
@@ -51,6 +51,8 @@ No coffee breaks. No tab-switching. No "I'll test later". So you can:
 * Large dataset generation in development environments
 * CI/CD pipelines requiring fast seeding
 * Database query and performance benchmarking
+
+---
 
 ## Table of Contents
 
