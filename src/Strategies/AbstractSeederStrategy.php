@@ -37,6 +37,18 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
      */
     public function seed(SeederConfigurationDTO $config): int
     {
+        if ($config->useBatchGenerator()) {
+            return $this->seedWithBatchGenerator($config);
+        }
+
+        return $this->seedWithSingleGenerator($config);
+    }
+
+    /**
+     * Seed using single-record generator.
+     */
+    private function seedWithSingleGenerator(SeederConfigurationDTO $config): int
+    {
         $totalChunks = (int) ceil($config->count / $this->chunkSize);
         $recordsInserted = 0;
 
@@ -64,6 +76,71 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
         }
 
         return $recordsInserted;
+    }
+
+    /**
+     * Seed using batch generator.
+     */
+    private function seedWithBatchGenerator(SeederConfigurationDTO $config): int
+    {
+        $recordsInserted = 0;
+        $startIndex = 0;
+
+        while ($recordsInserted < $config->count) {
+            $remainingRecords = $config->count - $recordsInserted;
+            $batchSize = min($this->chunkSize, $remainingRecords);
+
+            $records = ($config->generator)($startIndex, $batchSize);
+
+            if (! is_array($records) || empty($records)) {
+                break;
+            }
+
+            $filteredRecords = $this->filterRecordsToColumns($records, $config->columns);
+            $this->insertChunkWithRetry($config->table, $config->columns, $filteredRecords, $config->getRetryAttempts());
+
+            $count = count($filteredRecords);
+            $recordsInserted += $count;
+            $startIndex += $count;
+
+            $this->memoryManager->forceCleanup();
+            $this->progressTracker->advance($count);
+
+            unset($records, $filteredRecords);
+
+            if ($count < $batchSize) {
+                break;
+            }
+        }
+
+        return $recordsInserted;
+    }
+
+    /**
+     * Filter batch records to only include declared columns.
+     *
+     * @param  array<int, array<string, mixed>>  $records
+     * @param  array<int, string>  $columns
+     * @return array<int, array<string, mixed>>
+     */
+    private function filterRecordsToColumns(array $records, array $columns): array
+    {
+        $filtered = [];
+
+        foreach ($records as $record) {
+            if (! is_array($record)) {
+                continue;
+            }
+
+            $filteredRecord = [];
+            foreach ($columns as $column) {
+                $filteredRecord[$column] = $record[$column] ?? null;
+            }
+
+            $filtered[] = $filteredRecord;
+        }
+
+        return $filtered;
     }
 
     public function getOptimalChunkSize(): int
