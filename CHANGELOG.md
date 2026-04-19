@@ -2,54 +2,71 @@
 
 All notable changes to `laravel-turbo-seeder` will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+---
 
-### Added
-- Initial release of Laravel Turbo Seeder
-- Fluent API builder for easy configuration
-- Two seeding strategies: Default (bulk insert) and CSV (file-based import)
-- Support for MySQL, PostgreSQL, and SQLite databases
-- Memory-efficient chunking and garbage collection
-- Progress tracking with real-time metrics
-- Comprehensive CLI commands:
-  - `turbo-seeder:run` - Run seeders
-  - `turbo-seeder:benchmark` - Performance benchmarking
-  - `turbo-seeder:test-connection` - Test database connections
-  - `turbo-seeder:clear-cache` - Clear temporary files
-- `UsesTurboSeeder` trait for easy integration in seeders
-- Comprehensive test suite with 120+ tests using Pest PHP
-- Full PHPDoc documentation
-- Example seeder demonstrating various use cases
-
-### Features
-- **Performance**: Seed 1M records in 2-3 minutes
-- **Memory Efficient**: Uses less than 256MB peak memory
-- **Database Optimizations**: 
-  - MySQL: Multi-row INSERT, disabled constraints, autocommit optimization
-  - PostgreSQL: UNNEST optimization, deferred constraints
-  - SQLite: PRAGMA optimizations for maximum speed
-- **CSV Strategy**: 
-  - MySQL: LOAD DATA INFILE
-  - PostgreSQL: COPY command
-  - SQLite: Chunked CSV reading
-- **Fluent API**: Chainable methods for intuitive configuration
-- **Progress Tracking**: Real-time progress bars with metrics
-- **Error Handling**: Comprehensive error messages and validation
-- **Type Safety**: Full PHP 8.1+ type hints and strict types
-
-### Technical Details
-- Built with SOLID principles
-- Action pattern for single responsibilities
-- Strategy pattern for database-specific implementations
-- Builder pattern for fluent API
-- Dependency injection throughout
-- Readonly DTOs for immutability
-- PHP 8.1+ Enums for type safety
-- Laravel 10/11/12 compatible
-
-## [1.0.0] - 2024-01-xx to be released
+## [Unreleased] — PR #11
 
 ### Added
-- Initial stable release
+- `->dryRun()` — generate and validate data without committing; result carries `$isDryRun` flag
+- `->upsert(array $uniqueBy)` — native upsert per driver (`ON DUPLICATE KEY UPDATE` / `ON CONFLICT DO UPDATE SET`)
+- `->retryAttempts(int $n)` — retry on deadlock / lock-timeout (SQLSTATE 40001, MySQL 1205) with exponential backoff (1–10 attempts)
+- `->withoutColumnValidation()` — skip pre-seed schema check
+- `TurboSeederCompleted` event — dispatched after every successful seed (including dry-run); carries table name and full result DTO
+- Column name regex validation on `columns()` and `upsert()`
+- Upsert key subset validation — keys must be declared columns
+- `hasTable()` check before seeding — throws clear error for non-existent tables
+- `SeederConfigurationDTO::shouldUseTransactions()` accessor
+
+### Fixed
+- SQL placeholder string cached per strategy instance instead of rebuilt per chunk
+- CSV temp directory resolved via `realpath()` to block path traversal
+- `dryRun()` docblock warns against combining with `withoutTransactions()`
+- `TurboSeederCompleted` docblock clarifies event fires on dry-run; listeners must check `isDryRun`
+
+### Changed
+- `ValueFormatter`: dead `is_bool` branch removed from `formatForCsv()`; custom formatters loop guarded with `empty()` check
+- `TurboData`: pool count cached in `fromPool()` closure; `dateRange()` validates argument order; `mt_rand()` replaced with `random_int()` throughout for CSPRNG consistency
+- CI matrix updated: PHP 8.2–8.5 × Laravel 11–13; excluded known unstable combos
+
+---
+
+## [1.1.0] — 2026-04-16 — PR #10
+
+### Added
+- `TurboData` helper class — Faker-free static helpers for high-volume seeding: `cycleFrom`, `weightedFrom`, `randomFrom`, `randomInt`, `randomFloat`, `randomBool`, `nullable`, `dateRange`, `sequentialDate`, `nowOnce`, `fromPool`, `uniqueEmail`, `uniqueUsername`, `uniqueSlug`, `uniqueUuid`
+- `ValueFormatter` service — unified value formatting with `BackedEnum`, `UnitEnum`, `Collection`, and custom type support via `ValueFormatter::extend()`
+- `UniqueValueGenerator` deprecated in favour of `TurboData`
+
+### Fixed
+- CSV generator no longer calls user closure twice when inferring columns
+- CSV file handle now closed after reading; `GenerateCsvAction` wraps write loop in `try-finally`
+- SQLite CSV null marker (`\N`) now configurable
+- `MemoryManager` GC counter increments in `forceCleanup()` — fixes "GC fires once then never again"
+- Transaction tracking records whether the strategy started the transaction before commit/rollback
+- `CsvImportFailedException` now carries driver, table, and filepath for debuggable logs
+- CSV strategies catch `Throwable` instead of `Exception`
+
+### Security
+- Temp CSV files created with `0600` permissions (previously world-readable)
+- Temp filenames now use `bin2hex(random_bytes(16))` — replaces predictable `uniqid()+time()`
+
+### Changed
+- Test matrix expanded to PHP 8.5 × Laravel 13
+- ExampleSeeder rewritten to demonstrate `TurboData` patterns
+
+---
+
+## [1.0.0] — Initial Release
+
+### Added
+- Fluent builder API with chainable configuration
+- Two seeding strategies: bulk INSERT (default) and native CSV file import
+- MySQL, PostgreSQL, and SQLite support
+- Memory-efficient chunking with automatic garbage collection
+- Real-time progress tracking with metrics
+- Artisan commands: `turbo-seeder:run`, `turbo-seeder:benchmark`, `turbo-seeder:test-connection`, `turbo-seeder:clear-cache`
+- `UsesTurboSeeder` trait with `quickSeed()` and `quickCsvSeed()` helpers
+- Publishable config (`turbo-seeder.php`)
+- Full Pest PHP test suite

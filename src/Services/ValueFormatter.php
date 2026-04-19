@@ -33,9 +33,11 @@ final class ValueFormatter
             return null;
         }
 
-        foreach (self::$customFormatters as $type => $formatter) {
-            if ($value instanceof $type) {
-                return $formatter($value);
+        if (! empty(self::$customFormatters)) {
+            foreach (self::$customFormatters as $type => $formatter) {
+                if ($value instanceof $type) {
+                    return $formatter($value);
+                }
             }
         }
 
@@ -82,7 +84,7 @@ final class ValueFormatter
             return $nullMarker;
         }
 
-        return is_bool($formatted) ? ($formatted ? '1' : '0') : (string) $formatted;
+        return (string) $formatted;
     }
 
     private static function encodeJson(mixed $value): string
