@@ -1,7 +1,5 @@
 # Laravel Turbo Seeder
 
-[![Tests](https://github.com/iz-ahmad/laravel-turbo-seeder/actions/workflows/run-tests.yml/badge.svg)](https://github.com/iz-ahmad/laravel-turbo-seeder/actions/workflows/run-tests.yml)
-
 **Blazing fast database seeder for Laravel - seed millions of records in seconds — not minutes.**
 
 Laravel Turbo Seeder is a high-performance database seeding package that allows you to seed massive amounts of data (1M+ records) in just seconds. Perfect for testing applications with realistic data volumes.
@@ -40,10 +38,10 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you now can:
 - **Multi-Database** — MySQL, PostgreSQL, SQLite
 - **Two Strategies** — bulk insert and native CSV import
 - **Fluent API** — clean, chainable interface
-- **TurboData Helpers** — Faker-free data generation: weighted picks, date ranges, FK pools, unique values
+- **TurboData Helpers** — Faker-free data generation: weighted picks, date ranges, unique values
+- **Foreign Key Pools** — Deterministic cycling of FK values loaded from the database
 - **Progress Tracking** — real-time progress bars with metrics
 - **Highly Configurable** — chunk sizes, transactions, upserts, retries, dry-run, and more
-- **Fully Tested** — Pest PHP test suite
 - **Laravel 11–13 Compatible**
 
 **Ideal for:**
@@ -640,31 +638,21 @@ composer test
 
 **Test Framework:** Pest PHP with SQLite, MySQL, and PostgreSQL support
 
----
-
 ## Contributing
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
-
----
 
 ## Security
 
 If you discover a security issue, please email `n.ahmad.web.cit22@gmail.com` instead of opening a public issue.
 
----
-
 ## Changelog
 
 Please see [CHANGELOG.md](CHANGELOG.md) for recent changes.
 
----
-
 ## License
 
 The MIT License (MIT). Please see [LICENSE.md](LICENSE.md) for more information.
-
----
 
 ## Credits
 
