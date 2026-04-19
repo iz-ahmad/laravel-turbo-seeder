@@ -42,7 +42,7 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you now can:
 - **Foreign Key Pools** — Deterministic cycling of FK values loaded from the database
 - **Progress Tracking** — real-time progress bars with metrics
 - **Highly Configurable** — chunk sizes, transactions, upserts, retries, dry-run, and more
-- **Laravel 11–13 Compatible**
+- **Laravel 10–13 Compatible**
 
 **Ideal for:**
 * Performance and load testing with production-scale datasets
@@ -80,7 +80,7 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you now can:
 ## Requirements
 
 - PHP 8.2+
-- Laravel 11.x, 12.x, or 13.x
+- Laravel 10.x, 11.x, 12.x, or 13.x
 - MySQL 5.7+, PostgreSQL 9.6+, or SQLite 3.24+
 
 ---
