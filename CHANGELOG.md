@@ -6,55 +6,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+Here is a slightly more concise version while keeping all core information intact:
+
+---
+
 ## [Unreleased] — PR #11
 
 ### Added
-- `->dryRun()` — generate and validate data without committing; result carries `$isDryRun` flag
-- `->upsert(array $uniqueBy)` — native upsert per driver (`ON DUPLICATE KEY UPDATE` / `ON CONFLICT DO UPDATE SET`)
-- `->retryAttempts(int $n)` — retry on deadlock / lock-timeout (SQLSTATE 40001, MySQL 1205) with exponential backoff (1–10 attempts)
-- `->withoutColumnValidation()` — skip pre-seed schema check
-- `TurboSeederCompleted` event — dispatched after every successful seed (including dry-run); carries table name and full result DTO
-- Column name regex validation on `columns()` and `upsert()`
-- Upsert key subset validation — keys must be declared columns
-- `hasTable()` check before seeding — throws clear error for non-existent tables
-- `SeederConfigurationDTO::shouldUseTransactions()` accessor
+* `->dryRun()` — generate/validate without committing; result includes `$isDryRun`
+* `->upsert(array $uniqueBy)` — native driver support (`ON DUPLICATE KEY UPDATE` / `ON CONFLICT DO UPDATE SET`)
+* `->retryAttempts(int $n)` — exponential backoff retry (1–10 attempts) for deadlock/lock-timeout (SQLSTATE 40001, MySQL 1205)
+* `->withoutColumnValidation()` — skip schema pre-check
+* `TurboSeederCompleted` event — dispatched after every successful seed (including dry-run); includes table + result DTO
+* Column regex validation for `columns()` and `upsert()`
+* Upsert key subset validation (must exist in declared columns)
+* `hasTable()` existence check before seeding
+* `SeederConfigurationDTO::shouldUseTransactions()` accessor
 
 ### Fixed
-- SQL placeholder string cached per strategy instance instead of rebuilt per chunk
-- CSV temp directory resolved via `realpath()` to block path traversal
-- `dryRun()` docblock warns against combining with `withoutTransactions()`
-- `TurboSeederCompleted` docblock clarifies event fires on dry-run; listeners must check `isDryRun`
+* SQL placeholder string cached per strategy instance (not per chunk)
+* CSV temp directory resolved via `realpath()` (path traversal protection)
+* `dryRun()` docblock warns against `withoutTransactions()`
+* `TurboSeederCompleted` docblock clarifies dry-run behavior
 
 ### Changed
-- `ValueFormatter`: dead `is_bool` branch removed from `formatForCsv()`; custom formatters loop guarded with `empty()` check
-- `TurboData`: pool count cached in `fromPool()` closure; `dateRange()` validates argument order; `mt_rand()` replaced with `random_int()` throughout for CSPRNG consistency
-- CI matrix updated: PHP 8.2–8.5 × Laravel 11–13; excluded known unstable combos
+
+* `ValueFormatter`: removed dead `is_bool` branch; guarded custom formatter loop with `empty()`
+* `TurboData`: cached pool count in `fromPool()`, validated `dateRange()` order, replaced `mt_rand()` with `random_int()`
+* CI matrix: PHP 8.2–8.5 × Laravel 11–13 (unstable combos excluded)
 
 ---
 
 ## [1.1.0] — 2026-04-16 — PR #10
 
 ### Added
-- `TurboData` helper class — Faker-free static helpers for high-volume seeding: `cycleFrom`, `weightedFrom`, `randomFrom`, `randomInt`, `randomFloat`, `randomBool`, `nullable`, `dateRange`, `sequentialDate`, `nowOnce`, `fromPool`, `uniqueEmail`, `uniqueUsername`, `uniqueSlug`, `uniqueUuid`
-- `ValueFormatter` service — unified value formatting with `BackedEnum`, `UnitEnum`, `Collection`, and custom type support via `ValueFormatter::extend()`
-- `UniqueValueGenerator` deprecated in favour of `TurboData`
+* `TurboData` — Faker-free helpers for high-volume seeding: `cycleFrom`, `weightedFrom`, `randomFrom`, `randomInt`, `randomFloat`, `randomBool`, `nullable`, `dateRange`, `sequentialDate`, `nowOnce`, `fromPool`, `uniqueEmail`, `uniqueUsername`, `uniqueSlug`, `uniqueUuid`
+* `ValueFormatter` — unified formatting for `BackedEnum`, `UnitEnum`, `Collection`, plus extensibility via `extend()`
+* Deprecated `UniqueValueGenerator` (replaced by `TurboData`)
 
 ### Fixed
-- CSV generator no longer calls user closure twice when inferring columns
-- CSV file handle now closed after reading; `GenerateCsvAction` wraps write loop in `try-finally`
-- SQLite CSV null marker (`\N`) now configurable
-- `MemoryManager` GC counter increments in `forceCleanup()` — fixes "GC fires once then never again"
-- Transaction tracking records whether the strategy started the transaction before commit/rollback
-- `CsvImportFailedException` now carries driver, table, and filepath for debuggable logs
-- CSV strategies catch `Throwable` instead of `Exception`
+* CSV generator no longer invokes closure twice for column inference
+* CSV file handle properly closed; write loop wrapped in `try-finally`
+* SQLite CSV null marker (`\N`) configurable
+* `MemoryManager` GC counter increment moved to `forceCleanup()` (fixes one-time GC trigger)
+* Transaction tracking records whether strategy initiated transaction
+* `CsvImportFailedException` now includes driver, table, filepath
+* CSV strategies now catch `Throwable`
 
 ### Security
-- Temp CSV files created with `0600` permissions (previously world-readable)
-- Temp filenames now use `bin2hex(random_bytes(16))` — replaces predictable `uniqid()+time()`
+* Temp CSV files use `0600` permissions
+* Filenames use `bin2hex(random_bytes(16))` (replaces predictable `uniqid()+time()`)
 
 ### Changed
-- Test matrix expanded to PHP 8.5 × Laravel 13
-- ExampleSeeder rewritten to demonstrate `TurboData` patterns
+* CI expanded to PHP 8.5 × Laravel 13
+* ExampleSeeder updated to demonstrate `TurboData` patterns
 
 ---
 
