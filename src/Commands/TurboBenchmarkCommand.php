@@ -7,6 +7,7 @@ namespace IzAhmad\TurboSeeder\Commands;
 use Illuminate\Console\Command;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
+use Illuminate\Support\Facades\DB;
 
 class TurboBenchmarkCommand extends Command
 {
@@ -139,7 +140,7 @@ class TurboBenchmarkCommand extends Command
 
     private function detectDriver(string $connection): DatabaseDriver
     {
-        $driver = \DB::connection($connection)->getDriverName();
+        $driver = DB::connection($connection)->getDriverName();
 
         return DatabaseDriver::fromString($driver);
     }
@@ -157,7 +158,7 @@ class TurboBenchmarkCommand extends Command
 
     private function createMySqlTable(string $table, string $connection): void
     {
-        \DB::connection($connection)->statement("
+        DB::connection($connection)->statement("
             CREATE TABLE `{$table}` (
                 `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 `name` VARCHAR(255) NOT NULL,
@@ -170,7 +171,7 @@ class TurboBenchmarkCommand extends Command
 
     private function createPostgreSqlTable(string $table, string $connection): void
     {
-        \DB::connection($connection)->statement("
+        DB::connection($connection)->statement("
             CREATE TABLE \"{$table}\" (
                 id BIGSERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
@@ -183,7 +184,7 @@ class TurboBenchmarkCommand extends Command
 
     private function createSqliteTable(string $table, string $connection): void
     {
-        \DB::connection($connection)->statement("
+        DB::connection($connection)->statement("
             CREATE TABLE \"{$table}\" (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name VARCHAR(255) NOT NULL,
@@ -197,13 +198,13 @@ class TurboBenchmarkCommand extends Command
     private function truncateTable(string $table, string $connection, DatabaseDriver $driver): void
     {
         match ($driver) {
-            DatabaseDriver::MYSQL => \DB::connection($connection)->statement("
+            DatabaseDriver::MYSQL => DB::connection($connection)->statement("
                 TRUNCATE TABLE `{$table}`
             "),
-            DatabaseDriver::PGSQL => \DB::connection($connection)->statement("
+            DatabaseDriver::PGSQL => DB::connection($connection)->statement("
                 TRUNCATE TABLE \"{$table}\"
             "),
-            DatabaseDriver::SQLITE => \DB::connection($connection)->statement("
+            DatabaseDriver::SQLITE => DB::connection($connection)->statement("
                 DELETE FROM \"{$table}\"
             "),
         };
@@ -212,13 +213,13 @@ class TurboBenchmarkCommand extends Command
     private function dropBenchmarkTable(string $table, string $connection, DatabaseDriver $driver): void
     {
         match ($driver) {
-            DatabaseDriver::MYSQL => \DB::connection($connection)->statement("
+            DatabaseDriver::MYSQL => DB::connection($connection)->statement("
                 DROP TABLE IF EXISTS `{$table}`
             "),
-            DatabaseDriver::PGSQL => \DB::connection($connection)->statement("
+            DatabaseDriver::PGSQL => DB::connection($connection)->statement("
                 DROP TABLE IF EXISTS \"{$table}\"
             "),
-            DatabaseDriver::SQLITE => \DB::connection($connection)->statement("
+            DatabaseDriver::SQLITE => DB::connection($connection)->statement("
                 DROP TABLE IF EXISTS \"{$table}\"
             "),
         };
