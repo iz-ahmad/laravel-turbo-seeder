@@ -119,7 +119,7 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
     /**
      * Filter batch records to only include declared columns.
      *
-     * @param  array<int, array<string, mixed>>  $records
+     * @param  array<int, mixed>  $records
      * @param  array<int, string>  $columns
      * @return array<int, array<string, mixed>>
      */
