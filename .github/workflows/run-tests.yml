@@ -34,10 +34,13 @@ jobs:
         exclude:
           - php: 8.5
             laravel: 11.*
+          - php: 8.4
+            laravel: 11.*
+            stability: prefer-lowest
           - php: 8.3
             laravel: 11.*
             stability: prefer-lowest
-          - php: 8.4
+          - php: 8.2
             laravel: 11.*
             stability: prefer-lowest
           - php: 8.2
