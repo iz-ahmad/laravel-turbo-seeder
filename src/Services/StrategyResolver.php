@@ -19,7 +19,7 @@ use IzAhmad\TurboSeeder\Enums\SeederStrategy as SeederStrategyEnum;
 final class StrategyResolver
 {
     /**
-     * @var array<string, class-string<\IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface>>
+     * @var array<string, class-string<SeederStrategyInterface>>
      */
     private array $strategies = [];
 
@@ -83,7 +83,7 @@ final class StrategyResolver
     /**
      * Get all registered strategies.
      *
-     * @return array<string, class-string<\IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface>>
+     * @return array<string, class-string<SeederStrategyInterface>>
      */
     public function getStrategies(): array
     {

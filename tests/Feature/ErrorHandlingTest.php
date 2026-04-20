@@ -11,7 +11,7 @@ test('handles invalid table name gracefully', function () {
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(10)
         ->run())
-        ->toThrow(\RuntimeException::class);
+        ->toThrow(RuntimeException::class);
 });
 
 test('handles generator returning wrong columns', function () {
@@ -20,7 +20,7 @@ test('handles generator returning wrong columns', function () {
         ->generate(fn ($i) => ['name' => "User {$i}"])
         ->count(10)
         ->run())
-        ->toThrow(\RuntimeException::class);
+        ->toThrow(RuntimeException::class);
 });
 
 test('handles empty generator result', function () {
@@ -29,7 +29,7 @@ test('handles empty generator result', function () {
         ->generate(fn ($i) => [])
         ->count(10)
         ->run())
-        ->toThrow(\RuntimeException::class);
+        ->toThrow(RuntimeException::class);
 });
 
 test('handles null values in generator', function () {

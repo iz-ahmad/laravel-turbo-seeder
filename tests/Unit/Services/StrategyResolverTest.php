@@ -14,7 +14,7 @@ test('can register strategy', function () {
 
 test('throws exception when registering invalid strategy class', function () {
     $resolver = new StrategyResolver;
-    $resolver->register('test.invalid', \stdClass::class);
+    $resolver->register('test.invalid', stdClass::class);
 })->throws(InvalidArgumentException::class, 'must implement SeederStrategyInterface');
 
 test('can check if strategy exists', function () {

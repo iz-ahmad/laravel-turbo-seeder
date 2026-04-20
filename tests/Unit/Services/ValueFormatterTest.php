@@ -33,7 +33,7 @@ test('format returns string unchanged', function () {
 });
 
 test('format converts DateTimeInterface to Y-m-d H:i:s string', function () {
-    $dt = new \DateTime('2024-06-15 10:30:00');
+    $dt = new DateTime('2024-06-15 10:30:00');
     expect(ValueFormatter::format($dt))->toBe('2024-06-15 10:30:00');
 });
 
@@ -68,10 +68,10 @@ test('format converts Illuminate Collection to JSON string', function () {
 });
 
 test('format throws on invalid JSON input', function () {
-    $circular = new \stdClass;
+    $circular = new stdClass;
     $circular->self = $circular;
     ValueFormatter::format($circular);
-})->throws(\JsonException::class);
+})->throws(JsonException::class);
 
 // ── formatForCsv() ────────────────────────────────────────────────────────────
 
@@ -92,7 +92,7 @@ test('formatForCsv returns "0" for bool false', function () {
 });
 
 test('formatForCsv formats datetime as Y-m-d H:i:s', function () {
-    $dt = new \DateTime('2024-06-15 10:30:00');
+    $dt = new DateTime('2024-06-15 10:30:00');
     expect(ValueFormatter::formatForCsv($dt))->toBe('2024-06-15 10:30:00');
 });
 

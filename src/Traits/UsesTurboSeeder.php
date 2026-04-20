@@ -6,6 +6,7 @@ namespace IzAhmad\TurboSeeder\Traits;
 
 use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
+use IzAhmad\TurboSeeder\Examples\ExampleSeeder;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
@@ -13,9 +14,9 @@ use IzAhmad\TurboSeeder\Helpers\TurboData;
  * Trait to use TurboSeeder in your seeder classes.
  * It provides helper methods to use Turbo Seeder easily and quickly with various options.
  *
- * @see \IzAhmad\TurboSeeder\Builder\TurboSeederBuilder
- * @see \IzAhmad\TurboSeeder\Facades\TurboSeeder
- * @see \IzAhmad\TurboSeeder\Examples\ExampleSeeder
+ * @see TurboSeederBuilder
+ * @see TurboSeeder
+ * @see ExampleSeeder
  */
 trait UsesTurboSeeder
 {
