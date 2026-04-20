@@ -32,7 +32,7 @@ trait ManagesEnvironment
 
         ($this->prepareAction)($this->dbConnection, $this->config);
 
-        if ($this->config->options['use_transactions'] ?? true) {
+        if ($this->config->shouldUseTransactions()) {
             $connection = DB::connection($this->dbConnection->name);
             $levelBefore = $connection->transactionLevel();
             $connection->beginTransaction();
@@ -53,10 +53,10 @@ trait ManagesEnvironment
             return;
         }
 
-        if (($this->config->options['use_transactions'] ?? true) && $this->transactionStartedByUs) {
+        if ($this->config->shouldUseTransactions() && $this->transactionStartedByUs) {
             $connection = DB::connection($this->dbConnection->name);
 
-            if ($fromException) {
+            if ($fromException || $this->config->isDryRun()) {
                 if ($connection->transactionLevel() > 0) {
                     $connection->rollBack();
                 }

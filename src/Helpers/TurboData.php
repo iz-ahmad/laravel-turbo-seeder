@@ -92,7 +92,7 @@ final class TurboData
      */
     public static function randomFloat(int $decimals, float $min, float $max): float
     {
-        $value = $min + (float) mt_rand() / mt_getrandmax() * ($max - $min);
+        $value = $min + (float) random_int(0, PHP_INT_MAX) / PHP_INT_MAX * ($max - $min);
 
         return round($value, $decimals);
     }
@@ -103,7 +103,7 @@ final class TurboData
      */
     public static function randomBool(float $probability = 0.5): bool
     {
-        return ((float) mt_rand() / mt_getrandmax()) < $probability;
+        return ((float) random_int(0, PHP_INT_MAX) / PHP_INT_MAX) < $probability;
     }
 
     /**
@@ -116,7 +116,7 @@ final class TurboData
      */
     public static function nullable(float $probability, mixed $produce): mixed
     {
-        if (((float) mt_rand() / mt_getrandmax()) < $probability) {
+        if (((float) random_int(0, PHP_INT_MAX) / PHP_INT_MAX) < $probability) {
             return null;
         }
 
@@ -137,6 +137,12 @@ final class TurboData
 
         if (! isset($parsed[$to])) {
             $parsed[$to] = Carbon::parse($to)->timestamp;
+        }
+
+        if ($parsed[$from] > $parsed[$to]) {
+            throw new \InvalidArgumentException(
+                "dateRange() \$from [{$from}] must not be after \$to [{$to}]."
+            );
         }
 
         $timestamp = random_int($parsed[$from], $parsed[$to]);
@@ -204,17 +210,20 @@ final class TurboData
     public static function fromPool(callable $loader): \Closure
     {
         $pool = null;
+        $count = 0;
 
-        return static function (int $index) use ($loader, &$pool): mixed {
+        return static function (int $index) use ($loader, &$pool, &$count): mixed {
             if ($pool === null) {
                 $pool = array_values($loader());
 
                 if (empty($pool)) {
                     throw new \RuntimeException('TurboData::fromPool() loader returned an empty array.');
                 }
+
+                $count = count($pool);
             }
 
-            return $pool[$index % count($pool)];
+            return $pool[$index % $count];
         };
     }
 

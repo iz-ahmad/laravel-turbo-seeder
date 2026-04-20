@@ -32,13 +32,14 @@ class ExampleSeeder extends Seeder
         // records share the same "imported at" timestamp, which is realistic and fast.
 
         $uniqueEmail = TurboData::uniqueEmail();
+        $hashedPassword = bcrypt('password'); // hashed once,then reused across all records
 
         TurboSeeder::create('users')
             ->columns(['name', 'email', 'password', 'remember_token', 'created_at'])
             ->generate(fn ($index) => [
                 'name' => "User {$index}",
                 'email' => $uniqueEmail($index),
-                'password' => 'hashed_password', // use a pre-hashed string for bulk seeding
+                'password' => $hashedPassword,
                 'remember_token' => bin2hex(random_bytes(5)),
                 'created_at' => TurboData::nowOnce(),
             ])
@@ -48,7 +49,7 @@ class ExampleSeeder extends Seeder
         // Example 2: CSV strategy for maximum speed with weighted distribution
         //
         // TurboData::weightedFrom() generates realistic non-uniform distributions.
-        // Use ->useCsvStrategy() for datasets over 100K rows.
+        // you can use ->useCsvStrategy() for datasets over 100K rows or more to achieve faster seeding.
 
         $now = TurboData::nowOnce();
 

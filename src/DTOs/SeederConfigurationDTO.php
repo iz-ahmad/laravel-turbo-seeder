@@ -77,4 +77,54 @@ final readonly class SeederConfigurationDTO
     {
         return $this->options['disable_query_log'] ?? true;
     }
+
+    /**
+     * Check if this is a dry-run (no rows committed).
+     */
+    public function isDryRun(): bool
+    {
+        return $this->options['dry_run'] ?? false;
+    }
+
+    /**
+     * Check if upsert mode is enabled.
+     */
+    public function isUpsert(): bool
+    {
+        return ! empty($this->options['upsert_keys']);
+    }
+
+    /**
+     * Get the unique key columns for upsert operations.
+     *
+     * @return array<int, string>
+     */
+    public function getUpsertKeys(): array
+    {
+        return $this->options['upsert_keys'] ?? [];
+    }
+
+    /**
+     * Get the maximum number of retry attempts on lock/deadlock failures.
+     */
+    public function getRetryAttempts(): int
+    {
+        return max(1, (int) ($this->options['retry_attempts'] ?? 3));
+    }
+
+    /**
+     * Check if schema column validation is enabled.
+     */
+    public function shouldValidateColumns(): bool
+    {
+        return $this->options['validate_columns'] ?? true;
+    }
+
+    /**
+     * Check if database transactions should be used during seeding.
+     */
+    public function shouldUseTransactions(): bool
+    {
+        return $this->options['use_transactions'] ?? true;
+    }
 }
