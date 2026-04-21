@@ -92,7 +92,7 @@ final class TurboData
      */
     public static function randomFloat(int $decimals, float $min, float $max): float
     {
-        $value = $min + (float) random_int(0, PHP_INT_MAX) / PHP_INT_MAX * ($max - $min);
+        $value = $min + (float) mt_rand() / mt_getrandmax() * ($max - $min);
 
         return round($value, $decimals);
     }
@@ -103,7 +103,7 @@ final class TurboData
      */
     public static function randomBool(float $probability = 0.5): bool
     {
-        return ((float) random_int(0, PHP_INT_MAX) / PHP_INT_MAX) < $probability;
+        return ((float) mt_rand() / mt_getrandmax()) < $probability;
     }
 
     /**
@@ -116,7 +116,7 @@ final class TurboData
      */
     public static function nullable(float $probability, mixed $produce): mixed
     {
-        if (((float) random_int(0, PHP_INT_MAX) / PHP_INT_MAX) < $probability) {
+        if (((float) mt_rand() / mt_getrandmax()) < $probability) {
             return null;
         }
 
