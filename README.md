@@ -2,131 +2,98 @@
 
 [![Tests](https://github.com/iz-ahmad/laravel-turbo-seeder/actions/workflows/run-tests.yml/badge.svg)](https://github.com/iz-ahmad/laravel-turbo-seeder/actions/workflows/run-tests.yml)
 
-**Blazing fast database seeder for Laravel - seed millions of records in less than a minute, or even seconds!**
+**Blazing fast database seeder for Laravel - seed millions of records in seconds — not minutes.**
 
 Laravel Turbo Seeder is a high-performance database seeding package that allows you to seed massive amounts of data (1M+ records) in just seconds. Perfect for testing applications with realistic data volumes.
 
-![Laravel Turbo Seeder Demo](https://raw.githubusercontent.com/iz-ahmad/laravel-turbo-seeder/master/images/banner.png)
+![Laravel Turbo Seeder Demo](images/banner.png)
 
 ---
 
-## 📑 Table of Contents
+## Why Turbo Seeder?
 
-- [Why Turbo Seeder?](#-why-turbo-seeder)
-- [Main Features](#-main-features)
-- [Requirements](#-requirements)
-- [Installation](#-installation)
-- [Quick Start](#-quick-start)
-  - [Basic Usage](#basic-usage)
-  - [CSV Strategy (Fastest)](#using-csv-strategy-fastest)
-  - [Advanced Configuration](#advanced-configuration)
-- [API Documentation](#-api-documentation)
-  - [Fluent API Methods](#fluent-api-methods)
-  - [Using in Seeders](#using-in-seeders)
-    - [Generating Unique Values](#generating-unique-values)
-  - [Artisan Commands](#artisan-commands)
-- [Configuration Reference](#%EF%B8%8F-configuration-reference)
-  - [Chunk Sizes](#chunk-sizes)
-  - [Memory Management](#memory-management)
-  - [Performance Optimizations](#performance-optimizations)
-  - [CSV Strategy](#csv-strategy-configuration)
-  - [Progress Tracking](#progress-tracking)
-  - [Error Handling](#error-handling)
-  - [Seeder Namespace](#seeder-namespace)
-- [CSV Strategy Setup](#-csv-strategy-setup)
-  - [MySQL Configuration](#mysql-configuration)
-  - [PostgreSQL Configuration](#postgresql-configuration)
-  - [Automatic Fallback](#automatic-fallback)
-  - [Troubleshooting](#troubleshooting)
-- [Performance Benchmarks](#-performance-benchmarks)
-- [Testing](#-testing)
-- [Contributing](#-contributing)
-- [Security](#-security)
-- [Changelog](#-changelog)
-- [License](#-license)
-- [Credits](#-credits)
+Traditional Laravel seeders crawl at scale. When you need 500K–1M+ rows for realistic performance testing, they really become a productivity killer.
 
----
+**Turbo Seeder makes seeding great again! ;-).**
+What used to take **~30 minutes** (for **1M** records) - now finishes in literally **~15-60 seconds**.
 
-## 💡 Why Turbo Seeder?
-When you need to test your app with **real, production-scale data** (hundreds of thousands or millions of rows), traditional Laravel seeders crawl… and your flow dies with them.
+No more coffee breaks, tab-switching, or "I'll test later"! So you now can:
+- Test at production-scale data volumes
+- Catch slow queries before users do
+- Iterate fast without seeding being a bottleneck
 
-**Turbo Seeder makes seeding great again (in a good way) ;-).**
-What used to take **~30 minutes** now finishes in **~15-60 seconds** for ~**1M records**... approximately.
+### How We Achieve This Speed   
 
-No coffee breaks. No tab-switching. No "I'll test later". So you can:
-
-* Test performance like it's production
-* Catch slow queries before users do
-* Iterate without killing your dev flow
-
-### How We Achieve This Speed:
-
-1. **Bypassing Eloquent** - Uses raw database queries instead of ORM overhead, avoiding usage of Faker and other libraries that slow down the process.
-2. **Bulk Operations** - Multi-row INSERT statements instead of individual inserts
-3. **Database Optimizations** - Disables constraints, uses transactions efficiently
-4. **CSV Import** - For maximum speed, uses native database CSV import commands
-5. **Memory Management** - Efficient chunking and garbage collection
+1. **No Eloquent overhead** — raw queries only; no model events, no Faker
+2. **Bulk operations** — multi-row `INSERT` statements instead of row-by-row
+3. **CSV import** — native `LOAD DATA` / `COPY` commands for maximum throughput
+4. **Smart chunking** — controlled memory use with automatic garbage collection
+5. **Minimal setup** — foreign key checks and query logging disabled automatically
 6. **Streaming** - CSV files are written/read in streams, not loaded into memory
 
-### Performance Snapshot (Real Measurements)
+---
 
-For a local setup with MySQL and default chunk sizes:
+## Features At A Glance
 
-- **Simple tables (~5 columns, 1M rows)**  
-  - Default strategy: **~16 seconds**, **~50 MB** peak memory  
-  - CSV strategy: **~9 seconds**, **~0 MB** additional memory  
+- **Lightning Fast** — 1M records in 15–60 seconds (depending on the table complexity)
+- **Memory Efficient** — under 200 MB peak
+- **Multi-Database** — MySQL, PostgreSQL, SQLite
+- **Two Strategies** — bulk insert and native CSV import
+- **Fluent API** — clean, chainable interface
+- **TurboData Helpers** — Faker-free data generation: weighted picks, date ranges, unique values
+- **Foreign Key Pools** — Deterministic cycling of FK values loaded from the database
+- **Progress Tracking** — real-time progress bars with metrics
+- **Highly Configurable** — chunk sizes, transactions, upserts, retries, dry-run, and more
+- **Laravel 10–13 Compatible**
 
-- **Complex tables (~15–20 columns, 1M rows)**  
-  - Default strategy: **~60 seconds**, **~160 MB** peak memory  
-  - CSV strategy: **~40 seconds**, **~0 MB** additional memory  
-
-> **Note:** Results may vary based on hardware, DB engine/type, connection (local vs remote), and the chosen chunk size.
+**Ideal for:**
+* Performance and load testing with production-scale datasets
+* Large dataset generation in development environments
+* CI/CD pipelines requiring fast seeding
+* Database query and performance benchmarking
 
 ---
 
-## 🚀 Main Features
+## Table of Contents
 
-- ⚡ **Lightning Fast** - Seed 1M records in ~15-60 seconds (depending on the table complexity)
-- 💾 **Memory Efficient** - Uses less than 200MB memory
-- 🗄️ **Multi-Database Support** - MySQL, PostgreSQL, SQLite
-- 📊 **Two Strategies** - Default (bulk insert) and CSV (file-based import)
-- 🎯 **Fluent API** - Beautiful, chainable interface
-- 🧩 **TurboData Helpers** - Faker-free data helpers: weighted distributions, date ranges, FK pools, unique values
-- 📈 **Progress Tracking** - Real-time progress bars with metrics
-- 🔧 **Highly Configurable** - Fine-tune performance settings
-- ✅ **Fully Tested** - with Pest PHP
-- 🎨 **Laravel 10–13 Compatible** - Works with latest Laravel versions
-- 🔒 **Secure** - Temp CSV files are restricted to owner-only permissions (0600)
-
-**Perfect for:**
-- ✅ Performance testing with realistic data volumes
-- ✅ Development environments needing large datasets
-- ✅ CI/CD pipelines requiring fast seeding
-- ✅ Testing database performance and queries
-- ✅ Generating test data for load testing
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+  - [Basic Usage](#basic-usage)
+  - [CSV Strategy (Fastest)](#csv-strategy-fastest)
+  - [Advanced Configuration](#advanced-configuration)
+- [API Documentation](#api-documentation)
+  - [Fluent API Methods](#fluent-api-methods)
+  - [Using in Seeders](#using-in-seeders)
+  - [TurboData Helpers](#turbodata-helpers)
+  - [Artisan Commands](#artisan-commands)
+- [Configuration Reference](#configuration-reference)
+- [CSV Strategy Setup](#csv-strategy-setup)
+- [Performance Benchmarks](#performance-benchmarks)
+- [Testing](#testing)
+- [Contributing](#contributing)
+- [Security](#security)
+- [Changelog](#changelog)
+- [License](#license)
+- [Credits](#credits)
 
 ---
 
-## 📋 Requirements
+## Requirements
 
-- PHP 8.1 or higher (including 8.5)
+- PHP 8.2+
 - Laravel 10.x, 11.x, 12.x, or 13.x
-- MySQL 5.7+, PostgreSQL 9.6+, or SQLite 3.8+
+- MySQL 5.7+, PostgreSQL 9.6+, or SQLite 3.24+
 
 ---
 
-## 📦 Installation
-
-Install via Composer:
+## Installation
 
 ```bash
 composer require iz-ahmad/laravel-turbo-seeder
 ```
 
-The package will automatically register itself.
-
-### Publish Configuration (Optional)
+The package auto-registers itself. Optionally publish the config:
 
 ```bash
 php artisan vendor:publish --tag="turbo-seeder-config"
@@ -136,7 +103,7 @@ This creates `config/turbo-seeder.php` in your project.
 
 ---
 
-## 🎯 Quick Start
+## Quick Start
 
 ### Basic Usage
 
@@ -147,25 +114,26 @@ use IzAhmad\TurboSeeder\Helpers\TurboData;
 TurboSeeder::create('users')
     ->columns(['name', 'email', 'created_at'])
     ->generate(fn ($index) => [
-        'name' => "User {$index}",
-        'email' => "user{$index}@example.com",
-        'created_at' => TurboData::nowOnce(), // computed once, not 100K times
+        'name'       => "User {$index}",
+        'email'      => "user{$index}@example.com",
+        'created_at' => TurboData::nowOnce(),
     ])
     ->count(100000)
     ->run();
 ```
 
-### Using CSV Strategy (Fastest)
+### CSV Strategy (Fastest)
 
 ```php
+use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 TurboSeeder::create('posts')
     ->columns(['user_id', 'title', 'content', 'created_at'])
     ->generate(fn ($index) => [
-        'user_id' => TurboData::randomInt(1, 10000),
-        'title' => "Post {$index}",
-        'content' => "Content for post {$index}",
+        'user_id'    => TurboData::randomInt(1, 10000),
+        'title'      => "Post {$index}",
+        'content'    => "Content for post {$index}",
         'created_at' => TurboData::nowOnce(),
     ])
     ->count(1000000)
@@ -176,14 +144,15 @@ TurboSeeder::create('posts')
 ### Advanced Configuration
 
 ```php
+use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 TurboSeeder::create('orders')
     ->columns(['user_id', 'total', 'status', 'created_at'])
     ->generate(fn ($index) => [
-        'user_id' => TurboData::randomInt(1, 10000),
-        'total' => TurboData::randomFloat(2, 10.00, 999.99),
-        'status' => TurboData::weightedFrom(['pending' => 50, 'completed' => 40, 'cancelled' => 10]),
+        'user_id'    => TurboData::randomInt(1, 10000),
+        'total'      => TurboData::randomFloat(2, 10.00, 999.99),
+        'status'     => TurboData::weightedFrom(['pending' => 50, 'completed' => 40, 'cancelled' => 10]),
         'created_at' => TurboData::dateRange('2023-01-01', '2024-12-31'),
     ])
     ->count(50000)
@@ -199,42 +168,77 @@ See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) for more ex
 ---
 
 <details>
-<summary><h3>📚 API Documentation</h3></summary>
+<summary><h3 id="api-documentation">API Documentation</h3></summary>
 
 ### Fluent API Methods
 
 #### Core Methods
 
-- `table(string $table)` - Set the table name
-- `columns(array $columns)` - Set columns to seed
-- `generate(Closure $generator)` - Set data generator function
-- `count(int $count)` - Set number of records to seed
-- `run()` - Execute the seeding operation
+- `table(string $table)` — Set the table name
+- `columns(array $columns)` — Set columns to seed
+- `generate(Closure $generator)` — Set data generator (receives `$index`)
+- `count(int $count)` — Number of records to seed
+- `run()` — Execute and return a `SeederResultDTO`
 
 #### Strategy Methods
 
-- `useCsvStrategy()` - Use CSV-based import (fastest)
-- `useDefaultStrategy()` - Use bulk insert (default)
-- `strategy(SeederStrategy $strategy)` - Set specific strategy
+- `useCsvStrategy()` — Native CSV file import (fastest)
+- `useDefaultStrategy()` — Bulk INSERT (default)
+- `strategy(SeederStrategy $strategy)` — Set via enum directly
 
 #### Configuration Methods
 
-- `connection(string $connection)` - Set database connection
-- `chunkSize(int $size)` - Custom chunk size
-- `withProgressTracking()` / `withoutProgressTracking()` - Progress bar control
-- `disableForeignKeyChecks()` / `enableForeignKeyChecks()` - FK checks control
-- `disableQueryLog()` / `enableQueryLog()` - Query log control
-- `useTransactions()` / `withoutTransactions()` - Transaction control
-- `options(array $options)` - Set custom options
+- `connection(string $connection)` — Database connection to use
+- `chunkSize(int $size)` — Records per chunk
+- `withProgressTracking()` / `withoutProgressTracking()` — Toggle progress bar
+- `disableForeignKeyChecks()` / `enableForeignKeyChecks()` — Toggle FK checks
+- `disableQueryLog()` / `enableQueryLog()` — Toggle query logging
+- `useTransactions()` / `withoutTransactions()` — Toggle transactions
+- `options(array $options)` — Merge custom options
+- `when(bool|callable $condition, callable $callback, ?callable $default)` — Conditional chaining
+- `unless(bool|callable $condition, callable $callback, ?callable $default)` — Inverse conditional
 
-#### Conditional Methods
+#### Advanced Methods
 
-- `when(bool|callable $condition, callable $callback, ?callable $default = null)` - Conditional execution
-- `unless(bool|callable $condition, callable $callback, ?callable $default = null)` - Inverse conditional
+- `dryRun(bool $enabled = true)` — Generate and validate data without committing. Uses transaction rollback; `$result->isDryRun` will be `true`. **Do not combine this with `withoutTransactions()`** — without a transaction there is nothing to roll back and rows will be permanently written.
+
+- `upsert(array $uniqueBy)` — On conflict, update non-key columns. Uses `ON DUPLICATE KEY UPDATE` (MySQL), `ON CONFLICT DO UPDATE SET` (PostgreSQL / SQLite 3.24+). Keys must be a subset of declared columns and must form a unique constraint on the table.
+
+- `retryAttempts(int $attempts)` — Retry on transient deadlock / lock-timeout failures (SQLSTATE 40001, MySQL 1205) with exponential backoff. Accepts 1–10; defaults to 3.
+
+- `withoutColumnValidation()` — Skip the pre-seed schema check that validates declared columns exist on the table.
+
+#### Events
+
+`TurboSeederCompleted` is dispatched after every successful seed, including dry-runs; which you can use to trigger actions after seeding as per your requirements.
+
+```php
+use IzAhmad\TurboSeeder\Events\TurboSeederCompleted;
+ 
+class SendTurboSeederCompletedNotification
+{
+    /**
+     * Handle the event.
+     */
+    public function handle(TurboSeederCompleted $event): void
+    {
+        // $event->table  — the seeded table name
+        // $event->result — SeederResultDTO (includes isDryRun flag)
+
+        if ($event->result->isDryRun) {
+            return; // no rows were committed
+        }
+    }
+}
+```
+
+> **Note:** Always check `$event->result->isDryRun` before acting on the assumption that rows were committed. The event is **not** dispatched when seeding fails.
+
+---
 
 ### Using in Seeders
 
-Use the `UsesTurboSeeder` trait in your seeders:
+Use the `UsesTurboSeeder` trait for quick helpers inside standard Laravel seeders:
 
 ```php
 use Illuminate\Database\Seeder;
@@ -246,7 +250,6 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        // Quick seed helper
         $this->quickSeed(
             'users',
             ['name', 'email'],
@@ -257,13 +260,12 @@ class DatabaseSeeder extends Seeder
             10000
         );
 
-        // Quick CSV seed
         $this->quickCsvSeed(
             'posts',
             ['user_id', 'title'],
             fn ($i) => [
                 'user_id' => ($i % 10000) + 1,
-                'title' => "Post {$i}"
+                'title' => "Post {$i}",
             ],
             100000
         );
@@ -271,59 +273,7 @@ class DatabaseSeeder extends Seeder
 }
 ```
 
-### Generating Unique Values
-
-When seeding tables with unique constraints (like `email`, `username`, etc.), you need to ensure values are unique. TurboSeeder provides helper methods to generate unique values:
-
-**Available Methods:**
-
-- `uniqueEmail(?string $prefix = null)` - Generates unique email addresses
-- `uniqueValue(?string $prefix = null)` - Generates unique string values
-- `uniqueUuid(string $prefix = '')` - Generates unique UUID-based values
-
-**Example Usage:**
-
-```php
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
-use IzAhmad\TurboSeeder\Facades\TurboSeeder;
-
-class UserSeeder extends Seeder
-{
-    use UsesTurboSeeder;
-
-    public function run(): void
-    {
-        // You can clear table before seeding to avoid duplicate entry errors
-        DB::table('users')->delete();
-
-        // Generate unique email generator
-        $uniqueEmail = $this->uniqueEmail('user');
-        $uniqueUsername = $this->uniqueValue('username');
-
-        TurboSeeder::create('users')
-            ->columns(['name', 'email', 'username', 'created_at'])
-            ->generate(fn($index) => [
-                'name' => "User {$index}",
-                'email' => $uniqueEmail($index),        // Always unique!
-                'username' => $uniqueUsername($index),   // Always unique!
-                'created_at' => now(),
-            ])
-            ->count(100000)
-            ->run();
-    }
-}
-```
-
-**How It Works:**
-
-- `uniqueEmail()` generates emails like: `user0_1234567890_abcd@test.com`
-- `uniqueValue()` generates values like: `unique_0_1234567890_abcd`
-- Both use timestamp + random string to ensure uniqueness
-- `uniqueUuid()` generates full UUIDs for maximum uniqueness, with or without prefix
-
-**Tip:** You can also clear the table before seeding using `DB::table('table_name')->delete()` or `DB::table('table_name')->truncate()` to avoid duplicate entry errors, especially useful when re-running seeders during development.
+---
 
 ### TurboData Helpers
 
@@ -336,13 +286,11 @@ use IzAhmad\TurboSeeder\Helpers\TurboData;
 #### Value Selection
 
 ```php
-// Round-robin cycling — replaces the fragile ($index % N) pattern
-$role = TurboData::cycleFrom(['admin', 'editor', 'viewer']);
-// Returns a closure: $role($index)
+// Round-robin cycling
+$role = TurboData::cycleFrom(['admin', 'editor', 'viewer']); // returns a closure: $role($index)
 
-// Weighted random — realistic non-uniform distributions
-$status = TurboData::weightedFrom(['active' => 70, 'pending' => 20, 'banned' => 10]);
-// Returns the selected value directly (not a closure)
+// Weighted random
+$status = TurboData::weightedFrom(['active' => 70, 'pending' => 20, 'banned' => 10]); // returns value directly
 
 // Uniform random
 $method = TurboData::randomFrom(['paypal', 'bank_transfer', 'credit_card']);
@@ -362,27 +310,25 @@ $flag  = TurboData::randomBool(0.8); // 80% true
 // Random date within a range
 $date = TurboData::dateRange('2022-01-01', '2024-12-31');
 
-// Sequential timestamps (good for analytics/time-series data)
+// Sequential timestamps — good for time-series data
 $ts = TurboData::sequentialDate('2024-01-01', 'hour', $index);
 
-// ⚠️ Avoid calling now() inside the generator — use nowOnce() instead
-// BAD:  'created_at' => now(),          // calls now() 1M times — all same timestamp
-// GOOD: 'created_at' => TurboData::nowOnce(), // called once, reused
-$now = TurboData::nowOnce();
+// Use nowOnce() inside generators for better performance — avoids calling now() 1M times
+'created_at' => TurboData::nowOnce()
 ```
 
 #### Nullable Values
 
 ```php
-// 15% chance of null; value is only evaluated when not null
+// 15% chance of null; value only evaluated when not null
 $deletedAt = TurboData::nullable(0.15, fn () => now());
 ```
 
 #### Foreign Key Pools
 
 ```php
-// Load IDs once from the DB, cycle through them safely
-// Works with UUID PKs, soft-deleted records, and ID gaps
+// Loads IDs once from DB, cycles deterministically — works with UUID PKs and ID gaps
+// Returns a closure: $userIds($index)
 $userIds = TurboData::fromPool(
     fn () => DB::table('users')->pluck('id')->toArray()
 );
@@ -390,7 +336,7 @@ $userIds = TurboData::fromPool(
 TurboSeeder::create('posts')
     ->columns(['user_id', 'title'])
     ->generate(fn ($i) => [
-        'user_id' => $userIds($i), // loads IDs once, cycles deterministically
+        'user_id' => $userIds($i),
         'title'   => "Post {$i}",
     ])
     ->count(1_000_000)
@@ -400,28 +346,30 @@ TurboSeeder::create('posts')
 #### Unique Values
 
 ```php
-// Better-looking unique values than the legacy UniqueValueGenerator
-$email = TurboData::uniqueEmail();          // u_a3f9b2c1_0@turbo.test
-$user  = TurboData::uniqueUsername('usr');  // usr_a3f9b2c1_0
-$slug  = TurboData::uniqueSlug('My Post');  // my-post-a3f9b2c1-0
-$uuid  = TurboData::uniqueUuid('ref_');     // ref_xxxxxxxx-xxxx-...
+$email = TurboData::uniqueEmail();         // u_a3f9b2c1_0@turbo.test
+$user  = TurboData::uniqueUsername('usr'); // usr_a3f9b2c1_0
+$slug  = TurboData::uniqueSlug('My Post'); // my-post-a3f9b2c1-0
+$uuid  = TurboData::uniqueUuid('ref_');    // ref_xxxxxxxx-xxxx-...
 // All return closures: $email($index)
 ```
 
 #### Custom Type Formatters
 
-Register custom type handlers for your own value objects:
+Register custom handlers for your own value objects to ensure proper formatting based on your need:
 
 ```php
 use IzAhmad\TurboSeeder\Services\ValueFormatter;
 
 // In a service provider or seeder
 ValueFormatter::extend(Money::class, fn ($money) => $money->getAmount());
+// now, when you use `Money` objects in your seeders, they will be formatted as you format them in the callback above
 ```
+
+---
 
 ### Artisan Commands
 
-#### Run Seeder
+#### Run a Seeder
 
 ```bash
 php artisan turbo-seeder:run YourSeederClass
@@ -440,12 +388,13 @@ php artisan turbo-seeder:run YourSeederClass
 - `--no-fk-checks` - Disable foreign key checks
 - `--no-transactions` - Disable transactions -->
 
-You can still use Laravel’s native `php artisan db:seed` command when using this package — it remains fully compatible. However, the `turbo-seeder:run` command provided by this package offers additional benefits: you can easily customize options, view detailed performance metrics, and monitor real-time progress, making it ideal for large-scale or advanced seeding operations.
+You can still use Laravel’s native `php artisan db:seed` command when using this package. 
+_However_, the `turbo-seeder:run` command provided by this package offers **additional benefits**: easily customize options, view detailed performance metrics, and monitor real-time progress — making it ideal for large-scale or advanced seeding operations.
 
 #### Benchmark Performance
 
 ```bash
-php artisan turbo-seeder:benchmark
+php artisan turbo-seeder:benchmark [--connection=] [--table=] [--records=]
 ```
 
 **Options:**
@@ -461,31 +410,33 @@ php artisan turbo-seeder:test-connection
 
 #### Clear Cache
 
-Clear all temporary files made by the package:
-
 ```bash
-php artisan turbo-seeder:clear-cache
+php artisan turbo-seeder:clear-cache [--all]
 ```
 
 **Options:**
-- `--all` - Clear all temporary files including subdirectories
+- `--all` - Clear all temporary files including subdirectories created during seeding.
 
 </details>
 
 ---
 
 <details>
-<summary><h3>⚙️ Configuration Reference</h3></summary>
+<summary><h3 id="configuration-reference">Configuration Reference</h3></summary>
 
-We have provided an optimal configuration for you to use. You can override it by adding your own configuration in your `config/turbo-seeder.php` file, if you need to.
+We have provided an optimal configuration for you to use. Still, you can publish and customize the config for full control:
+
+```bash
+php artisan vendor:publish --tag="turbo-seeder-config"
+```
 
 ### Chunk Sizes
 
 Chunk size determines how many records are inserted (processed in memory) at once. This directly impacts memory usage and performance.
 
 **Config Priority Order:**
-1. **Custom chunk size** (set via `->chunkSize()` in the seeder class using our fluent API) - Highest priority
-2. **Database-specific chunk size** (from `chunk_sizes.{database_driver}` config) - Medium priority
+1. **Custom chunk size** (set via `->chunkSize()` in the seeder class using our fluent API) - **Highest** priority
+2. **Database-specific chunk size** (from `chunk_sizes.{database_driver}` config) - **Medium** priority
 3. **Default chunk size** (from `default_chunk_size` config) - Fallback
 
 ```php
@@ -550,7 +501,7 @@ Settings for CSV-based seeding:
 
 ```php
 'csv_strategy' => [
-    'enabled' => true,                                    // Enable CSV strategy
+    'enabled' => true,                                   // Enable CSV strategy
     'temp_path' => storage_path('app/turbo-seeder'),     // Directory for temporary CSV files
     'buffer_size' => 8192,                               // File write buffer size (bytes)
     'line_terminator' => "\n",                           // CSV line ending
@@ -603,7 +554,7 @@ Default namespace for seeder classes:
 ---
 
 <details>
-<summary><h3>🔧 CSV Strategy Setup</h3></summary>
+<summary><h3 id="csv-strategy-setup">CSV Strategy Setup</h3></summary>
 
 The CSV strategy provides the fastest seeding performance but requires additional database configuration.
 
@@ -653,90 +604,60 @@ The default strategy works without any additional configuration and is still ver
 
 ---
 
-<details>
-<summary><h3>📊 Performance Benchmarks</h3></summary>
+## Performance Benchmarks
 
-These benchmarks are based on real runs on a modern local machine with MySQL, PGSQL and optimized (default) chunk sizes.
+Measured on a modern local machine with MySQL and default chunk sizes.
 
 ### Default Strategy (Bulk Insert)
 
-- **Simple tables (~5 columns, 1M rows)**: ~**16 seconds**, ~**50 MB** peak memory  
-- **Complex tables (~15–20 columns, 1M rows)**: ~**60 seconds**, ~**160 MB** peak memory  
-- **Best for**: General use, remote databases, when you can't enable CSV imports
+| Table complexity | Records | Time | Peak memory |
+|---|---|---|---|
+| Simple (~5 cols) | 1M | ~16s | ~50 MB |
+| Complex (~15–20 cols) | 1M | ~60s | ~160 MB |
+
+Best for: general use, remote databases, when CSV import isn't available.
 
 ### CSV Strategy (File Import)
 
-- **Simple tables (~5 columns, 1M rows)**: ~**9 seconds**, ~**0 MB** additional memory  
-- **Complex tables (~15–20 columns, 1M rows)**: ~**40 seconds**, ~**0 MB** additional memory  
-- **Best for**: Local databases and high‑throughput seeding where you can enable `LOAD DATA` / `COPY`
+| Table complexity | Records | Time | Additional memory |
+|---|---|---|---|
+| Simple (~5 cols) | 1M | ~9s | ~0 MB |
+| Complex (~15–20 cols) | 1M | ~40s | ~0 MB |
 
-> **Note:** These are indicative numbers based on our tests. Your exact results may differ depending on hardware, database engine/version, network latency (local vs remote DB), and the configured chunk size.
+Best for: local databases, maximum throughput where `LOAD DATA` / `COPY` can be enabled.
 
-</details>
+> Results vary by hardware, DB engine/version, network latency, and chunk size.
 
 ---
 
-<details>
-<summary><h3>🧪 Testing</h3></summary>
+## Testing
 
-Run the test suite:
+Run the test suite to ensure everything is working correctly:
 
 ```bash
 composer test
 ```
 
-Run with coverage:
+**Test Framework:** Pest PHP with SQLite, MySQL, and PostgreSQL support
 
-```bash
-composer test-coverage
-```
-
-</details>
-
----
-
-<details>
-<summary><h3>🤝 Contributing</h3></summary>
+## Contributing
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-</details>
+## Security
 
----
+If you discover a security issue, please email `n.ahmad.web.cit22@gmail.com` instead of opening a public issue.
 
-<details>
-<summary><h3>🔒 Security</h3></summary>
+## Changelog
 
-If you discover any security-related issues, please email `n.ahmad.web.cit22@gmail.com` instead of creating a public issue.
+Please see [CHANGELOG.md](CHANGELOG.md) for recent changes.
 
-</details>
-
----
-
-<details>
-<summary><h3>📝 Changelog</h3></summary>
-
-Please see [CHANGELOG.md](CHANGELOG.md) for more information on recent changes.
-
-</details>
-
----
-
-<details>
-<summary><h3>📄 License</h3></summary>
+## License
 
 The MIT License (MIT). Please see [LICENSE.md](LICENSE.md) for more information.
 
-</details>
+## Credits
 
----
-
-<details>
-<summary><h3>🙏 Credits</h3></summary>
-
-<!-- - [iz-ahmad](https://github.com/iz-ahmad) -->
 - All Contributors
 
-**Made with <3 for the Laravel community**
-
-</details>
+**Made with ❤️ for the Laravel community**

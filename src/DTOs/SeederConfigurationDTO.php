@@ -127,5 +127,4 @@ final readonly class SeederConfigurationDTO
     {
         return $this->options['use_transactions'] ?? true;
     }
-
 }
