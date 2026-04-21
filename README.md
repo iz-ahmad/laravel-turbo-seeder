@@ -161,29 +161,6 @@ TurboSeeder::create('orders')
     ->run();
 ```
 
-### Batch Generator (Highest Performance)
-
-For maximum performance on very large datasets, use the batch generator API to reduce PHP function call overhead:
-
-```php
-use IzAhmad\TurboSeeder\Facades\TurboSeeder;
-
-TurboSeeder::create('users')
-    ->generateBatch(fn ($startIndex, $batchSize) => [
-        // Generate multiple records at once
-        // Reduces call overhead from 1M calls to N/batchSize calls
-        // For 1M records with batchSize=10000: only 100 calls instead of 1M
-        ...$this->generateUsers($startIndex, $batchSize),
-    ])
-    ->count(1_000_000)
-    ->run();
-```
-
-**Performance Impact:** 
-- Single generator: 1M function calls = ~50-200ms call overhead
-- Batch generator: N/batchSize function calls = reduces overhead by 100-1000x
-- Total seeding time: ~9-60s (depending on strategy and complexity)
-
 See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) for more examples.
 
 ---
@@ -197,8 +174,7 @@ See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) for more ex
 
 - `table(string $table)` — Set the table name
 - `columns(array $columns)` — Set columns to seed
-- `generate(Closure $generator)` — Set data generator (receives `$index`). Cannot be combined with `generateBatch()`
-- `generateBatch(Closure $batchGenerator)` — Set batch data generator (receives `$startIndex, $batchSize`, returns array of records). More efficient for large datasets. Cannot be combined with `generate()`
+- `generate(Closure $generator)` — Set data generator (receives `$index`)
 - `count(int $count)` — Number of records to seed
 - `run()` — Execute and return a `SeederResultDTO`
 

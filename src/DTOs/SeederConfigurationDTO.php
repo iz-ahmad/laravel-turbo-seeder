@@ -128,11 +128,4 @@ final readonly class SeederConfigurationDTO
         return $this->options['use_transactions'] ?? true;
     }
 
-    /**
-     * Check if batch generator is being used instead of single-record generator.
-     */
-    public function useBatchGenerator(): bool
-    {
-        return $this->options['use_batch_generator'] ?? false;
-    }
 }
