@@ -86,15 +86,24 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
         $records = [];
         $startIndex = $chunkIndex * $this->chunkSize;
 
+        $needsFilter = null;
+
         for ($i = 0; $i < $count; $i++) {
             $record = $generator($startIndex + $i);
 
-            $filteredRecord = [];
-            foreach ($columns as $column) {
-                $filteredRecord[$column] = $record[$column] ?? null;
+            if ($needsFilter === null) {
+                $needsFilter = array_keys($record) !== $columns;
             }
 
-            $records[] = $filteredRecord;
+            if ($needsFilter) {
+                $filteredRecord = [];
+                foreach ($columns as $column) {
+                    $filteredRecord[$column] = $record[$column] ?? null;
+                }
+                $records[] = $filteredRecord;
+            } else {
+                $records[] = $record;
+            }
         }
 
         return $records;
