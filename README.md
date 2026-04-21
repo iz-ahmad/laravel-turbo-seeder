@@ -167,8 +167,7 @@ See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) for more ex
 
 ---
 
-<details>
-<summary><h3 id="api-documentation">API Documentation</h3></summary>
+## API Documentation
 
 ### Fluent API Methods
 
@@ -417,12 +416,9 @@ php artisan turbo-seeder:clear-cache [--all]
 **Options:**
 - `--all` - Clear all temporary files including subdirectories created during seeding.
 
-</details>
-
 ---
 
-<details>
-<summary><h3 id="configuration-reference">Configuration Reference</h3></summary>
+## Configuration Reference
 
 We have provided an optimal configuration for you to use. Still, you can publish and customize the config for full control:
 
@@ -549,12 +545,9 @@ Default namespace for seeder classes:
 
 **Usage:** Allows using short class names in commands. For example, `php artisan turbo-seeder:run UserSeeder` instead of `php artisan turbo-seeder:run Database\\Seeders\\UserSeeder`.
 
-</details>
-
 ---
 
-<details>
-<summary><h3 id="csv-strategy-setup">CSV Strategy Setup</h3></summary>
+## CSV Strategy Setup
 
 The CSV strategy provides the fastest seeding performance but requires additional database configuration.
 
@@ -599,8 +592,6 @@ If you see a warning about CSV strategy falling back to default:
 3. **Both** - Review application logs for detailed error messages
 
 The default strategy works without any additional configuration and is still very fast.
-
-</details>
 
 ---
 
