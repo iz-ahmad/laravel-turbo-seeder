@@ -672,16 +672,9 @@ php artisan turbo-seeder:run YourSeederClass
 
 **Options:**
 - `--class=` - Seeder class name (no need if you use the `seeder` argument)
-<!-- - `--connection=` - Database connection
-- `--strategy=` - Strategy (default or csv)
-- `--count=` - Number of records
-- `--chunk=` - Custom chunk size
-- `--no-progress` - Disable progress bar
-- `--no-fk-checks` - Disable foreign key checks
-- `--no-transactions` - Disable transactions -->
 
 You can still use Laravel’s native `php artisan db:seed` command when using this package. 
-_However_, the `turbo-seeder:run` command provided by this package offers **additional benefits**: easily customize options, view detailed performance metrics, and monitor real-time progress — making it ideal for large-scale or advanced seeding operations.
+_However_, the `turbo-seeder:run` command provided by this package offers **additional benefits**: easily **customize** options, view detailed **performance metrics**, and monitor real-time **progress** — making it ideal for large-scale or advanced seeding operations.
 
 #### Benchmark Performance
 
