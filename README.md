@@ -5,7 +5,7 @@
 <!-- [![Total Downloads](https://img.shields.io/packagist/dt/iz-ahmad/laravel-turbo-seeder.svg)](https://packagist.org/packages/iz-ahmad/laravel-turbo-seeder) -->
 <!-- [![License](https://img.shields.io/packagist/l/iz-ahmad/laravel-turbo-seeder.svg)](LICENSE.md) -->
 
-**Blazing fast database seeder for Laravel - seed millions of records in seconds — not minutes.**
+**Blazing fast database seeder for Laravel - seed millions of records in seconds; not minutes.**
 
 Laravel Turbo Seeder is a high-performance seeding package built for large-scale data generation (1M+ records) with very minimal time and memory usage. Ideal for testing applications with production-sized datasets.
 
@@ -29,27 +29,27 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you can:
 
 ## How It’s So Fast
 
-1. **No Eloquent overhead** — raw queries only (no model events, no Faker)
-2. **Bulk inserts** — multi-row `INSERT` instead of row-by-row
-3. **Native CSV imports** — `LOAD DATA` / `COPY` for maximum throughput
-4. **Smart chunking** — controlled memory with automatic garbage collection
-5. **Minimal overhead** — foreign key checks & query logging disabled automatically
-6. **Streaming I/O** — CSV handled via streams, not loaded fully into memory
+1. **No Eloquent overhead**: raw queries only (no model events, no Faker)
+2. **Bulk inserts**: multi-row `INSERT` instead of row-by-row
+3. **Native CSV imports**: `LOAD DATA` / `COPY` for maximum throughput
+4. **Smart chunking**: controlled memory with automatic garbage collection
+5. **Minimal overhead**: foreign key checks & query logging disabled automatically
+6. **Streaming I/O**: CSV handled via streams, not loaded fully into memory
 
 ---
 
 ## Features At A Glance
 
-* **Lightning Fast** — 1M records in 15–60 seconds (table-complexity dependent)
-* **Memory Efficient** — under 200MB peak
-* **Multi-Database** — MySQL, PostgreSQL, SQLite
-* **Two Strategies** — bulk insert or native CSV import
-* **Fluent API** — clean, chainable interface
-* **TurboData Helpers** — Faker-free data generation: weighted picks, date ranges, unique values
-* **Data Type Handling** — automatically formats enums, JSON, dates, collections, and objects.
-* **Foreign Key Pools** — deterministic FK cycling from DB
-* **Progress Tracking** — real-time progress with metrics
-* **Highly Configurable** — chunk size, transactions, upserts, retries, dry-run, etc.
+* **Lightning Fast**: 1M records in 15–60 seconds (table-complexity dependent)
+* **Memory Efficient**: under 200MB peak
+* **Multi-Database**: MySQL, PostgreSQL, SQLite
+* **Two Strategies**: bulk insert or native CSV import
+* **Fluent API**: clean, chainable interface
+* **TurboData Helpers**: Faker-free data generation: weighted picks, date ranges, unique values
+* **Data Type Handling**: automatically formats enums, JSON, dates, collections, and objects.
+* **Foreign Key Pools**: deterministic FK cycling from DB
+* **Progress Tracking**: real-time progress with metrics
+* **Highly Configurable**: chunk size, transactions, upserts, retries, dry-run, etc.
 * **Laravel 10–13 Compatible**
 
 ### Ideal For
@@ -77,6 +77,7 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you can:
   - [Fluent API Methods](#fluent-api-methods)
   - [Using in Seeders](#using-in-seeders)
   - [TurboData Helpers](#turbodata-helpers)
+  - [Data Type Handling](#data-type-handling)
   - [Artisan Commands](#artisan-commands)
 - [Configuration Reference](#configuration-reference)
 - [Performance Benchmarks](#performance-benchmarks)
@@ -400,39 +401,40 @@ class UserSeeder extends Seeder
 
 #### Core Methods
 
-- `table(string $table)` — Set the table name
-- `columns(array $columns)` — Set columns to seed
-- `generate(Closure $generator)` — Set data generator (receives `$index`)
-- `count(int $count)` — Number of records to seed
-- `run()` — Execute and return a `SeederResultDTO`
+- `table(string $table)`: Set the table name
+- `columns(array $columns)`: Set columns to seed
+- `generate(Closure $generator)`: Set data generator (receives `$index`)
+- `count(int $count)`: Number of records to seed
+- `run()`: Execute and return a `SeederResultDTO`
 
 #### Strategy Methods
 
-- `useCsvStrategy()` — Native CSV file import (fastest)
-- `useDefaultStrategy()` — Bulk INSERT (default)
-- `strategy(SeederStrategy $strategy)` — Set via enum directly
+- `useCsvStrategy()`: Native CSV file import (fastest)
+- `useDefaultStrategy()`: Bulk INSERT (default)
+- `strategy(SeederStrategy $strategy)`: Set via enum directly
 
 #### Configuration Methods
 
-- `connection(string $connection)` — Database connection to use
-- `chunkSize(int $size)` — Records per chunk
-- `withProgressTracking()` / `withoutProgressTracking()` — Toggle progress bar
-- `disableForeignKeyChecks()` / `enableForeignKeyChecks()` — Toggle FK checks
-- `disableQueryLog()` / `enableQueryLog()` — Toggle query logging
-- `useTransactions()` / `withoutTransactions()` — Toggle transactions
-- `options(array $options)` — Merge custom options
-- `when(bool|callable $condition, callable $callback, ?callable $default)` — Conditional chaining
-- `unless(bool|callable $condition, callable $callback, ?callable $default)` — Inverse conditional
+- `connection(string $connection)`: Database connection to use
+- `chunkSize(int $size)`: Records per chunk
+- `withProgressTracking()` / `withoutProgressTracking()`: Toggle progress bar
+- `disableForeignKeyChecks()` / `enableForeignKeyChecks()`: Toggle FK checks
+- `disableQueryLog()` / `enableQueryLog()`: Toggle query logging
+- `useTransactions()` / `withoutTransactions()`: Toggle transactions
+- `options(array $options)`: Merge custom options
+- `when(bool|callable $condition, callable $callback, ?callable $default)`: Conditional chaining
+- `unless(bool|callable $condition, callable $callback, ?callable $default)`: Inverse conditional
 
 #### Advanced Methods
 
-- `dryRun(bool $enabled = true)` — Generate and validate data without committing. Uses transaction rollback; `$result->isDryRun` will be `true`. **Do not combine this with `withoutTransactions()`** — without a transaction there is nothing to roll back and rows will be permanently written.
+- `dryRun(bool $enabled = true)`: Generate and validate data without committing. Uses transaction rollback; `$result->isDryRun` will be `true`.
+> **Do not combine this with `withoutTransactions()`**; because without a transaction, there is nothing to roll back and rows will be permanently written.
 
-- `upsert(array $uniqueBy)` — On conflict, update non-key columns. Uses `ON DUPLICATE KEY UPDATE` (MySQL), `ON CONFLICT DO UPDATE SET` (PostgreSQL / SQLite 3.24+). Keys must be a subset of declared columns and must form a unique constraint on the table.
+- `upsert(array $uniqueBy)`: On conflict, update non-key columns. Uses `ON DUPLICATE KEY UPDATE` (MySQL), `ON CONFLICT DO UPDATE SET` (PostgreSQL / SQLite 3.24+). Keys must be a subset of declared columns and must form a unique constraint on the table.
 
-- `retryAttempts(int $attempts)` — Retry on transient deadlock / lock-timeout failures (SQLSTATE 40001, MySQL 1205) with exponential backoff. Accepts 1–10; defaults to 3.
+- `retryAttempts(int $attempts)`: Retry on transient deadlock / lock-timeout failures (SQLSTATE 40001, MySQL 1205) with exponential backoff. Accepts 1–10; defaults to 3.
 
-- `withoutColumnValidation()` — Skip the pre-seed schema check that validates declared columns exist on the table.
+- `withoutColumnValidation()`: Skip the pre-seed schema check that validates declared columns exist on the table.
 
 #### Events
 
@@ -448,8 +450,8 @@ class SendTurboSeederCompletedNotification
      */
     public function handle(TurboSeederCompleted $event): void
     {
-        // $event->table  — the seeded table name
-        // $event->result — SeederResultDTO (includes isDryRun flag)
+        // $event->table  - the seeded table name
+        // $event->result - SeederResultDTO (includes isDryRun flag)
 
         if ($event->result->isDryRun) {
             return; // no rows were committed
@@ -537,10 +539,10 @@ $flag  = TurboData::randomBool(0.8); // 80% true
 // Random date within a range
 $date = TurboData::dateRange('2022-01-01', '2024-12-31');
 
-// Sequential timestamps — good for time-series data
+// Sequential timestamps - good for time-series data
 $ts = TurboData::sequentialDate('2024-01-01', 'hour', $index);
 
-// Use nowOnce() inside generators for better performance — avoids calling now() 1M times
+// Use nowOnce() inside generators for better performance - avoids calling now() 1M times
 'created_at' => TurboData::nowOnce()
 ```
 
@@ -554,7 +556,7 @@ $deletedAt = TurboData::nullable(0.15, fn () => now());
 #### Foreign Key Pools
 
 ```php
-// Loads IDs once from DB, cycles deterministically — works with UUID PKs and ID gaps
+// Loads IDs once from DB, cycles deterministically - works with UUID PKs and ID gaps
 // Returns a closure: $userIds($index)
 $userIds = TurboData::fromPool(
     fn () => DB::table('users')->pluck('id')->toArray()
@@ -584,7 +586,7 @@ $uuid  = TurboData::uniqueUuid('ref_');    // ref_xxxxxxxx-xxxx-...
 
 ### Data Type Handling
 
-TurboSeeder **automatically formats** all types of values returned from your generator via **ValueFormatter**. You don’t need to manually convert types — everything is handled internally.
+TurboSeeder **automatically formats** all types of values returned from your generator via **ValueFormatter**. You don’t need to manually convert data types; everything is handled internally.
 
 #### Supported Types
 
@@ -607,10 +609,10 @@ TurboSeeder **automatically formats** all types of values returned from your gen
 TurboSeeder::create('posts')
     ->columns(['data', 'metadata'])
     ->generate(fn ($i) => [
-        // PHP array — automatically JSON encoded
+        // PHP array - automatically JSON encoded
         'data' => ['nested' => ['key' => 'value']],
 
-        // JSON string — stored as-is (no double encoding)
+        // JSON string - stored as-is (no double encoding)
         'metadata' => '{"source":"api"}',
     ])
     ->count(1000)
@@ -624,7 +626,7 @@ TurboSeeder::create('posts')
 
 #### Custom Type Formatters
 
-You can register custom formatters for your own value objects:
+You can even register custom formatters for your own value objects, if you need to:
 
 ```php
 use IzAhmad\TurboSeeder\Services\ValueFormatter;
@@ -640,7 +642,7 @@ Now any `Money` object returned from your generator will be formatted automatica
 
 #### Manual Formatting
 
-You don't need to manually format values generally. Only use `ValueFormatter` directly if you need to validate or format outside the generator:
+You won't need to manually format values, since TurboSeeder does it automatically. Only use `ValueFormatter` manually if you need to validate or format outside the generator context:
 
 ```php
 use IzAhmad\TurboSeeder\Services\ValueFormatter;
@@ -651,9 +653,9 @@ ValueFormatter::formatForCsv($value, '\\N');
 
 **Key Behaviors:**
 
-* Fully automatic — no manual conversions required
-* Type-safe — preserves scalar types and safely converts complex types
-* JSON-safe (no double encoding)
+* Fully automatic - no manual conversions required
+* Type-safe - preserves scalar types and safely converts complex types
+* JSON-safe - no double encoding
 * CSV-compatible
 * Extensible for custom value objects
 
@@ -674,7 +676,7 @@ php artisan turbo-seeder:run YourSeederClass
 - `--class=` - Seeder class name (no need if you use the `seeder` argument)
 
 You can still use Laravel’s native `php artisan db:seed` command when using this package. 
-_However_, the `turbo-seeder:run` command provided by this package offers **additional benefits**: easily **customize** options, view detailed **performance metrics**, and monitor real-time **progress** — making it ideal for large-scale or advanced seeding operations.
+_However_, the `turbo-seeder:run` command provided by this package offers **additional benefits**: easily **customize** options, view detailed **performance metrics**, and monitor real-time **progress**; making it ideal for large-scale or advanced seeding operations.
 
 #### Benchmark Performance
 
