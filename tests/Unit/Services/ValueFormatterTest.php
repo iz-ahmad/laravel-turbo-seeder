@@ -116,6 +116,60 @@ test('can register custom type formatter', function () {
     expect($result)->toBe('custom:test-value');
 });
 
+// ── Round-trip encoding ───────────────────────────────────────────────────────
+
+test('JSON round-trip preserves array structure', function () {
+    $original = ['key' => 'value', 'nested' => ['count' => 5]];
+    $formatted = ValueFormatter::format($original);
+    $decoded = json_decode($formatted, true);
+
+    expect($decoded)->toBe($original);
+});
+
+test('JSON round-trip preserves numeric arrays', function () {
+    $original = [1, 2, 3, 4, 5];
+    $formatted = ValueFormatter::format($original);
+    $decoded = json_decode($formatted, true);
+
+    expect($decoded)->toBe($original);
+});
+
+test('JSON round-trip preserves Collection contents', function () {
+    $original = ['item1', 'item2', 'item3'];
+    $collection = new Collection($original);
+    $formatted = ValueFormatter::format($collection);
+    $decoded = json_decode($formatted, true);
+
+    expect($decoded)->toBe($original);
+});
+
+test('formatForCsv preserves type as string for all inputs', function () {
+    expect(is_string(ValueFormatter::formatForCsv(42)))->toBeTrue();
+    expect(is_string(ValueFormatter::formatForCsv(3.14)))->toBeTrue();
+    expect(is_string(ValueFormatter::formatForCsv(['a' => 'b'])))->toBeTrue();
+    expect(is_string(ValueFormatter::formatForCsv(true)))->toBeTrue();
+    expect(is_string(ValueFormatter::formatForCsv(null)))->toBeTrue();
+});
+
+// ── stdClass handling ────────────────────────────────────────────────────────
+
+test('format converts stdClass to JSON string', function () {
+    $obj = (object) ['name' => 'John', 'age' => 30];
+    $formatted = ValueFormatter::format($obj);
+    $decoded = json_decode($formatted, true);
+
+    expect($decoded['name'])->toBe('John');
+    expect($decoded['age'])->toBe(30);
+});
+
+test('formatForCsv converts stdClass to JSON string', function () {
+    $obj = (object) ['key' => 'value'];
+    $result = ValueFormatter::formatForCsv($obj);
+    $decoded = json_decode($result, true);
+
+    expect($decoded['key'])->toBe('value');
+});
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 enum StatusFixture: string
