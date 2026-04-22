@@ -110,7 +110,7 @@ This creates `config/turbo-seeder.php` in your project.
 
 ## Quick Start
 
-### Strategy Comparison {#strategy-comparison}
+### Strategy Comparison
 
 | Feature | Default Strategy | CSV Strategy |
 |---------|-----------------|--------------|
@@ -122,7 +122,7 @@ This creates `config/turbo-seeder.php` in your project.
 
 **Recommendation**: Start with the default strategy. Switch to CSV strategy for maximum speed on local databases.
 
-### Basic Usage {#basic-usage}
+### Basic Usage
 
 ```php
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
@@ -139,7 +139,7 @@ TurboSeeder::create('users')
     ->run();
 ```
 
-### CSV Strategy (Fastest) {#csv-strategy-fastest}
+### CSV Strategy (Fastest)
 
 ```php
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
@@ -158,7 +158,7 @@ TurboSeeder::create('posts')
     ->run();
 ```
 
-### Advanced Configuration {#advanced-configuration}
+### Advanced Configuration
 
 ```php
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
@@ -184,22 +184,32 @@ See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) for more ex
 
 ---
 
-## Common Use Cases {#common-use-cases}
+## Common Use Cases
 
 ### Seeding Users with Relationships
 
-Create users with related posts and comments:
+Seed users first, then create related posts:
 
 ```php
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
-// Seed users first
+// Seed users first with TurboSeeder
+TurboSeeder::create('users')
+    ->columns(['name', 'email', 'created_at'])
+    ->generate(fn ($index) => [
+        'name'       => "User {$index}",
+        'email'      => "user{$index}@example.com",
+        'created_at' => TurboData::nowOnce(),
+    ])
+    ->count(50000)
+    ->run();
+
+// Then seed posts with user relationships
 $userIds = TurboData::fromPool(
     fn () => DB::table('users')->pluck('id')->toArray()
 );
 
-// Then seed posts with user relationships
 TurboSeeder::create('posts')
     ->columns(['user_id', 'title', 'content', 'created_at'])
     ->generate(fn ($index) => [
@@ -268,7 +278,7 @@ php artisan test
 
 ---
 
-## CSV Strategy Setup {#csv-strategy-setup}
+## CSV Strategy Setup
 
 The CSV strategy provides the fastest seeding performance but requires additional database configuration.
 
@@ -304,7 +314,7 @@ For PostgreSQL, the CSV strategy uses the `COPY` command which requires:
 
 **Note:** For local PostgreSQL installations, CSV strategy typically works without additional configuration. For remote servers, you may need network file sharing or use the default strategy.
 
-### Troubleshooting {#troubleshooting}
+### Troubleshooting
 
 If you see a warning about CSV strategy falling back to default:
 
@@ -316,7 +326,7 @@ The default strategy works without any additional configuration and is still ver
 
 ---
 
-## Migration from Standard Seeders {#migration-from-standard-seeders}
+## Migration from Standard Seeders
 
 Converting existing Laravel seeders to use Turbo Seeder is straightforward:
 
@@ -372,7 +382,7 @@ class UserSeeder extends Seeder
 
 ---
 
-## Performance Tips {#performance-tips}
+## Performance Tips
 
 ### Choosing the Right Chunk Size
 
@@ -393,8 +403,8 @@ class UserSeeder extends Seeder
 
 - Use CSV strategy for memory efficiency
 - Reduce chunk size if hitting memory limits
-- Enable automatic garbage collection in config
-- Disable query logging during seeding
+- **Automatic garbage collection is enabled by default** (`gc_threshold_percent: 80`, `force_gc_after_chunks: 10`) — no configuration needed unless you want to customize
+- **Query logging is disabled by default during seeding** (`disable_query_log: true`) — this is automatically applied, no manual setup required
 
 ### Database-Specific Considerations
 
@@ -404,9 +414,9 @@ class UserSeeder extends Seeder
 
 ---
 
-## API Documentation {#api-documentation}
+## API Documentation
 
-### Fluent API Methods {#fluent-api-methods}
+### Fluent API Methods
 
 #### Core Methods
 
@@ -472,7 +482,7 @@ class SendTurboSeederCompletedNotification
 
 ---
 
-### Using in Seeders {#using-in-seeders}
+### Using in Seeders
 
 Use the `UsesTurboSeeder` trait for quick helpers inside standard Laravel seeders:
 
@@ -511,7 +521,7 @@ class DatabaseSeeder extends Seeder
 
 ---
 
-### TurboData Helpers {#turbodata-helpers}
+### TurboData Helpers
 
 `TurboData` is a Faker-free data generation utility designed for high-volume seeding. Every method is safe to call 1M+ times.
 
@@ -603,7 +613,7 @@ ValueFormatter::extend(Money::class, fn ($money) => $money->getAmount());
 
 ---
 
-### Artisan Commands {#artisan-commands}
+### Artisan Commands
 
 #### Run a Seeder
 
@@ -655,7 +665,7 @@ php artisan turbo-seeder:clear-cache [--all]
 
 ---
 
-## Configuration Reference {#configuration-reference}
+## Configuration Reference
 
 We have provided an optimal configuration for you to use. Still, you can publish and customize the config for full control:
 
@@ -784,7 +794,7 @@ Default namespace for seeder classes:
 
 ---
 
-## Performance Benchmarks {#performance-benchmarks}
+## Performance Benchmarks
 
 Measured on a modern local machine with MySQL and default chunk sizes.
 
@@ -810,7 +820,7 @@ Best for: local databases, maximum throughput where `LOAD DATA` / `COPY` can be 
 
 ---
 
-## Testing {#testing}
+## Testing
 
 Run the test suite to ensure everything is working correctly:
 
@@ -820,23 +830,23 @@ composer test
 
 **Test Framework:** Pest PHP with SQLite, MySQL, and PostgreSQL support
 
-## Contributing {#contributing}
+## Contributing
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-## Security {#security}
+## Security
 
 If you discover a security issue, please email `n.ahmad.web.cit22@gmail.com` instead of opening a public issue.
 
-## Changelog {#changelog}
+## Changelog
 
 Please see [CHANGELOG.md](CHANGELOG.md) for recent changes.
 
-## License {#license}
+## License
 
 The MIT License (MIT). Please see [LICENSE.md](LICENSE.md) for more information.
 
-## Credits {#credits}
+## Credits
 
 - All Contributors
 
