@@ -582,9 +582,9 @@ $uuid  = TurboData::uniqueUuid('ref_');    // ref_xxxxxxxx-xxxx-...
 
 ---
 
-### Data Type Handling (ValueFormatter)
+### Data Type Handling
 
-TurboSeeder automatically formats all values returned from your generator via **ValueFormatter**. You don’t need to manually convert types — everything is handled internally.
+TurboSeeder **automatically formats** all types of values returned from your generator via **ValueFormatter**. You don’t need to manually convert types — everything is handled internally.
 
 #### Supported Types
 
@@ -600,8 +600,6 @@ TurboSeeder automatically formats all values returned from your generator via **
 | `array`                  | JSON string   |
 | `Collection`             | JSON string   |
 | `object` / `stdClass`    | JSON string   |
-
----
 
 #### JSON Handling Example
 
@@ -624,8 +622,6 @@ TurboSeeder::create('posts')
 * `data` → `{"nested":{"key":"value"}}`
 * `metadata` → `{"source":"api"}`
 
----
-
 #### Custom Type Formatters
 
 You can register custom formatters for your own value objects:
@@ -642,9 +638,7 @@ ValueFormatter::extend(
 
 Now any `Money` object returned from your generator will be formatted automatically.
 
----
-
-**Manual Formatting:**
+#### Manual Formatting
 
 You don't need to manually format values generally. Only use `ValueFormatter` directly if you need to validate or format outside the generator:
 
@@ -654,8 +648,6 @@ use IzAhmad\TurboSeeder\Services\ValueFormatter;
 ValueFormatter::format($value);
 ValueFormatter::formatForCsv($value, '\\N');
 ```
-
----
 
 **Key Behaviors:**
 
