@@ -46,6 +46,7 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you can:
 * **Two Strategies** — bulk insert or native CSV import
 * **Fluent API** — clean, chainable interface
 * **TurboData Helpers** — Faker-free data generation: weighted picks, date ranges, unique values
+* **Data Type Handling** — automatically formats enums, JSON, dates, collections, and objects.
 * **Foreign Key Pools** — deterministic FK cycling from DB
 * **Progress Tracking** — real-time progress with metrics
 * **Highly Configurable** — chunk size, transactions, upserts, retries, dry-run, etc.
@@ -113,13 +114,18 @@ This creates `config/turbo-seeder.php` in your project.
 
 | Feature | Default Strategy | CSV Strategy |
 |---------|-----------------|--------------|
-| **Speed** | Fast (~15-60s for 1M) | Fastest (~9-40s for 1M) |
+| **Speed** | Fast (~15-60s for 1M) | Fastest (~9-40s for 1M)¹ |
 | **Memory** | Moderate (~50-160 MB) | Minimal (~0 MB additional) |
 | **Setup** | No configuration required | Requires some database config |
 | **Best For** | Remote databases, general use | Local databases, max speed |
 | **Compatibility** | All databases | MySQL, PostgreSQL, SQLite |
 
-**Recommendation**: Start with the default strategy. Switch to CSV strategy for maximum speed on local databases.
+¹ **SQLite Note:** CSV strategy may be _slower_ than default strategy on SQLite due to file I/O overhead. CSV shines mainly on MySQL (`LOAD DATA`) and PostgreSQL (`COPY`).
+
+**Recommendation**: 
+- **MySQL/PostgreSQL**: Use CSV strategy for 1M+ records
+- **SQLite**: Use default strategy
+- **General use**: Start with default. Switch to CSV strategy for maximum speed on local databases.
 
 ### Basic Usage
 
@@ -314,15 +320,21 @@ For PostgreSQL, the CSV strategy uses the `COPY` command which requires:
 
 **Note:** For local PostgreSQL installations, CSV strategy typically works without additional configuration. For remote servers, you may need network file sharing or use the default strategy.
 
+### SQLite Configuration
+
+SQLite supports CSV strategy but has different performance characteristics:
+
+**Performance Note:** Due to SQLite's file-based architecture and file I/O overhead, the CSV strategy sometimes may be **slower** than the default bulk insert strategy. So, for SQLite development, use the **default strategy** unless you specifically find CSV beneficial for your use case.
+
 ### Troubleshooting
 
 If you see a warning about CSV strategy falling back to default:
 
 1. **MySQL** - Verify `PDO::MYSQL_ATTR_LOCAL_INFILE => true` is in `config/database.php`
 2. **PostgreSQL** - Check file permissions and COPY privileges
-3. **Both** - Review application logs for detailed error messages
+3. **All** - Review application logs for detailed error messages
 
-The default strategy works without any additional configuration and is still very fast.
+The **default** strategy works _without_ any additional configuration and is still very fast.
 
 ---
 
@@ -492,6 +504,7 @@ class DatabaseSeeder extends Seeder
 ### TurboData Helpers
 
 `TurboData` is a Faker-free data generation utility designed for high-volume seeding. Every method is safe to call 1M+ times.
+> All returned values are automatically formatted via the internal **ValueFormatter**.
 
 ```php
 use IzAhmad\TurboSeeder\Helpers\TurboData;
@@ -567,17 +580,90 @@ $uuid  = TurboData::uniqueUuid('ref_');    // ref_xxxxxxxx-xxxx-...
 // All return closures: $email($index)
 ```
 
+---
+
+### Data Type Handling (ValueFormatter)
+
+TurboSeeder automatically formats all values returned from your generator via **ValueFormatter**. You don’t need to manually convert types — everything is handled internally.
+
+#### Supported Types
+
+| Input Type               | Stored As     |
+| ------------------------ | ------------- |
+| `null`                   | `NULL`        |
+| `bool`                   | `1` / `0`     |
+| `int`, `float`, `string` | unchanged     |
+| `json` (string)          | stored as-is  |
+| `DateTime` / `Carbon`    | `Y-m-d H:i:s` |
+| `BackedEnum`             | enum value    |
+| `UnitEnum`               | enum name     |
+| `array`                  | JSON string   |
+| `Collection`             | JSON string   |
+| `object` / `stdClass`    | JSON string   |
+
+---
+
+#### JSON Handling Example
+
+```php
+TurboSeeder::create('posts')
+    ->columns(['data', 'metadata'])
+    ->generate(fn ($i) => [
+        // PHP array — automatically JSON encoded
+        'data' => ['nested' => ['key' => 'value']],
+
+        // JSON string — stored as-is (no double encoding)
+        'metadata' => '{"source":"api"}',
+    ])
+    ->count(1000)
+    ->run();
+```
+
+**Result in database:**
+
+* `data` → `{"nested":{"key":"value"}}`
+* `metadata` → `{"source":"api"}`
+
+---
+
 #### Custom Type Formatters
 
-Register custom handlers for your own value objects to ensure proper formatting based on your need:
+You can register custom formatters for your own value objects:
 
 ```php
 use IzAhmad\TurboSeeder\Services\ValueFormatter;
 
-// In a service provider or seeder
-ValueFormatter::extend(Money::class, fn ($money) => $money->getAmount());
-// now, when you use `Money` objects in your seeders, they will be formatted as you format them in the callback above
+// In a service provider
+ValueFormatter::extend(
+    Money::class,
+    fn ($money) => $money->getAmount()
+);
 ```
+
+Now any `Money` object returned from your generator will be formatted automatically.
+
+---
+
+**Manual Formatting:**
+
+You don't need to manually format values generally. Only use `ValueFormatter` directly if you need to validate or format outside the generator:
+
+```php
+use IzAhmad\TurboSeeder\Services\ValueFormatter;
+
+ValueFormatter::format($value);
+ValueFormatter::formatForCsv($value, '\\N');
+```
+
+---
+
+**Key Behaviors:**
+
+* Fully automatic — no manual conversions required
+* Type-safe — preserves scalar types and safely converts complex types
+* JSON-safe (no double encoding)
+* CSV-compatible
+* Extensible for custom value objects
 
 ---
 
@@ -764,7 +850,7 @@ Default namespace for seeder classes:
 
 ## Performance Benchmarks
 
-Measured on a modern local machine with MySQL and default chunk sizes.
+Measured on a modern local machine with **MySQL** and default chunk sizes.
 
 ### Default Strategy (Bulk Insert)
 
@@ -782,7 +868,7 @@ Best for: general use, remote databases, when CSV import isn't available.
 | Simple (~5 cols) | 1M | ~9s | ~0 MB |
 | Complex (~15–20 cols) | 1M | ~40s | ~0 MB |
 
-Best for: local databases, maximum throughput where `LOAD DATA` / `COPY` can be enabled.
+Best for: local **MySQL/PostgreSQL** databases, maximum throughput where `LOAD DATA` / `COPY` can be enabled. On **SQLite**, the CSV strategy may be comparable or slower than the default strategy due to file I/O overhead.
 
 > Results vary by hardware, DB engine/version, network latency, and chunk size.
 
