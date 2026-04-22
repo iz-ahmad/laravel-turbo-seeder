@@ -4,7 +4,7 @@
 
 **Blazing fast database seeder for Laravel - seed millions of records in seconds — not minutes.**
 
-Laravel Turbo Seeder is a high-performance database seeding package that allows you to seed massive amounts of data (1M+ records) in just seconds. Perfect for testing applications with realistic data volumes.
+Laravel Turbo Seeder is a high-performance seeding package built for large-scale data generation (1M+ records) with very minimal time and memory usage. Ideal for testing applications with production-sized datasets.
 
 ![Laravel Turbo Seeder Demo](images/banner.png)
 
@@ -12,45 +12,46 @@ Laravel Turbo Seeder is a high-performance database seeding package that allows 
 
 ## Why Turbo Seeder?
 
-Traditional Laravel seeders crawl at scale. When you need 500K–1M+ rows for realistic performance testing, they really become a productivity killer.
+Default Laravel seeders crawl at scale. When you need 500K–1M+ rows for realistic performance testing, they really become a productivity killer.
 
 **Turbo Seeder makes seeding great again! ;-).**
-What used to take **~30 minutes** (for **1M** records) - now finishes in literally **~15-60 seconds**.
 
-No more coffee breaks, tab-switching, or "I'll test later"! So you now can:
-- Test at production-scale data volumes
-- Catch slow queries before users do
-- Iterate fast without seeding being a bottleneck
+What used to take **~30 minutes** for **1M records** now completes in **~15–60 seconds**.
 
-### How We Achieve This Speed   
+No more coffee breaks, tab-switching, or "I'll test later"! So that you can:
+* Test with production-scale datasets
+* Detect slow queries early
+* Iterate faster without seeding delays
 
-1. **No Eloquent overhead** — raw queries only; no model events, no Faker
-2. **Bulk operations** — multi-row `INSERT` statements instead of row-by-row
-3. **CSV import** — native `LOAD DATA` / `COPY` commands for maximum throughput
-4. **Smart chunking** — controlled memory use with automatic garbage collection
-5. **Minimal setup** — foreign key checks and query logging disabled automatically
-6. **Streaming** - CSV files are written/read in streams, not loaded into memory
+## How It’s So Fast
+
+1. **No Eloquent overhead** — raw queries only (no model events, no Faker)
+2. **Bulk inserts** — multi-row `INSERT` instead of row-by-row
+3. **Native CSV imports** — `LOAD DATA` / `COPY` for maximum throughput
+4. **Smart chunking** — controlled memory with automatic garbage collection
+5. **Minimal overhead** — foreign key checks & query logging disabled automatically
+6. **Streaming I/O** — CSV handled via streams, not loaded fully into memory
 
 ---
 
 ## Features At A Glance
 
-- **Lightning Fast** — 1M records in 15–60 seconds (depending on the table complexity)
-- **Memory Efficient** — under 200 MB peak
-- **Multi-Database** — MySQL, PostgreSQL, SQLite
-- **Two Strategies** — bulk insert and native CSV import
-- **Fluent API** — clean, chainable interface
-- **TurboData Helpers** — Faker-free data generation: weighted picks, date ranges, unique values
-- **Foreign Key Pools** — Deterministic cycling of FK values loaded from the database
-- **Progress Tracking** — real-time progress bars with metrics
-- **Highly Configurable** — chunk sizes, transactions, upserts, retries, dry-run, and more
-- **Laravel 10–13 Compatible**
+* **Lightning Fast** — 1M records in 15–60 seconds (table-complexity dependent)
+* **Memory Efficient** — under 200MB peak
+* **Multi-Database** — MySQL, PostgreSQL, SQLite
+* **Two Strategies** — bulk insert or native CSV import
+* **Fluent API** — clean, chainable interface
+* **TurboData Helpers** — Faker-free data generation: weighted picks, date ranges, unique values
+* **Foreign Key Pools** — deterministic FK cycling from DB
+* **Progress Tracking** — real-time progress with metrics
+* **Highly Configurable** — chunk size, transactions, upserts, retries, dry-run, etc.
+* **Laravel 10–13 Compatible**
 
-**Ideal for:**
-* Performance and load testing with production-scale datasets
-* Large dataset generation in development environments
+### Ideal For
+* Performance and load testing with large datasets
+* Dev environments needing production-scale data generation
 * CI/CD pipelines requiring fast seeding
-* Database query and performance benchmarking
+* Query and database performance benchmarking
 
 ---
 
@@ -63,9 +64,9 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you now can:
   - [Basic Usage](#basic-usage)
   - [CSV Strategy (Fastest)](#csv-strategy-fastest)
   - [Advanced Configuration](#advanced-configuration)
+- [Common Use Cases](#common-use-cases)
 - [CSV Strategy Setup](#csv-strategy-setup)
   - [Troubleshooting](#troubleshooting)
-- [Common Use Cases](#common-use-cases)
 - [Migration from Standard Seeders](#migration-from-standard-seeders)
 - [Performance Tips](#performance-tips)
 - [API Documentation](#api-documentation)
