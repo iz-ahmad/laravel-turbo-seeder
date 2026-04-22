@@ -79,12 +79,7 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you can:
   - [Artisan Commands](#artisan-commands)
 - [Configuration Reference](#configuration-reference)
 - [Performance Benchmarks](#performance-benchmarks)
-- [Testing](#testing)
-- [Contributing](#contributing)
-- [Security](#security)
-- [Changelog](#changelog)
-- [License](#license)
-- [Credits](#credits)
+- [Others](#testing)
 
 ---
 
