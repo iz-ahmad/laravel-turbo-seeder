@@ -65,11 +65,11 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you can:
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-  - [Strategy Comparison](#strategy-comparison)
   - [Basic Usage](#basic-usage)
   - [CSV Strategy (Fastest)](#csv-strategy-fastest)
   - [Advanced Configuration](#advanced-configuration)
 - [Common Use Cases](#common-use-cases)
+- [Strategy Comparison](#strategy-comparison)
 - [CSV Strategy Setup](#csv-strategy-setup)
   - [Troubleshooting](#troubleshooting)
 - [Migration from Standard Seeders](#migration-from-standard-seeders)
@@ -110,23 +110,6 @@ This creates `config/turbo-seeder.php` in your project.
 ---
 
 ## Quick Start
-
-### Strategy Comparison
-
-| Feature | Default Strategy | CSV Strategy |
-|---------|-----------------|--------------|
-| **Speed** | Fast (~15-60s for 1M) | Fastest (~9-40s for 1M)¹ |
-| **Memory** | Moderate (~50-160 MB) | Minimal (~0 MB additional) |
-| **Setup** | No configuration required | Requires some database config |
-| **Best For** | Remote databases, general use | Local databases, max speed |
-| **Compatibility** | All databases | MySQL, PostgreSQL, SQLite |
-
-¹ **SQLite Note:** CSV strategy may be _slower_ than default strategy on SQLite due to file I/O overhead. CSV shines mainly on MySQL (`LOAD DATA`) and PostgreSQL (`COPY`).
-
-**Recommendation**: 
-- **MySQL/PostgreSQL**: Use CSV strategy for 1M+ records
-- **SQLite**: Use default strategy
-- **General use**: Start with default. Switch to CSV strategy for maximum speed on local databases.
 
 ### Basic Usage
 
@@ -279,11 +262,28 @@ Use in your CI/CD pipeline for fast test data setup:
 ```bash
 # In your CI/CD script
 php artisan migrate:fresh --seed
-php artisan turbo-seeder:run PerformanceTestSeeder --no-progress
+php artisan turbo-seeder:run PerformanceTestSeeder
 php artisan test
 ```
 
 ---
+
+## Strategy Comparison
+
+| Feature | Default Strategy | CSV Strategy |
+|---------|-----------------|--------------|
+| **Speed** | Fast (~15-60s for 1M) | Fastest (~9-40s for 1M)¹ |
+| **Memory** | Moderate (~50-160 MB) | Minimal (~0 MB additional) |
+| **Setup** | No configuration required | Requires some database config |
+| **Best For** | Remote databases, general use | Local databases, max speed |
+| **Compatibility** | All databases | MySQL, PostgreSQL, SQLite |
+
+¹ **SQLite Note:** CSV strategy may be _slower_ than default strategy on SQLite due to file I/O overhead. CSV shines mainly on MySQL (`LOAD DATA`) and PostgreSQL (`COPY`).
+
+**Recommendation**: 
+- **MySQL/PostgreSQL**: Use CSV strategy for 1M+ records
+- **SQLite**: Use default strategy
+- **General use**: Start with default. Switch to CSV strategy for maximum speed on local databases.
 
 ## CSV Strategy Setup
 
@@ -385,13 +385,6 @@ class UserSeeder extends Seeder
     }
 }
 ```
-
-### Key Benefits
-
-- **Speed**: 10-100x faster than factory-based seeders
-- **Memory**: Uses significantly less memory
-- **No Faker**: Eliminates Faker overhead for large datasets
-- **Progress**: Built-in progress tracking
 
 ---
 
