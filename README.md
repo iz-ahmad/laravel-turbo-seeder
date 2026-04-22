@@ -116,7 +116,7 @@ This creates `config/turbo-seeder.php` in your project.
 |---------|-----------------|--------------|
 | **Speed** | Fast (~15-60s for 1M) | Fastest (~9-40s for 1M) |
 | **Memory** | Moderate (~50-160 MB) | Minimal (~0 MB additional) |
-| **Setup** | No configuration required | Requires database config |
+| **Setup** | No configuration required | Requires some database config |
 | **Best For** | Remote databases, general use | Local databases, max speed |
 | **Compatibility** | All databases | MySQL, PostgreSQL, SQLite |
 
@@ -188,7 +188,7 @@ See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) for more ex
 
 ### Seeding Users with Relationships
 
-Seed users first, then create related posts:
+Create users with related posts:
 
 ```php
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
@@ -205,11 +205,12 @@ TurboSeeder::create('users')
     ->count(50000)
     ->run();
 
-// Then seed posts with user relationships
+// then pool user ids using TurboData helper
 $userIds = TurboData::fromPool(
     fn () => DB::table('users')->pluck('id')->toArray()
 );
 
+// then seed posts with user relationships
 TurboSeeder::create('posts')
     ->columns(['user_id', 'title', 'content', 'created_at'])
     ->generate(fn ($index) => [
@@ -392,25 +393,14 @@ class UserSeeder extends Seeder
 
 ### When to Use CSV vs Default Strategy
 
-| Scenario | Recommended Strategy |
-|----------|---------------------|
-| Local development | CSV (fastest) |
-| Remote databases | Default (bulk insert) |
-| Very large datasets (1M+) | CSV |
-| Quick testing | Default |
+Check the [Strategy Comparison](#strategy-comparison).
 
 ### Memory Optimization
 
 - Use CSV strategy for memory efficiency
 - Reduce chunk size if hitting memory limits
-- **Automatic garbage collection is enabled by default** (`gc_threshold_percent: 80`, `force_gc_after_chunks: 10`) — no configuration needed unless you want to customize
-- **Query logging is disabled by default during seeding** (`disable_query_log: true`) — this is automatically applied, no manual setup required
-
-### Database-Specific Considerations
-
-- **MySQL**: CSV strategy requires `PDO::MYSQL_ATTR_LOCAL_INFILE`
-- **PostgreSQL**: CSV strategy requires file access and COPY privileges
-- **SQLite**: Default strategy works well; CSV has limited benefits
+- Enable automatic garbage collection in config (**already enabled** by default)
+- Disable query logging during seeding (**already disabled** by default)
 
 ---
 
