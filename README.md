@@ -12,16 +12,17 @@ Laravel Turbo Seeder is a high-performance seeding package built for large-scale
 
 ## Why Turbo Seeder?
 
-Default Laravel seeders crawl at scale. When you need 500K–1M+ rows for realistic performance testing, they really become a productivity killer.
+Default Laravel seeders don’t scale well. When seeding 500K–1M+ records for realistic performance testing, they can consume too much time and slow down development.
 
-**Turbo Seeder makes seeding great again! ;-).**
+**Turbo Seeder eliminates that bottleneck.**
 
 What used to take **~30 minutes** for **1M records** now completes in **~15–60 seconds**.
 
-No more coffee breaks, tab-switching, or "I'll test later"! So that you can:
-* Test with production-scale datasets
-* Detect slow queries early
-* Iterate faster without seeding delays
+No more coffee breaks, tab-switching, or "I'll test later"! So you can:
+
+* Test against production-scale datasets
+* Detect slow queries and indexing issues early
+* Iterate faster without waiting on long seeding cycles
 
 ## How It’s So Fast
 
@@ -68,7 +69,6 @@ No more coffee breaks, tab-switching, or "I'll test later"! So that you can:
 - [CSV Strategy Setup](#csv-strategy-setup)
   - [Troubleshooting](#troubleshooting)
 - [Migration from Standard Seeders](#migration-from-standard-seeders)
-- [Performance Tips](#performance-tips)
 - [API Documentation](#api-documentation)
   - [Fluent API Methods](#fluent-api-methods)
   - [Using in Seeders](#using-in-seeders)
@@ -181,7 +181,7 @@ TurboSeeder::create('orders')
     ->run();
 ```
 
-See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) for more examples.
+See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) and [Common Use Cases](#common-use-cases) for more examples.
 
 ---
 
@@ -381,27 +381,6 @@ class UserSeeder extends Seeder
 - **Memory**: Uses significantly less memory
 - **No Faker**: Eliminates Faker overhead for large datasets
 - **Progress**: Built-in progress tracking
-
----
-
-## Performance Tips
-
-### Choosing the Right Chunk Size
-
-- **Simple tables (3-5 columns)**: 1000 - 5000 records
-- **Medium tables (6-10 columns)**: ~1000 records
-- **Complex tables (15+ columns)**: 200 - 1000 records
-
-### When to Use CSV vs Default Strategy
-
-Check the [Strategy Comparison](#strategy-comparison).
-
-### Memory Optimization
-
-- Use CSV strategy for memory efficiency
-- Reduce chunk size if hitting memory limits
-- Enable automatic garbage collection in config (**already enabled** by default)
-- Disable query logging during seeding (**already disabled** by default)
 
 ---
 
@@ -669,9 +648,9 @@ php artisan vendor:publish --tag="turbo-seeder-config"
 Chunk size determines how many records are inserted (processed in memory) at once. This directly impacts memory usage and performance.
 
 **Config Priority Order:**
-1. **Custom chunk size** (set via `->chunkSize()` in the seeder class using our fluent API) - **Highest** priority
-2. **Database-specific chunk size** (from `chunk_sizes.{database_driver}` config) - **Medium** priority
-3. **Default chunk size** (from `default_chunk_size` config) - Fallback
+1. **Custom chunk size** (set via `->chunkSize()` in the seeder class using TurboSeeder fluent API) - gets **Highest** priority
+2. **Database-specific chunk size** (from `chunk_sizes.{database_driver}` config) - gets **Medium** priority
+3. **Default chunk size** (from `default_chunk_size` config) - used as Fallback
 
 ```php
 'default_chunk_size' => 1000, // Fallback when database-specific size not set
@@ -693,17 +672,17 @@ Memory ≈ (chunk_size × number_of_columns × average_value_size) + overhead
 
 **Key Considerations:**
 
-- **More columns = smaller chunk size needed**: Tables with 15+ columns or large fields require smaller chunks to stay within memory limits
-- **Fewer columns = larger chunk size possible**: Simple tables (3-5 columns) can handle larger chunks efficiently
-- **Default strategy**: More memory-intensive than CSV strategy, so consider smaller chunks for large datasets
-- **CSV strategy**: More memory-efficient, can handle larger chunks even with many columns. Because it uses the database's native CSV import command.
+- **More columns = smaller chunk size needed**: Tables with 15+ columns or large fields require smaller chunks to stay within memory limits.
+- **Fewer columns = larger chunk size possible**: Simple tables (3-5 columns) can handle larger chunks efficiently.
+- **Default strategy**: More memory-intensive than CSV strategy, so consider **smaller chunks for large datasets**.
+- **CSV strategy**: More memory-efficient, can handle larger chunks even with many columns. Because it uses the database's **native CSV import** command.
 
 **Recommendations for chunk size:**
 
 - **Simple tables (3-5 columns)**: 1000 - 5000
 - **Medium tables (6-10 columns)**: ~ 1000
 - **Complex tables (15+ columns, large text/JSON)**: 200 - 1000
-- **For very large datasets (1M+ records)**: Consider CSV strategy or reduce chunk size to smaller values if memory limit is exhausted.
+- **For very large datasets (1M+ records)**: Consider CSV strategy or reduce chunk size if memory limit is exhausted.
 
 ### Memory Management
 
