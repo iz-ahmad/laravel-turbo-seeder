@@ -47,6 +47,12 @@ final class TurboSeederBuilder
      */
     public function table(string $table): self
     {
+        if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table)) {
+            throw new \InvalidArgumentException(
+                "Invalid table name [{$table}]. Table names must start with a letter or underscore and contain only letters, digits, and underscores."
+            );
+        }
+
         $this->table = $table;
 
         return $this;
@@ -405,7 +411,17 @@ final class TurboSeederBuilder
                 );
             }
 
-            $this->columns = array_keys($firstRecord);
+            $inferredColumns = array_keys($firstRecord);
+
+            foreach ($inferredColumns as $column) {
+                if (! preg_match('/^[a-zA-Z0-9_]+$/', (string) $column)) {
+                    throw new \InvalidArgumentException(
+                        "Invalid column name [{$column}] inferred from generator. Column names must only contain letters, digits, and underscores."
+                    );
+                }
+            }
+
+            $this->columns = $inferredColumns;
         }
 
         if ($this->count < 1) {
