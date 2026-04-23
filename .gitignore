@@ -27,3 +27,8 @@ testbench.yaml
 /coverage
 
 /temp-docs
+.claude/
+skills-lock.json
+.trae/
+.windsurf/
+.agents/

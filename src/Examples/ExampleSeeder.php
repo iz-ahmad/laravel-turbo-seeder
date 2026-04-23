@@ -28,19 +28,18 @@ class ExampleSeeder extends Seeder
         // Example 1: Basic fluent API with TurboData helpers
         //
         // TurboData::uniqueEmail() generates realistic unique emails without Faker.
-        // TurboData::nowOnce() calls now() once for the whole seeding run — all
+        // TurboData::nowOnce() calls now() once for the whole seeding run - all
         // records share the same "imported at" timestamp, which is realistic and fast.
 
         $uniqueEmail = TurboData::uniqueEmail();
-        $hashedPassword = bcrypt('password'); // hashed once,then reused across all records
+        $hashedPassword = bcrypt('password'); // hashed once, reused across all records
 
         TurboSeeder::create('users')
-            ->columns(['name', 'email', 'password', 'remember_token', 'created_at'])
+            ->columns(['name', 'email', 'password', 'created_at'])
             ->generate(fn ($index) => [
                 'name' => "User {$index}",
                 'email' => $uniqueEmail($index),
                 'password' => $hashedPassword,
-                'remember_token' => bin2hex(random_bytes(5)),
                 'created_at' => TurboData::nowOnce(),
             ])
             ->count(10000)
@@ -49,7 +48,10 @@ class ExampleSeeder extends Seeder
         // Example 2: CSV strategy for maximum speed with weighted distribution
         //
         // TurboData::weightedFrom() generates realistic non-uniform distributions.
-        // you can use ->useCsvStrategy() for datasets over 100K rows or more to achieve faster seeding.
+        //
+        // ->useCsvStrategy() uses database-native CSV import (LOAD DATA for MySQL, COPY for PostgreSQL).
+        // For MySQL/PostgreSQL with 1M+ records, CSV strategy is significantly faster.
+        // For SQLite: CSV may not provide performance benefits; use default strategy instead.
 
         $now = TurboData::nowOnce();
 
@@ -137,6 +139,42 @@ class ExampleSeeder extends Seeder
                 'occurred_at' => TurboData::sequentialDate('2024-01-01', '1 hour', $index),
             ])
             ->count(1000)
+            ->run();
+
+        // Example 7: this demonstrates automatic type handling with `ValueFormatter`
+        //
+        // ValueFormatter automatically handles type conversions behind-the-scenes:
+        // - PHP arrays → JSON encoded (e.g., ['key' => 'val'] → '{"key":"val"}')
+        // - Booleans → integers (true → 1, false → 0)
+        // - DateTime/Carbon → formatted strings (Y-m-d H:i:s)
+        // - Enums → their values or names
+        // - Collections → JSON arrays
+        // - JSON strings → passed as-is (no double-encoding)
+        // - objects / stdClass → JSON strings
+        //
+        // so NO manual formatting needed - just provide natural PHP values in the `generate()` callback!
+        // See `README.md` for more details.
+
+        $themeSelector = TurboData::cycleFrom(['dark', 'light']); // alternates dark/light
+
+        TurboSeeder::create('settings')
+            ->columns(['user_id', 'preferences', 'is_dark', 'updated_at', 'metadata'])
+            ->generate(fn ($index) => [
+                'user_id' => TurboData::randomInt(1, 10000),
+                // array automatically encoded to JSON by ValueFormatter
+                'preferences' => [
+                    'theme' => $themeSelector($index),
+                    'notifications' => TurboData::randomBool(0.8), // 80% true
+                    'language' => TurboData::randomFrom(['en', 'es', 'fr']),
+                ],
+                // Boolean automatically converted to int (true → 1, false → 0)
+                'is_dark' => TurboData::randomBool(0.5), // 50% true
+                // Carbon automatically formatted to Y-m-d H:i:s
+                'updated_at' => TurboData::dateRange('2024-01-01', '2024-12-31'),
+                // JSON string (passed as-is, NOT double-encoded)
+                'metadata' => '{"status":"synced","priority":3}',
+            ])
+            ->count(5000)
             ->run();
     }
 }
