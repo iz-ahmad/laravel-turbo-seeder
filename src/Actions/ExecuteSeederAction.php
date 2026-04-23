@@ -67,7 +67,7 @@ final class ExecuteSeederAction
             Log::error('TurboSeeder: seeding failed', [
                 'table' => $config->table,
                 'connection' => $config->connection,
-                'file' => $e->getFile() ?? 'unknown',
+                'file' => $e->getFile(),
                 'exception' => $e,
             ]);
 
