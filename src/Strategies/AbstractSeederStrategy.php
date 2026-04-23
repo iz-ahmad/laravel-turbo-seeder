@@ -57,7 +57,7 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
 
             $recordsInserted += $recordsInChunk;
 
-            $this->memoryManager->forceCleanup();
+            $this->memoryManager->maybeCleanup();
             $this->progressTracker->advance($recordsInChunk);
 
             unset($records);

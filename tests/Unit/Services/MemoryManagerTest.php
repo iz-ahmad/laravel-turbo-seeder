@@ -37,15 +37,15 @@ test('determines when to garbage collect based on chunk threshold', function () 
         ],
     ]);
 
-    // Counter only advances inside forceCleanup(), not in shouldGarbageCollect().
+    // Counter only advances inside maybeCleanup(), not in shouldGarbageCollect().
     // After 4 calls, counter is below threshold.
     for ($i = 0; $i < 4; $i++) {
-        $manager->forceCleanup();
+        $manager->maybeCleanup();
     }
     expect($manager->shouldGarbageCollect())->toBeFalse();
 
     // 5th call hits the threshold → GC fires and counter resets to 0.
-    $manager->forceCleanup();
+    $manager->maybeCleanup();
     expect($manager->shouldGarbageCollect())->toBeFalse(); // counter reset after GC
 });
 
@@ -57,7 +57,7 @@ test('can force cleanup', function () {
         ],
     ]);
 
-    expect(fn () => $manager->forceCleanup())->not->toThrow(Exception::class);
+    expect(fn () => $manager->maybeCleanup())->not->toThrow(Exception::class);
 });
 
 test('returns memory limit', function () {
