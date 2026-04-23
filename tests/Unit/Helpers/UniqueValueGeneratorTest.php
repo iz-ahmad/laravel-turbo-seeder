@@ -7,7 +7,7 @@ use IzAhmad\TurboSeeder\Helpers\UniqueValueGenerator;
 test('uniqueEmail returns a closure', function () {
     $generator = UniqueValueGenerator::uniqueEmail();
 
-    expect($generator)->toBeInstanceOf(\Closure::class);
+    expect($generator)->toBeInstanceOf(Closure::class);
 });
 
 test('uniqueEmail generates email with default prefix', function () {
@@ -54,7 +54,7 @@ test('uniqueEmail with null prefix uses default', function () {
 test('uniqueValue returns a closure', function () {
     $generator = UniqueValueGenerator::uniqueValue();
 
-    expect($generator)->toBeInstanceOf(\Closure::class);
+    expect($generator)->toBeInstanceOf(Closure::class);
 });
 
 test('uniqueValue generates value with default prefix', function () {
@@ -98,7 +98,7 @@ test('uniqueValue with null prefix uses default', function () {
 test('uniqueUuid returns a closure', function () {
     $generator = UniqueValueGenerator::uniqueUuid();
 
-    expect($generator)->toBeInstanceOf(\Closure::class);
+    expect($generator)->toBeInstanceOf(Closure::class);
 });
 
 test('uniqueUuid generates UUID without prefix', function () {

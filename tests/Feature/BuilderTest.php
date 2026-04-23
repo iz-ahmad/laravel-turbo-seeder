@@ -10,15 +10,44 @@ test('builder validates required fields', function () {
     TurboSeeder::create()->run();
 })->throws(InvalidArgumentException::class, 'Table name is required');
 
-test('builder validates columns', function () {
+test('builder requires a generator', function () {
     TurboSeeder::create('test_users')->run();
-})->throws(InvalidArgumentException::class, 'Columns are required');
+})->throws(InvalidArgumentException::class, 'Data generator is required');
 
-test('builder validates generator', function () {
+test('builder requires a generator even when columns are set', function () {
     TurboSeeder::create('test_users')
         ->columns(['name'])
         ->run();
 })->throws(InvalidArgumentException::class, 'Data generator is required');
+
+test('columns are inferred from generator when not set explicitly', function () {
+    $result = TurboSeeder::create('test_users')
+        ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@infer.test"])
+        ->count(5)
+        ->run();
+
+    expect($result->success)->toBeTrue()
+        ->and($result->recordsInserted)->toBe(5);
+});
+
+test('inferred columns are available via getColumns after run', function () {
+    $builder = TurboSeeder::create('test_users')
+        ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@infer2.test"])
+        ->count(1);
+
+    $builder->run();
+
+    expect($builder->getColumns())->toBe(['name', 'email']);
+});
+
+test('inferred columns are available via toConfiguration', function () {
+    $config = TurboSeeder::create('test_users')
+        ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@inferconf.test"])
+        ->count(1)
+        ->toConfiguration();
+
+    expect($config->columns)->toBe(['name', 'email']);
+});
 
 test('builder validates count', function () {
     TurboSeeder::create('test_users')

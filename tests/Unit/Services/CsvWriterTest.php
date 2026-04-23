@@ -67,8 +67,8 @@ test('throws exception when file cannot be opened', function () {
     try {
         $writer->open();
         expect(false)->toBeTrue('Expected an exception to be thrown');
-    } catch (\Throwable $e) {
-        expect($e)->toBeInstanceOf(\Throwable::class);
+    } catch (Throwable $e) {
+        expect($e)->toBeInstanceOf(Throwable::class);
     }
 });
 

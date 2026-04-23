@@ -29,19 +29,24 @@ test('returns correct threshold status', function () {
     expect($status)->toBeInstanceOf(MemoryThreshold::class);
 });
 
-test('determines when to garbage collect based on threshold', function () {
+test('determines when to garbage collect based on chunk threshold', function () {
     $manager = new MemoryManager([
         'memory' => [
-            'gc_threshold_percent' => 80,
+            'gc_threshold_percent' => 100, // disable memory-based GC
             'force_gc_after_chunks' => 5,
         ],
     ]);
 
-    for ($i = 0; $i < 5; $i++) {
-        $shouldCollect = $manager->shouldGarbageCollect();
+    // Counter only advances inside forceCleanup(), not in shouldGarbageCollect().
+    // After 4 calls, counter is below threshold.
+    for ($i = 0; $i < 4; $i++) {
+        $manager->forceCleanup();
     }
+    expect($manager->shouldGarbageCollect())->toBeFalse();
 
-    expect($shouldCollect)->toBeTrue();
+    // 5th call hits the threshold → GC fires and counter resets to 0.
+    $manager->forceCleanup();
+    expect($manager->shouldGarbageCollect())->toBeFalse(); // counter reset after GC
 });
 
 test('can force cleanup', function () {

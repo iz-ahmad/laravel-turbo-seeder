@@ -25,3 +25,10 @@ phpstan.neon
 testbench.yaml
 /docs
 /coverage
+
+/temp-docs
+.claude/
+skills-lock.json
+.trae/
+.windsurf/
+.agents/
