@@ -29,7 +29,6 @@ testbench.yaml
 /temp-docs
 .claude/
 skills-lock.json
-.gitignore
 .trae/
 .windsurf/
 .agents/
