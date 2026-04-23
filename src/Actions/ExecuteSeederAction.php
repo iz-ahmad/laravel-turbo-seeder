@@ -6,6 +6,7 @@ namespace IzAhmad\TurboSeeder\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
@@ -62,6 +63,13 @@ final class ExecuteSeederAction
 
         } catch (\Throwable $e) {
             $strategy->cleanup(fromException: true);
+
+            Log::error('TurboSeeder: seeding failed', [
+                'table' => $config->table,
+                'connection' => $config->connection,
+                'file' => $e->getFile() ?? 'unknown',
+                'exception' => $e,
+            ]);
 
             return new SeederResultDTO(
                 success: false,
