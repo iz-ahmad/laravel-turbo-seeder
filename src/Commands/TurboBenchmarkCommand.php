@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
-use Illuminate\Support\Facades\DB;
 
 class TurboBenchmarkCommand extends Command
 {
