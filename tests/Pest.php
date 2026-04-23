@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use IzAhmad\TurboSeeder\Tests\TestCase;
 
-uses(TestCase::class)->in(__DIR__);
+uses(TestCase::class)->in('Feature', 'Unit/DTOs', 'Unit/Enums', 'Unit/Services', 'Unit/Actions', 'Unit/Helpers');
 
 /*
 |--------------------------------------------------------------------------

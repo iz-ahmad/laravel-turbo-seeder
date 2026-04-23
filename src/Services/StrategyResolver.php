@@ -19,18 +19,17 @@ use IzAhmad\TurboSeeder\Enums\SeederStrategy as SeederStrategyEnum;
 final class StrategyResolver
 {
     /**
-     * @var array<string, class-string<\IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface>>
+     * @var array<string, class-string<SeederStrategyInterface>>
      */
     private array $strategies = [];
 
     /**
      * Register a seeder strategy.
      *
-     * @param  class-string<\IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface>  $strategyClass
+     * @param  string  $strategyClass  Fully-qualified class name implementing SeederStrategyInterface
      */
     public function register(string $key, string $strategyClass): void
     {
-        // @phpstan-ignore-next-line
         if (! is_subclass_of($strategyClass, SeederStrategyInterface::class)) {
             throw new \InvalidArgumentException(
                 'Strategy class must implement SeederStrategyInterface'
@@ -84,7 +83,7 @@ final class StrategyResolver
     /**
      * Get all registered strategies.
      *
-     * @return array<string, class-string<\IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface>>
+     * @return array<string, class-string<SeederStrategyInterface>>
      */
     public function getStrategies(): array
     {

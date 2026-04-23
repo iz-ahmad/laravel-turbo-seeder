@@ -16,6 +16,7 @@ use IzAhmad\TurboSeeder\Commands\TurboSeederCommand;
 use IzAhmad\TurboSeeder\Commands\TurboTestConnectionCommand;
 use IzAhmad\TurboSeeder\Contracts\MemoryManagerInterface;
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
+use IzAhmad\TurboSeeder\Services\ConsoleProgressTracker;
 use IzAhmad\TurboSeeder\Services\MemoryManager;
 use IzAhmad\TurboSeeder\Services\NullProgressTracker;
 use IzAhmad\TurboSeeder\Services\SeederOrchestrator;
@@ -59,7 +60,9 @@ class TurboSeederServiceProvider extends PackageServiceProvider
         });
 
         $this->app->singleton(ProgressTrackerInterface::class, function ($app) {
-            return new NullProgressTracker;
+            return $app->runningInConsole()
+                ? new ConsoleProgressTracker
+                : new NullProgressTracker;
         });
     }
 

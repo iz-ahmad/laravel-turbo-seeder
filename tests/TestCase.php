@@ -12,7 +12,10 @@ class TestCase extends OrchestraTestCase
 {
     protected function setUp(): void
     {
-        parent::setUp();
+        // Call setUpTheTestEnvironment() directly instead of parent::setUp() to avoid
+        // the static::$latestResponse = null line added in some testbench patch versions,
+        // which causes a fatal error in PHP 8.3 when the property is undeclared.
+        $this->setUpTheTestEnvironment();
 
         $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
         $this->artisan('migrate')->run();

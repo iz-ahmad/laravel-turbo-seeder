@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Strategies\Concerns;
 
+use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\ConsoleProgressTrackerAdapter;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -65,7 +66,7 @@ trait HandlesCsvConsoleOutput
     /**
      * Display fallback warning with instructions.
      */
-    protected function displayFallbackWarning(\IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException $exception): void
+    protected function displayFallbackWarning(CsvImportFailedException $exception): void
     {
         $output = $this->getConsoleOutput();
 

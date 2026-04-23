@@ -59,6 +59,14 @@ final class TurboSeederBuilder
      */
     public function columns(array $columns): self
     {
+        foreach ($columns as $column) {
+            if (! preg_match('/^[a-zA-Z0-9_]+$/', (string) $column)) {
+                throw new \InvalidArgumentException(
+                    "Invalid column name [{$column}]. Column names must only contain letters, digits, and underscores."
+                );
+            }
+        }
+
         $this->columns = array_values($columns);
 
         return $this;
@@ -249,6 +257,77 @@ final class TurboSeederBuilder
     }
 
     /**
+     * Enable dry-run mode: data is generated and validated but not committed.
+     * The result will report how many records would have been inserted.
+     *
+     * WARNING: Dry-run discards inserts by rolling back a transaction.
+     * If you also call withoutTransactions(), the rollback cannot happen and
+     * rows WILL be permanently written to the database even though
+     * $result->isDryRun will be true. Do not combine dryRun() with
+     * withoutTransactions() unless you intentionally want this behaviour.
+     */
+    public function dryRun(bool $enabled = true): self
+    {
+        $this->options['dry_run'] = $enabled;
+
+        return $this;
+    }
+
+    /**
+     * Enable upsert mode using the given unique key columns.
+     * On conflict, non-key columns are updated with the new values.
+     *
+     * @param  array<int, string>  $uniqueBy  Column(s) that identify a unique row
+     */
+    public function upsert(array $uniqueBy): self
+    {
+        if (empty($uniqueBy)) {
+            throw new \InvalidArgumentException('upsert() requires at least one unique key column.');
+        }
+
+        foreach ($uniqueBy as $column) {
+            if (! preg_match('/^[a-zA-Z0-9_]+$/', (string) $column)) {
+                throw new \InvalidArgumentException(
+                    "Invalid upsert key column name [{$column}]. Column names must only contain letters, digits, and underscores."
+                );
+            }
+        }
+
+        $this->options['upsert_keys'] = array_values($uniqueBy);
+
+        return $this;
+    }
+
+    /**
+     * Set the number of retry attempts on transient lock/deadlock failures.
+     */
+    public function retryAttempts(int $attempts): self
+    {
+        if ($attempts < 1) {
+            throw new \InvalidArgumentException('retryAttempts() must be at least 1.');
+        }
+
+        if ($attempts > 10) {
+            throw new \InvalidArgumentException('retryAttempts() cannot exceed 10.');
+        }
+
+        $this->options['retry_attempts'] = $attempts;
+
+        return $this;
+    }
+
+    /**
+     * Disable schema column validation before seeding.
+     * By default, declared columns are checked against the actual table schema.
+     */
+    public function withoutColumnValidation(): self
+    {
+        $this->options['validate_columns'] = false;
+
+        return $this;
+    }
+
+    /**
      * Apply callback unless condition is true.
      */
     public function unless(bool|callable $condition, callable $callback, ?callable $default = null): self
@@ -263,17 +342,7 @@ final class TurboSeederBuilder
      */
     public function run(): SeederResultDTO
     {
-        $this->validate();
-
-        $config = new SeederConfigurationDTO(
-            table: $this->table,
-            columns: $this->columns,
-            generator: $this->generator,
-            count: $this->count,
-            connection: $this->connection ?? config('database.default'),
-            strategy: $this->strategy,
-            options: $this->options
-        );
+        $config = $this->buildConfiguration();
 
         $result = $this->orchestrator->execute($config);
 
@@ -291,6 +360,15 @@ final class TurboSeederBuilder
      */
     public function toConfiguration(): SeederConfigurationDTO
     {
+        return $this->buildConfiguration();
+    }
+
+    /**
+     * Validate state and build the configuration DTO.
+     * Shared by run() and toConfiguration() to avoid duplicate logic.
+     */
+    private function buildConfiguration(): SeederConfigurationDTO
+    {
         $this->validate();
 
         return new SeederConfigurationDTO(
@@ -306,6 +384,7 @@ final class TurboSeederBuilder
 
     /**
      * Validate the builder state.
+     * If columns were not set explicitly, they are inferred from the first generator record.
      */
     private function validate(): void
     {
@@ -313,16 +392,34 @@ final class TurboSeederBuilder
             throw new \InvalidArgumentException('Table name is required for seeding. Use table() method.');
         }
 
-        if (empty($this->columns)) {
-            throw new \InvalidArgumentException('Columns are required for seeding. Use columns() method.');
-        }
-
         if ($this->generator === null) {
             throw new \InvalidArgumentException('Data generator is required for seeding. Use generate() method.');
         }
 
+        if (empty($this->columns)) {
+            $firstRecord = ($this->generator)(0);
+
+            if (! is_array($firstRecord) || empty($firstRecord)) {
+                throw new \InvalidArgumentException(
+                    'Columns could not be inferred from the generator. Use columns() method or ensure generate() returns a non-empty associative array.'
+                );
+            }
+
+            $this->columns = array_keys($firstRecord);
+        }
+
         if ($this->count < 1) {
             throw new \InvalidArgumentException('Count must be at least 1 for seeding. Use count() method.');
+        }
+
+        $upsertKeys = $this->options['upsert_keys'] ?? [];
+        if (! empty($upsertKeys)) {
+            $invalidKeys = array_diff($upsertKeys, $this->columns);
+            if (! empty($invalidKeys)) {
+                throw new \InvalidArgumentException(
+                    'Upsert key column(s) ['.implode(', ', $invalidKeys).'] are not in the declared columns. Upsert keys must be a subset of the seeded columns.'
+                );
+            }
         }
     }
 

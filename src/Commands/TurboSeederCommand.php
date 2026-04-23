@@ -14,14 +14,7 @@ class TurboSeederCommand extends Command
 {
     public $signature = 'turbo-seeder:run
                         {seeder? : The seeder class name (optional)}
-                        {--class= : The seeder class name}
-                        {--connection= : Database connection name}
-                        {--strategy=default : Seeding strategy (default or csv)}
-                        {--count=1000 : Number of records to seed}
-                        {--chunk= : Custom chunk size}
-                        {--no-progress : Disable progress bar}
-                        {--no-fk-checks : Disable foreign key checks}
-                        {--no-transactions : Disable transactions}';
+                        {--class= : The seeder class name}';
 
     public $description = 'Run TurboSeeder for high-performance and fast database seeding with bulk amount of data';
 

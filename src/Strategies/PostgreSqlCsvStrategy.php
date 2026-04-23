@@ -44,7 +44,7 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
 
         try {
             DB::connection($this->dbConnection->name)->statement($sql);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $errorMessage = $e->getMessage();
 
             if ($this->isCopyCommandError($errorMessage)) {
@@ -53,7 +53,10 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
                 throw new CsvImportFailedException(
                     $this->getCopyCommandErrorMessage($errorMessage),
                     $shouldFallback,
-                    $e
+                    $e,
+                    'pgsql',
+                    $table,
+                    $filepath,
                 );
             }
 

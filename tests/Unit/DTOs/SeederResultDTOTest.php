@@ -76,5 +76,20 @@ test('converts result to array', function () {
         ->and($array['records_inserted'])->toBe(1000)
         ->and($array['duration_seconds'])->toBe(10.0)
         ->and($array['peak_memory_mb'])->toBe(50.0)
-        ->and($array['records_per_second'])->toBe(100.0);
+        ->and($array['records_per_second'])->toBe(100.0)
+        ->and($array)->toHaveKey('is_dry_run')
+        ->and($array['is_dry_run'])->toBeFalse();
+});
+
+test('isDryRun defaults to false', function () {
+    $result = new SeederResultDTO(success: true, recordsInserted: 0);
+
+    expect($result->isDryRun)->toBeFalse();
+});
+
+test('isDryRun can be set to true', function () {
+    $result = new SeederResultDTO(success: true, recordsInserted: 10, isDryRun: true);
+
+    expect($result->isDryRun)->toBeTrue()
+        ->and($result->toArray()['is_dry_run'])->toBeTrue();
 });

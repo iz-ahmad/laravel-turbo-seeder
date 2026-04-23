@@ -12,6 +12,7 @@ final readonly class SeederResultDTO
         public float $durationSeconds = 0.0,
         public int $peakMemoryBytes = 0,
         public ?string $errorMessage = null,
+        public bool $isDryRun = false,
     ) {}
 
     /**
@@ -48,6 +49,7 @@ final readonly class SeederResultDTO
             'peak_memory_mb' => $this->getPeakMemoryInMB(),
             'records_per_second' => $this->getRecordsPerSecond(),
             'error_message' => $this->errorMessage,
+            'is_dry_run' => $this->isDryRun,
         ];
     }
 }
