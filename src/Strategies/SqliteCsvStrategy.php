@@ -69,7 +69,6 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
         $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
         $singleRowPlaceholders = '('.str_repeat('?,', $columnCount - 1).'?)';
 
-        // SQLITE_MAX_VARIABLE_NUMBER is 32766 on PHP 8.0+ bundled SQLite (≥ 3.32).
         $maxRowsPerBatch = max(1, (int) floor(32766 / $columnCount));
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {

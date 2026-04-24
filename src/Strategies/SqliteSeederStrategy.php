@@ -63,7 +63,6 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
             $updateColumns,
         ));
 
-        // SQLITE_MAX_VARIABLE_NUMBER is 32766 on PHP 8.0+ bundled SQLite (≥ 3.32).
         $maxRowsPerBatch = max(1, (int) floor(32766 / $columnCount));
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
@@ -102,7 +101,6 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
         $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
 
-        // SQLITE_MAX_VARIABLE_NUMBER is 32766 on PHP 8.0+ bundled SQLite (≥ 3.32).
         $maxRowsPerBatch = max(1, (int) floor(32766 / $columnCount));
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {

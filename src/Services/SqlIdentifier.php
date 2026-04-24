@@ -8,11 +8,6 @@ use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 
 final class SqlIdentifier
 {
-    /**
-     * Quote a table name for the given driver, supporting schema.table notation.
-     * Each part is quoted independently so schema.table becomes "schema"."table"
-     * or `schema`.`table` for MySQL.
-     */
     public static function quoteTable(string $table, DatabaseDriver $driver): string
     {
         $parts = explode('.', $table, 2);

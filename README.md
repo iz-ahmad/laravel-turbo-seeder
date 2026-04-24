@@ -205,7 +205,7 @@ See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) for more ex
 
 #### Core Methods
 
-- `table(string $table)` - Set the table name
+- `table(string $table)` - Set the table name. Accepts plain names (`users`) and schema-qualified names (`public.users`, `myschema.my_table`). Names must start with a letter or underscore and contain only letters, digits, and underscores. **SQLite note:** schema-qualified names require an [ATTACHed database](https://www.sqlite.org/lang_attach.html) alias; without ATTACH the query will fail at runtime with "no such table".
 - `columns(array $columns)` - Set columns to seed
 - `generate(Closure $generator)` - Set data generator function
 - `count(int $count)` - Set number of records to seed

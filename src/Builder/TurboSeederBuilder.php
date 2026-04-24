@@ -43,7 +43,7 @@ final class TurboSeederBuilder
     ) {}
 
     /**
-     * Set the table name. Supports plain names and schema-qualified names (schema.table).
+     * Set the table name.
      */
     public function table(string $table): self
     {
