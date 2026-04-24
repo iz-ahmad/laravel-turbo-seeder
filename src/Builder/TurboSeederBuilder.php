@@ -401,7 +401,17 @@ final class TurboSeederBuilder
                 );
             }
 
-            $this->columns = array_keys($firstRecord);
+            $inferredColumns = array_keys($firstRecord);
+
+            foreach ($inferredColumns as $column) {
+                if (! preg_match('/^[a-zA-Z0-9_]+$/', (string) $column)) {
+                    throw new \InvalidArgumentException(
+                        "Invalid column name [{$column}] inferred from generator. Column names must only contain letters, digits, and underscores."
+                    );
+                }
+            }
+
+            $this->columns = $inferredColumns;
         }
 
         if ($this->count < 1) {

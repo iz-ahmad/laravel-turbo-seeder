@@ -137,3 +137,10 @@ test('table() rejects invalid table names', function (string $invalid) {
     'my-table',
     '',
 ])->throws(InvalidArgumentException::class, 'Invalid table name');
+
+test('generator-inferred column names are validated', function () {
+    TurboSeeder::create('test_users')
+        ->generate(fn ($i) => ['valid_col' => $i, 'invalid-col' => $i])
+        ->count(1)
+        ->run();
+})->throws(InvalidArgumentException::class, 'Invalid column name [invalid-col] inferred from generator');
