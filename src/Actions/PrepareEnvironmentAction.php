@@ -15,10 +15,6 @@ final class PrepareEnvironmentAction
     /**
      * Prepare the db environment for seeding.
      *
-     * Runs both pre-transaction and post-transaction phases in sequence.
-     * Use prepareBeforeTransaction() / prepareAfterTransaction() directly when
-     * you need to begin a transaction between the two phases (e.g. ManagesEnvironment).
-     *
      * @return array<string, mixed>
      */
     public function __invoke(
@@ -32,8 +28,7 @@ final class PrepareEnvironmentAction
     }
 
     /**
-     * Run preparations that must happen BEFORE the transaction begins.
-     * MySQL/SQLite session variables and PRAGMAs belong here.
+     * Prepare session-level settings that must run before the transaction.
      *
      * @return array<string, mixed>
      */
@@ -55,8 +50,7 @@ final class PrepareEnvironmentAction
     }
 
     /**
-     * Run preparations that must happen AFTER the transaction begins.
-     * PostgreSQL's SET CONSTRAINTS ALL DEFERRED requires an open transaction.
+     * Prepare settings that require an open transaction (e.g. PostgreSQL SET CONSTRAINTS).
      */
     public function prepareAfterTransaction(
         DatabaseConnectionDTO $dbConnection,
