@@ -6,6 +6,7 @@ namespace IzAhmad\TurboSeeder\Strategies;
 
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
+use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Services\ValueFormatter;
 
 final class SqliteSeederStrategy extends AbstractSeederStrategy
@@ -67,7 +68,7 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
             $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));
-            $sql = "INSERT INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) DO UPDATE SET {$updateClause}";
+            $sql = "INSERT INTO ".SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE)." ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) DO UPDATE SET {$updateClause}";
 
             $bindings = [];
             foreach ($batch as $record) {
@@ -106,7 +107,7 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
             $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));
-            $sql = "INSERT INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders}";
+            $sql = "INSERT INTO ".SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE)." ({$columnNames}) VALUES {$allPlaceholders}";
 
             $bindings = [];
             foreach ($batch as $record) {

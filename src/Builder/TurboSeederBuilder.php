@@ -43,10 +43,16 @@ final class TurboSeederBuilder
     ) {}
 
     /**
-     * Set the table name.
+     * Set the table name. Supports plain names and schema-qualified names (schema.table).
      */
     public function table(string $table): self
     {
+        if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/', $table)) {
+            throw new \InvalidArgumentException(
+                "Invalid table name [{$table}]. Table names must start with a letter or underscore, contain only letters, digits, and underscores, and may include one schema prefix (schema.table)."
+            );
+        }
+
         $this->table = $table;
 
         return $this;
@@ -395,7 +401,7 @@ final class TurboSeederBuilder
                 );
             }
 
-            $this->columns = array_values(array_keys($firstRecord));
+            $this->columns = array_keys($firstRecord);
         }
 
         if ($this->count < 1) {

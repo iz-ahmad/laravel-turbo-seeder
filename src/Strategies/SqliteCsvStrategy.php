@@ -7,6 +7,7 @@ namespace IzAhmad\TurboSeeder\Strategies;
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Services\CsvReader;
+use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 
 final class SqliteCsvStrategy extends AbstractCsvStrategy
 {
@@ -73,7 +74,7 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
             $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));
-            $sql = "INSERT INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders}";
+            $sql = "INSERT INTO ".SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE)." ({$columnNames}) VALUES {$allPlaceholders}";
 
             $bindings = [];
             foreach ($batch as $record) {

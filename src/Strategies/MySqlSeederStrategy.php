@@ -6,6 +6,7 @@ namespace IzAhmad\TurboSeeder\Strategies;
 
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
+use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Services\ValueFormatter;
 
 final class MySqlSeederStrategy extends AbstractSeederStrategy
@@ -64,7 +65,7 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
             $updateColumns,
         ));
 
-        $sql = "INSERT INTO `{$table}` ({$columnNames}) VALUES {$allPlaceholders} ON DUPLICATE KEY UPDATE {$updateClause}";
+        $sql = "INSERT INTO ".SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL)." ({$columnNames}) VALUES {$allPlaceholders} ON DUPLICATE KEY UPDATE {$updateClause}";
 
         $bindings = [];
         foreach ($records as $record) {
@@ -101,7 +102,7 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));
 
-        $sql = "INSERT INTO `{$table}` ({$columnNames}) VALUES {$allPlaceholders}";
+        $sql = "INSERT INTO ".SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL)." ({$columnNames}) VALUES {$allPlaceholders}";
 
         $bindings = [];
         foreach ($records as $record) {

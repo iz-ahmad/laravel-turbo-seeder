@@ -7,6 +7,7 @@ namespace IzAhmad\TurboSeeder\Strategies;
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
+use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 
 final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
 {
@@ -29,9 +30,10 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
         );
 
         $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL);
 
         $sql = "
-            COPY \"{$table}\" ({$columnNames})
+            COPY {$quotedTable} ({$columnNames})
             FROM '{$filepath}'
             WITH (
                 FORMAT csv,

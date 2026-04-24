@@ -117,3 +117,23 @@ test('builder getters return correct values', function () {
         ->and($builder->getOptions())->toHaveKey('chunk_size')
         ->and($builder->getOptions()['chunk_size'])->toBe(100);
 });
+
+test('table() accepts schema-qualified names', function () {
+    $builder = TurboSeeder::create()
+        ->table('public.test_users')
+        ->generate(fn ($i) => ['name' => "User {$i}"])
+        ->count(1);
+
+    expect($builder->getTable())->toBe('public.test_users');
+});
+
+test('table() rejects invalid table names', function (string $invalid) {
+    TurboSeeder::create()->table($invalid);
+})->with([
+    '123abc',
+    'a.b.c',
+    '.users',
+    'users.',
+    'my-table',
+    '',
+])->throws(InvalidArgumentException::class, 'Invalid table name');
