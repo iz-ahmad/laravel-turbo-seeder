@@ -37,7 +37,6 @@ trait ManagesEnvironment
         // (e.g. MySQL FK checks, SQLite PRAGMAs — SQLite rejects PRAGMA changes inside a txn).
         $this->environmentContext = $this->prepareAction->prepareBeforeTransaction($this->dbConnection, $this->config);
 
-        // Phase 2: open the transaction.
         if ($this->config->shouldUseTransactions()) {
             $connection = DB::connection($this->dbConnection->name);
             $levelBefore = $connection->transactionLevel();
