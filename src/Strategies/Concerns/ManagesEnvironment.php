@@ -21,6 +21,9 @@ trait ManagesEnvironment
 
     protected bool $transactionStartedByUs = false;
 
+    /** @var array<string, mixed> */
+    protected array $environmentContext = [];
+
     /**
      * Prepare the database environment for seeding.
      */
@@ -30,7 +33,9 @@ trait ManagesEnvironment
             return;
         }
 
-        ($this->prepareAction)($this->dbConnection, $this->config);
+        // Phase 1: prepare session-level settings that must run BEFORE the transaction
+        // (e.g. MySQL FK checks, SQLite PRAGMAs — SQLite rejects PRAGMA changes inside a txn).
+        $this->environmentContext = $this->prepareAction->prepareBeforeTransaction($this->dbConnection, $this->config);
 
         if ($this->config->shouldUseTransactions()) {
             $connection = DB::connection($this->dbConnection->name);
@@ -38,6 +43,10 @@ trait ManagesEnvironment
             $connection->beginTransaction();
             $this->transactionStartedByUs = $connection->transactionLevel() > $levelBefore;
         }
+
+        // Phase 3: prepare settings that REQUIRE an open transaction
+        // (e.g. PostgreSQL's SET CONSTRAINTS ALL DEFERRED).
+        $this->prepareAction->prepareAfterTransaction($this->dbConnection, $this->config);
 
         $this->environmentPrepared = true;
     }
@@ -69,7 +78,7 @@ trait ManagesEnvironment
             $this->transactionStartedByUs = false;
         }
 
-        ($this->cleanupAction)($this->dbConnection, $this->config);
+        ($this->cleanupAction)($this->dbConnection, $this->config, $this->environmentContext);
 
         $this->environmentPrepared = false;
     }

@@ -43,7 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - CSV generator no longer calls user closure twice when inferring columns
 - CSV file handle now closed after reading; `GenerateCsvAction` wraps write loop in `try-finally`
 - SQLite CSV null marker (`\N`) now configurable
-- `MemoryManager` GC counter increments in `forceCleanup()` — fixes "GC fires once then never again"
+- `MemoryManager` GC counter increments in `maybeCleanup()` — fixes "GC fires once then never again"
 - Transaction tracking records whether the strategy started the transaction before commit/rollback
 - `CsvImportFailedException` now carries driver, table, and filepath for debuggable logs
 - CSV strategies catch `Throwable` instead of `Exception`

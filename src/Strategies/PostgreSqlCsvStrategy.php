@@ -30,6 +30,9 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
 
         $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
 
+        // Server-side COPY requires superuser or pg_read_server_files privilege.
+        // Non-superuser connections will receive a permission error which is caught
+        // below and triggers automatic fallback to the default INSERT strategy.
         $sql = "
             COPY \"{$table}\" ({$columnNames})
             FROM '{$filepath}'
@@ -37,7 +40,6 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
                 FORMAT csv,
                 DELIMITER ',',
                 QUOTE '\"',
-                ESCAPE '\\',
                 NULL '\\N'
             )
         ";

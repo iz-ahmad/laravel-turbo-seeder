@@ -17,8 +17,6 @@ final class CsvWriter
 
     private string $enclosure = '"';
 
-    private string $escape = '\\';
-
     private int $bufferSize = 8192;
 
     /**
@@ -46,7 +44,6 @@ final class CsvWriter
 
         $this->delimiter = $this->config['field_delimiter'] ?? ',';
         $this->enclosure = $this->config['field_enclosure'] ?? '"';
-        $this->escape = $this->config['escape_char'] ?? '\\';
         $this->bufferSize = $this->config['buffer_size'] ?? 8192;
 
         stream_set_write_buffer($this->handle, $this->bufferSize);
@@ -63,12 +60,15 @@ final class CsvWriter
             throw new \RuntimeException('File handle not initialized. Call open() first.');
         }
 
+        // empty escape = RFC 4180 mode (enclosure doubled, never backslash-escaped).
+        // This also ensures null markers like \N are written unquoted, so MySQL/PG
+        // correctly recognise them as NULL rather than the literal string \N.
         $success = fputcsv(
             $this->handle,
             $row,
             $this->delimiter,
             $this->enclosure,
-            $this->escape
+            ''
         );
 
         if ($success === false) {

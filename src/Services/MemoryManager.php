@@ -53,7 +53,7 @@ final class MemoryManager implements MemoryManagerInterface
         return $this->getMemoryUsagePercentage() >= $this->gcThresholdPercent;
     }
 
-    public function forceCleanup(): void
+    public function maybeCleanup(): void
     {
         $this->gcCounter++;
 

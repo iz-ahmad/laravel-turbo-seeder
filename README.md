@@ -74,12 +74,8 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you can:
   - [Troubleshooting](#troubleshooting)
 - [Migration from Standard Seeders](#migration-from-standard-seeders)
 - [API Documentation](#api-documentation)
-  - [Fluent API Methods](#fluent-api-methods)
-  - [Using in Seeders](#using-in-seeders)
-  - [TurboData Helpers](#turbodata-helpers)
-  - [Data Type Handling](#data-type-handling)
-  - [Artisan Commands](#artisan-commands)
 - [Configuration Reference](#configuration-reference)
+- [Architecture Overview](#architecture-overview)
 - [Performance Benchmarks](#performance-benchmarks)
 - [Others](#testing)
 
@@ -825,6 +821,22 @@ Default namespace for seeder classes:
 ```
 
 **Usage:** Allows using short class names in commands. For example, `php artisan turbo-seeder:run UserSeeder` instead of `php artisan turbo-seeder:run Database\\Seeders\\UserSeeder`.
+
+---
+
+## Architecture Overview
+
+Turbo Seeder follows a clean and efficient execution flow:
+
+**Data Generator → Chunk Builder → Seeding Strategy → Database**
+
+1. `generate()` produces row data.
+2. Rows are grouped into memory-controlled chunks.
+3. The selected strategy (Bulk Insert or CSV) processes each chunk.
+4. Data is written using optimized native database operations.
+
+Memory is controlled at the **chunk level**, with automatic garbage collection.
+With the **CSV strategy**, rows are streamed to temporary files (`storage/app/turbo-seeder/`) and imported via native commands (`LOAD DATA` / `COPY`), avoiding large in-memory payloads.
 
 ---
 

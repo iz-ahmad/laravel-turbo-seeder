@@ -49,7 +49,7 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
 
                 unset($records);
 
-                $this->memoryManager->forceCleanup();
+                $this->memoryManager->maybeCleanup();
             }
         } finally {
             $reader->close();

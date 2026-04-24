@@ -14,32 +14,64 @@ final class PrepareEnvironmentAction
 {
     /**
      * Prepare the db environment for seeding.
+     *
+     * @return array<string, mixed>
      */
     public function __invoke(
         DatabaseConnectionDTO $dbConnection,
         SeederConfigurationDTO $config
-    ): void {
+    ): array {
+        $context = $this->prepareBeforeTransaction($dbConnection, $config);
+        $this->prepareAfterTransaction($dbConnection, $config);
+
+        return $context;
+    }
+
+    /**
+     * Prepare session-level settings that must run before the transaction.
+     *
+     * @return array<string, mixed>
+     */
+    public function prepareBeforeTransaction(
+        DatabaseConnectionDTO $dbConnection,
+        SeederConfigurationDTO $config
+    ): array {
         $connection = $dbConnection->connection;
 
         if ($config->shouldDisableQueryLog()) {
             DB::connection($dbConnection->name)->disableQueryLog();
         }
 
-        match ($dbConnection->driver) {
+        return match ($dbConnection->driver) {
             DatabaseDriver::MYSQL => $this->prepareMySql($connection, $config),
-            DatabaseDriver::PGSQL => $this->preparePostgreSql($connection, $config),
+            DatabaseDriver::PGSQL => [],
             DatabaseDriver::SQLITE => $this->prepareSqlite($connection, $config),
         };
     }
 
-    private function prepareMySql(Connection $connection, SeederConfigurationDTO $config): void
+    /**
+     * Prepare settings that require an open transaction (e.g. PostgreSQL SET CONSTRAINTS).
+     */
+    public function prepareAfterTransaction(
+        DatabaseConnectionDTO $dbConnection,
+        SeederConfigurationDTO $config
+    ): void {
+        $connection = $dbConnection->connection;
+
+        if ($dbConnection->driver === DatabaseDriver::PGSQL) {
+            $this->preparePostgreSql($connection, $config);
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private function prepareMySql(Connection $connection, SeederConfigurationDTO $config): array
     {
         if ($config->shouldDisableForeignKeyChecks()) {
             $connection->statement('SET FOREIGN_KEY_CHECKS=0');
             $connection->statement('SET unique_checks=0');
         }
 
-        $connection->statement('SET autocommit=0');
+        return [];
     }
 
     private function preparePostgreSql(Connection $connection, SeederConfigurationDTO $config): void
@@ -49,13 +81,26 @@ final class PrepareEnvironmentAction
         }
     }
 
-    private function prepareSqlite(Connection $connection, SeederConfigurationDTO $config): void
+    /** @return array<string, mixed> */
+    private function prepareSqlite(Connection $connection, SeederConfigurationDTO $config): array
     {
+        $context = [];
+
+        $syncResult = $connection->select('PRAGMA synchronous');
+        $context['synchronous'] = $syncResult[0]->synchronous ?? 2;
+
+        $journalResult = $connection->select('PRAGMA journal_mode');
+        $context['journal_mode'] = $journalResult[0]->journal_mode ?? 'delete';
+
         if ($config->shouldDisableForeignKeyChecks()) {
+            $fkResult = $connection->select('PRAGMA foreign_keys');
+            $context['foreign_keys'] = $fkResult[0]->foreign_keys ?? 1;
             $connection->statement('PRAGMA foreign_keys=OFF');
         }
 
         $connection->statement('PRAGMA synchronous=OFF');
         $connection->statement('PRAGMA journal_mode=MEMORY');
+
+        return $context;
     }
 }
