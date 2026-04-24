@@ -45,12 +45,8 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
     protected function upsertUsingMultiRowStatement(string $table, array $columns, array $records, array $upsertKeys): void
     {
         $columnCount = count($columns);
-        $recordCount = count($records);
-
         $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
-
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
-        $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));
 
         $conflictTarget = implode(', ', array_map(fn ($col) => "\"{$col}\"", $upsertKeys));
         $updateColumns = array_diff($columns, $upsertKeys);
@@ -66,24 +62,30 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
             $updateColumns,
         ));
 
-        $sql = "INSERT INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) DO UPDATE SET {$updateClause}";
+        // SQLITE_MAX_VARIABLE_NUMBER is 32766 on PHP 8.0+ bundled SQLite (≥ 3.32).
+        $maxRowsPerBatch = max(1, (int) floor(32766 / $columnCount));
 
-        $bindings = [];
-        foreach ($records as $record) {
-            foreach ($columns as $column) {
-                $bindings[] = $this->formatValue($record[$column] ?? null);
+        foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
+            $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));
+            $sql = "INSERT INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) DO UPDATE SET {$updateClause}";
+
+            $bindings = [];
+            foreach ($batch as $record) {
+                foreach ($columns as $column) {
+                    $bindings[] = $this->formatValue($record[$column] ?? null);
+                }
             }
-        }
 
-        try {
-            DB::connection($this->dbConnection->name)->statement($sql, $bindings);
-        } catch (\Throwable $e) {
-            throw new \RuntimeException(
-                'Failed to upsert records into SQLite database. '.
-                'Error: '.$e->getMessage(),
-                0,
-                $e
-            );
+            try {
+                DB::connection($this->dbConnection->name)->statement($sql, $bindings);
+            } catch (\Throwable $e) {
+                throw new \RuntimeException(
+                    'Failed to upsert records into SQLite database. '.
+                    'Error: '.$e->getMessage(),
+                    0,
+                    $e
+                );
+            }
         }
     }
 
@@ -96,31 +98,33 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
     protected function insertUsingMultiRowStatement(string $table, array $columns, array $records): void
     {
         $columnCount = count($columns);
-        $recordCount = count($records);
-
         $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
-
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
-        $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));
 
-        $sql = "INSERT INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders}";
+        // SQLITE_MAX_VARIABLE_NUMBER is 32766 on PHP 8.0+ bundled SQLite (≥ 3.32).
+        $maxRowsPerBatch = max(1, (int) floor(32766 / $columnCount));
 
-        $bindings = [];
-        foreach ($records as $record) {
-            foreach ($columns as $column) {
-                $bindings[] = $this->formatValue($record[$column] ?? null);
+        foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
+            $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));
+            $sql = "INSERT INTO \"{$table}\" ({$columnNames}) VALUES {$allPlaceholders}";
+
+            $bindings = [];
+            foreach ($batch as $record) {
+                foreach ($columns as $column) {
+                    $bindings[] = $this->formatValue($record[$column] ?? null);
+                }
             }
-        }
 
-        try {
-            DB::connection($this->dbConnection->name)->statement($sql, $bindings);
-        } catch (\Throwable $e) {
-            throw new \RuntimeException(
-                'Failed to insert records into SQLite database. '.
-                'Error: '.$e->getMessage(),
-                0,
-                $e
-            );
+            try {
+                DB::connection($this->dbConnection->name)->statement($sql, $bindings);
+            } catch (\Throwable $e) {
+                throw new \RuntimeException(
+                    'Failed to insert records into SQLite database. '.
+                    'Error: '.$e->getMessage(),
+                    0,
+                    $e
+                );
+            }
         }
     }
 
