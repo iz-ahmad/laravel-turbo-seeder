@@ -47,7 +47,7 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you can:
 * **Fluent API**: clean, chainable interface
 * **TurboData Helpers**: Faker-free data generation: weighted picks, date ranges, unique values
 * **Data Type Handling**: automatically formats enums, JSON, dates, collections, and objects.
-* **Foreign Key Pools**: deterministic FK cycling from DB
+* **Relational Seeding**: load FK values from seeded tables in one line, zero extra queries
 * **Progress Tracking**: real-time progress with metrics
 * **Highly Configurable**: chunk size, transactions, upserts, retries, dry-run, etc.
 * **Laravel 10–13 Compatible**
@@ -540,7 +540,7 @@ $ts = TurboData::sequentialDate('2024-01-01', 'hour', $index);
 $deletedAt = TurboData::nullable(0.15, fn () => now());
 ```
 
-#### Foreign Key Pools
+#### Seeding Related Tables
 
 **`fromTable()`** is the standard way to assign FK values. It plucks a column from an already-seeded table once, caches it in memory, and cycles or randomly picks from it on every generator call — zero extra DB queries after the first.
 
