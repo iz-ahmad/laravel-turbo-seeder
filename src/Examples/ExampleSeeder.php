@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Examples;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
@@ -68,17 +67,20 @@ class ExampleSeeder extends Seeder
             ->useCsvStrategy()
             ->run();
 
-        // Example 3: Using a pool for correct FK assignment
+        // Example 3: FK assignment with fromTable()
         //
-        // TurboData::fromPool() loads existing IDs once from the DB, then cycles
-        // through them. This is safe with gaps, UUIDs, and soft-deleted records.
+        // TurboData::fromTable() plucks a column from a table once, then cycles or
+        // randomly picks from the cached pool. Zero DB overhead after the first call.
+        // Use 'random' mode when you want non-deterministic FK distribution.
 
-        $userIds = TurboData::fromPool(fn () => DB::table('users')->pluck('id')->toArray());
+        $userIds     = TurboData::fromTable('users');                          // cycle (default)
+        $categoryIds = TurboData::fromTable('categories', 'id', 'random');    // random pick
 
         TurboSeeder::create('orders')
-            ->columns(['user_id', 'total', 'status', 'payment_method', 'created_at'])
+            ->columns(['user_id', 'category_id', 'total', 'status', 'payment_method', 'created_at'])
             ->generate(fn ($index) => [
                 'user_id' => $userIds($index),
+                'category_id' => $categoryIds($index),
                 'total' => TurboData::randomFloat(2, 10.00, 999.99),
                 'status' => TurboData::weightedFrom(['pending' => 50, 'completed' => 40, 'cancelled' => 10]),
                 'payment_method' => TurboData::randomFrom(['paypal', 'bank_transfer', 'credit_card']),

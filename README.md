@@ -173,13 +173,13 @@ See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) and [Common
 
 ### Seeding Users with Relationships
 
-Create users with related posts:
+Create users with related posts using `fromTable()` for clean FK assignment:
 
 ```php
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
-// Seed users first with TurboSeeder
+// Seed users first
 TurboSeeder::create('users')
     ->columns(['name', 'email', 'created_at'])
     ->generate(fn ($index) => [
@@ -190,12 +190,10 @@ TurboSeeder::create('users')
     ->count(50000)
     ->run();
 
-// then pool user ids using TurboData helper
-$userIds = TurboData::fromPool(
-    fn () => DB::table('users')->pluck('id')->toArray()
-);
+// fromTable() loads user IDs once from the DB, then cycles deterministically
+$userIds = TurboData::fromTable('users');
 
-// then seed posts with user relationships
+// seed posts — each post gets a valid user_id with zero extra DB queries
 TurboSeeder::create('posts')
     ->columns(['user_id', 'title', 'content', 'created_at'])
     ->generate(fn ($index) => [
