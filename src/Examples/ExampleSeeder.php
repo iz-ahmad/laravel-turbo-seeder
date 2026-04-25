@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Examples;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
@@ -24,21 +25,23 @@ class ExampleSeeder extends Seeder
      */
     public function run(): void
     {
-        // Example 1: Basic fluent API with TurboData helpers
+        // Example 1: Basic fluent API with unique value helpers
         //
-        // TurboData::uniqueEmail() generates realistic unique emails without Faker.
-        // TurboData::nowOnce() calls now() once for the whole seeding run - all
-        // records share the same "imported at" timestamp, which is realistic and fast.
+        // uniqueEmail(), uniqueUsername(), uniqueSlug(), uniqueUuid() all return closures
+        // that produce collision-free values across millions of records — no Faker needed.
+        // nowOnce() calls now() once for the whole run; all records share the same timestamp.
 
-        $uniqueEmail = TurboData::uniqueEmail();
+        $uniqueEmail    = TurboData::uniqueEmail();
+        $uniqueUsername = TurboData::uniqueUsername('usr');
         $hashedPassword = bcrypt('password'); // hashed once, reused across all records
 
         TurboSeeder::create('users')
-            ->columns(['name', 'email', 'password', 'created_at'])
+            ->columns(['name', 'username', 'email', 'password', 'created_at'])
             ->generate(fn ($index) => [
-                'name' => "User {$index}",
-                'email' => $uniqueEmail($index),
-                'password' => $hashedPassword,
+                'name'       => "User {$index}",
+                'username'   => $uniqueUsername($index),
+                'email'      => $uniqueEmail($index),
+                'password'   => $hashedPassword,
                 'created_at' => TurboData::nowOnce(),
             ])
             ->count(10000)
@@ -129,7 +132,47 @@ class ExampleSeeder extends Seeder
             1000
         );
 
-        // Example 6: Sequential dates for realistic time-series data
+        // Example 6: uniqueSlug, uniqueUuid, and fromPool
+        //
+        // uniqueSlug() produces URL-safe slugs guaranteed unique per index.
+        // uniqueUuid() produces a UUID (with optional prefix) per call.
+        // fromPool() is the escape hatch for fromTable() — accepts any callable that
+        // returns an array, enabling filters, joins, or specific ordering.
+
+        $productSlug = TurboData::uniqueSlug('product');
+        $productSku  = TurboData::uniqueUuid('SKU-');
+
+        TurboSeeder::create('products')
+            ->columns(['sku', 'slug', 'name', 'price', 'created_at'])
+            ->generate(fn ($index) => [
+                'sku'        => $productSku(),
+                'slug'       => $productSlug($index),
+                'name'       => "Product {$index}",
+                'price'      => TurboData::randomFloat(2, 1.00, 999.99),
+                'created_at' => TurboData::nowOnce(),
+            ])
+            ->count(5000)
+            ->run();
+
+        // fromPool(): custom query — only active users, specific ordering.
+        // Use this when fromTable() isn't enough (filters, joins, etc.)
+        $activeUserIds = TurboData::fromPool(
+            fn () => DB::table('users')->where('active', 1)->orderBy('id')->pluck('id')->toArray()
+        );
+
+        TurboSeeder::create('reviews')
+            ->columns(['user_id', 'product_id', 'rating', 'created_at'])
+            ->generate(fn ($index) => [
+                'user_id'    => $activeUserIds($index),
+                'product_id' => TurboData::randomInt(1, 5000),
+                'rating'     => TurboData::randomInt(1, 5),
+                'created_at' => TurboData::dateRange('2023-01-01', '2024-12-31'),
+            ])
+            ->count(20000)
+            ->run();
+
+        // Example 7: Sequential dates for realistic time-series data
+
         //
         // TurboData::sequentialDate() increments by a fixed step per index,
         // producing realistic time-series data for analytics seeding.
@@ -143,7 +186,7 @@ class ExampleSeeder extends Seeder
             ->count(1000)
             ->run();
 
-        // Example 7: this demonstrates automatic type handling with `ValueFormatter`
+        // Example 8: automatic type handling with ValueFormatter
         //
         // ValueFormatter automatically handles type conversions behind-the-scenes:
         // - PHP arrays → JSON encoded (e.g., ['key' => 'val'] → '{"key":"val"}')
