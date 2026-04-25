@@ -544,11 +544,38 @@ $deletedAt = TurboData::nullable(0.15, fn () => now());
 
 #### Foreign Key Pools
 
+**`fromTable()`** — table-aware shorthand. Plucks a column from a table once, then cycles or randomly picks on every generator call. Zero DB overhead after the first call.
+
+```php
+// Cycle mode (default) — deterministic round-robin by index
+$userIds = TurboData::fromTable('users');
+
+// Random mode — uniform random pick from the pool
+$categoryIds = TurboData::fromTable('categories', 'id', 'random');
+
+// Custom column, explicit connection
+$codes = TurboData::fromTable('regions', 'code', 'cycle', 'reports');
+
+TurboSeeder::create('posts')
+    ->columns(['user_id', 'category_id', 'title'])
+    ->generate(fn ($i) => [
+        'user_id'     => $userIds($i),
+        'category_id' => $categoryIds($i),
+        'title'       => "Post {$i}",
+    ])
+    ->count(1_000_000)
+    ->run();
+```
+
+> The DB query fires once on the **first generator call**. All subsequent calls are O(1) array lookups. Seed the referenced table before calling `fromTable()`.
+
+**`fromPool()`** — escape hatch for custom queries (joins, filters, specific ordering):
+
 ```php
 // Loads IDs once from DB, cycles deterministically - works with UUID PKs and ID gaps
 // Returns a closure: $userIds($index)
 $userIds = TurboData::fromPool(
-    fn () => DB::table('users')->pluck('id')->toArray()
+    fn () => DB::table('users')->where('active', 1)->pluck('id')->toArray()
 );
 
 TurboSeeder::create('posts')
