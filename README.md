@@ -542,17 +542,12 @@ $deletedAt = TurboData::nullable(0.15, fn () => now());
 
 #### Foreign Key Pools
 
-**`fromTable()`** — table-aware shorthand. Plucks a column from a table once, then cycles or randomly picks on every generator call. Zero DB overhead after the first call.
+**`fromTable()`** is the standard way to assign FK values. It plucks a column from an already-seeded table once, caches it in memory, and cycles or randomly picks from it on every generator call — zero extra DB queries after the first.
 
 ```php
-// Cycle mode (default) — deterministic round-robin by index
-$userIds = TurboData::fromTable('users');
-
-// Random mode — uniform random pick from the pool
-$categoryIds = TurboData::fromTable('categories', 'id', 'random');
-
-// Custom column, explicit connection
-$codes = TurboData::fromTable('regions', 'code', 'cycle', 'reports');
+$userIds     = TurboData::fromTable('users');                       // cycle (default)
+$categoryIds = TurboData::fromTable('categories', 'id', 'random'); // random pick
+$codes       = TurboData::fromTable('regions', 'code', 'cycle', 'reports'); // custom column + connection
 
 TurboSeeder::create('posts')
     ->columns(['user_id', 'category_id', 'title'])
@@ -565,26 +560,18 @@ TurboSeeder::create('posts')
     ->run();
 ```
 
-> The DB query fires once on the **first generator call**. All subsequent calls are O(1) array lookups. Seed the referenced table before calling `fromTable()`.
+> Seed the referenced table **before** calling `fromTable()`. The DB query fires once on the first generator call; all subsequent calls are O(1) array lookups.
 
-**`fromPool()`** — escape hatch for custom queries (joins, filters, specific ordering):
+**`fromPool()`** — use this when `fromTable()` isn't enough: custom filters, joins, specific ordering, or any query that can't be expressed as a simple column pluck.
 
 ```php
-// Loads IDs once from DB, cycles deterministically - works with UUID PKs and ID gaps
-// Returns a closure: $userIds($index)
+// Only reference active users; fromTable() can't filter — fromPool() can
 $userIds = TurboData::fromPool(
-    fn () => DB::table('users')->where('active', 1)->pluck('id')->toArray()
+    fn () => DB::table('users')->where('active', 1)->orderBy('id')->pluck('id')->toArray()
 );
-
-TurboSeeder::create('posts')
-    ->columns(['user_id', 'title'])
-    ->generate(fn ($i) => [
-        'user_id' => $userIds($i),
-        'title'   => "Post {$i}",
-    ])
-    ->count(1_000_000)
-    ->run();
 ```
+
+`fromPool()` accepts any callable that returns an array. Same lazy-load and cycle semantics as `fromTable()` — loaded once, cycled by index.
 
 #### Unique Values
 
