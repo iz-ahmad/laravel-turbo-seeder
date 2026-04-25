@@ -99,6 +99,13 @@ test('randomFloat respects decimal places', function () {
     }
 });
 
+test('randomFloat with 0 decimals returns whole number', function () {
+    for ($i = 0; $i < 20; $i++) {
+        $result = TurboData::randomFloat(0, 1.0, 10.0);
+        expect($result)->toBe(round($result, 0));
+    }
+});
+
 // ── randomBool() ──────────────────────────────────────────────────────────────
 
 test('randomBool returns a bool', function () {
@@ -166,6 +173,16 @@ test('dateRange returns date within specified range', function () {
             ->toBeLessThanOrEqual($to->timestamp);
     }
 });
+
+test('dateRange accepts same from and to date', function () {
+    $result = TurboData::dateRange('2024-06-15', '2024-06-15');
+
+    expect($result->toDateString())->toBe('2024-06-15');
+});
+
+test('dateRange throws when from is after to', function () {
+    TurboData::dateRange('2024-12-31', '2024-01-01');
+})->throws(InvalidArgumentException::class);
 
 // ── sequentialDate() ──────────────────────────────────────────────────────────
 
@@ -245,10 +262,22 @@ test('uniqueEmail produces different emails per index', function () {
     expect($gen(0))->not->toBe($gen(1));
 });
 
+test('uniqueEmail respects custom domain', function () {
+    $gen = TurboData::uniqueEmail('example.com');
+
+    expect($gen(0))->toEndWith('@example.com');
+});
+
 test('uniqueUsername returns closure with prefix', function () {
     $gen = TurboData::uniqueUsername('staff');
 
     expect($gen(5))->toStartWith('staff_');
+});
+
+test('uniqueUsername produces unique values per index', function () {
+    $gen = TurboData::uniqueUsername();
+
+    expect($gen(0))->not->toBe($gen(1));
 });
 
 test('uniqueSlug produces url-safe slugs', function () {
@@ -258,6 +287,12 @@ test('uniqueSlug produces url-safe slugs', function () {
 
     expect($slug)->toStartWith('my-product-')
         ->toMatch('/^[a-z0-9\-]+$/');
+});
+
+test('uniqueSlug produces unique values per index', function () {
+    $gen = TurboData::uniqueSlug('item');
+
+    expect($gen(0))->not->toBe($gen(1));
 });
 
 test('uniqueUuid returns a closure producing UUIDs', function () {
