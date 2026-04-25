@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Helpers;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -191,6 +192,57 @@ final class TurboData
     public static function resetNowOnce(): void
     {
         self::$cachedNow = null;
+    }
+
+    /**
+     * Load a single column from a table once, then cycle or randomly pick from the cached values.
+     * The DB query fires on the first generator call; all subsequent calls are O(1) array lookups.
+     *
+     * Use this for FK columns where the referenced table is already seeded.
+     * For custom queries (joins, filters, ordering) use fromPool() instead.
+     *
+     * @param  string  $mode  'cycle' (default) — deterministic round-robin | 'random' — uniform random pick
+     * @return \Closure(int): mixed
+     *
+     * @throws \InvalidArgumentException if $table, $column, or $mode are invalid
+     * @throws \RuntimeException         if the table column returns no rows at runtime
+     */
+    public static function fromTable(string $table, string $column = 'id', string $mode = 'cycle', ?string $connection = null): \Closure
+    {
+        if ($table === '') {
+            throw new \InvalidArgumentException('fromTable() $table must not be empty.');
+        }
+
+        if ($column === '') {
+            throw new \InvalidArgumentException('fromTable() $column must not be empty.');
+        }
+
+        if (! in_array($mode, ['cycle', 'random'], true)) {
+            throw new \InvalidArgumentException('fromTable() $mode must be "cycle" or "random".');
+        }
+
+        $pool = null;
+        $count = 0;
+
+        return static function (int $index) use ($table, $column, $mode, $connection, &$pool, &$count): mixed {
+            if ($pool === null) {
+                $pool = array_values(
+                    DB::connection($connection)->table($table)->pluck($column)->toArray()
+                );
+
+                if (empty($pool)) {
+                    throw new \RuntimeException(
+                        "TurboData::fromTable() — [{$table}.{$column}] returned no rows. Seed the table before referencing it."
+                    );
+                }
+
+                $count = count($pool);
+            }
+
+            return $mode === 'random'
+                ? $pool[array_rand($pool)]
+                : $pool[$index % $count];
+        };
     }
 
     /**
