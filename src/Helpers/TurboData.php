@@ -195,17 +195,12 @@ final class TurboData
     }
 
     /**
-     * Load a single column from a table once, then cycle or randomly pick from the cached values.
-     * The DB query fires on the first generator call; all subsequent calls are O(1) array lookups.
+     * Pluck a column from a table once and cycle or randomly pick on every generator call.
+     * Loaded lazily on first call; all subsequent calls are O(1) array lookups.
+     * For custom queries (filters, joins) use fromPool() instead.
      *
-     * Use this for FK columns where the referenced table is already seeded.
-     * For custom queries (joins, filters, ordering) use fromPool() instead.
-     *
-     * @param  string  $mode  'cycle' (default) — deterministic round-robin | 'random' — uniform random pick
+     * @param  string  $mode  'cycle' (default) | 'random'
      * @return \Closure(int): mixed
-     *
-     * @throws \InvalidArgumentException if $table, $column, or $mode are invalid
-     * @throws \RuntimeException         if the table column returns no rows at runtime
      */
     public static function fromTable(string $table, string $column = 'id', string $mode = 'cycle', ?string $connection = null): \Closure
     {
@@ -246,15 +241,8 @@ final class TurboData
     }
 
     /**
-     * Load values once via $loader callable, then cycle through them using the index.
-     * Solves the fragile ($index % N) + 1 pattern for foreign key assignment.
-     *
-     * The loader is called once per unique pool key. Subsequent calls with the same
-     * loader identity reuse the cached pool.
-     *
-     * Example:
-     *   $userIds = TurboData::fromPool(fn() => DB::table('users')->pluck('id')->toArray());
-     *   ->generate(fn($i) => ['user_id' => $userIds($i)])
+     * Load values once via a callable, then cycle through them by index.
+     * Use when fromTable() isn't enough — filters, joins, custom ordering.
      *
      * @param  callable(): array<int, mixed>  $loader
      * @return \Closure(int): mixed
