@@ -562,16 +562,16 @@ TurboSeeder::create('posts')
 
 > Seed the referenced table **before** calling `fromTable()`. The DB query fires once on the first generator call; all subsequent calls are O(1) array lookups.
 
-**`fromPool()`** — use this when `fromTable()` isn't enough: custom filters, joins, specific ordering, or any query that can't be expressed as a simple column pluck.
+**`fromQuery()`** — use this when `fromTable()` isn't enough: custom filters, joins, specific ordering, or any query that can't be expressed as a simple column pluck.
 
 ```php
-// Only reference active users; fromTable() can't filter — fromPool() can
-$userIds = TurboData::fromPool(
+// Only reference active users; fromTable() can't filter — fromQuery() can
+$userIds = TurboData::fromQuery(
     fn () => DB::table('users')->where('active', 1)->orderBy('id')->pluck('id')->toArray()
 );
 ```
 
-`fromPool()` accepts any callable that returns an array. Same lazy-load and cycle semantics as `fromTable()` — loaded once, cycled by index.
+`fromQuery()` accepts any callable that returns an array. Same lazy-load and cycle semantics as `fromTable()` — loaded once, cycled by index.
 
 #### Unique Values
 

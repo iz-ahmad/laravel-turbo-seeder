@@ -27,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - `ValueFormatter`: dead `is_bool` branch removed from `formatForCsv()`; custom formatters loop guarded with `empty()` check
-- `TurboData`: pool count cached in `fromPool()` closure; `dateRange()` validates argument order; `mt_rand()` replaced with `random_int()` throughout for CSPRNG consistency
+- `TurboData`: pool count cached in `fromQuery()` closure; `dateRange()` validates argument order; `mt_rand()` replaced with `random_int()` throughout for CSPRNG consistency
 - CI matrix updated: PHP 8.2–8.5 × Laravel 11–13; excluded known unstable combos
 
 ---
@@ -35,7 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [1.1.0] — 2026-04-16 — PR #10
 
 ### Added
-- `TurboData` helper class — Faker-free static helpers for high-volume seeding: `cycleFrom`, `weightedFrom`, `randomFrom`, `randomInt`, `randomFloat`, `randomBool`, `nullable`, `dateRange`, `sequentialDate`, `nowOnce`, `fromPool`, `uniqueEmail`, `uniqueUsername`, `uniqueSlug`, `uniqueUuid`
+- `TurboData` helper class — Faker-free static helpers for high-volume seeding: `cycleFrom`, `weightedFrom`, `randomFrom`, `randomInt`, `randomFloat`, `randomBool`, `nullable`, `dateRange`, `sequentialDate`, `nowOnce`, `fromQuery`, `uniqueEmail`, `uniqueUsername`, `uniqueSlug`, `uniqueUuid`
 - `ValueFormatter` service — unified value formatting with `BackedEnum`, `UnitEnum`, `Collection`, and custom type support via `ValueFormatter::extend()`
 - `UniqueValueGenerator` deprecated in favour of `TurboData`
 

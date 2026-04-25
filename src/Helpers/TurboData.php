@@ -197,7 +197,7 @@ final class TurboData
     /**
      * Pluck a column from a table once and cycle or randomly pick on every generator call.
      * Loaded lazily on first call; all subsequent calls are O(1) array lookups.
-     * For custom queries (filters, joins) use fromPool() instead.
+     * For custom queries (filters, joins) use fromQuery() instead.
      *
      * @param  string  $mode  'cycle' (default) | 'random'
      * @return \Closure(int): mixed
@@ -247,7 +247,7 @@ final class TurboData
      * @param  callable(): array<int, mixed>  $loader
      * @return \Closure(int): mixed
      */
-    public static function fromPool(callable $loader): \Closure
+    public static function fromQuery(callable $loader): \Closure
     {
         $pool = null;
         $count = 0;
@@ -257,7 +257,7 @@ final class TurboData
                 $pool = array_values($loader());
 
                 if (empty($pool)) {
-                    throw new \RuntimeException('TurboData::fromPool() loader returned an empty array.');
+                    throw new \RuntimeException('TurboData::fromQuery() loader returned an empty array.');
                 }
 
                 $count = count($pool);
