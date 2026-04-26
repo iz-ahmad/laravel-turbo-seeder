@@ -47,7 +47,7 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you can:
 * **Fluent API**: clean, chainable interface
 * **TurboData Helpers**: Faker-free data generation: weighted picks, date ranges, unique values
 * **Data Type Handling**: automatically formats enums, JSON, dates, collections, and objects.
-* **Foreign Key Pools**: deterministic FK cycling from DB
+* **Relational Seeding**: load FK values from seeded tables in one line, zero extra queries
 * **Progress Tracking**: real-time progress with metrics
 * **Highly Configurable**: chunk size, transactions, upserts, retries, dry-run, etc.
 * **Laravel 10–13 Compatible**
@@ -173,13 +173,13 @@ See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) and [Common
 
 ### Seeding Users with Relationships
 
-Create users with related posts:
+Create users with related posts using `fromTable()` for clean FK assignment:
 
 ```php
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
-// Seed users first with TurboSeeder
+// Seed users first
 TurboSeeder::create('users')
     ->columns(['name', 'email', 'created_at'])
     ->generate(fn ($index) => [
@@ -190,12 +190,10 @@ TurboSeeder::create('users')
     ->count(50000)
     ->run();
 
-// then pool user ids using TurboData helper
-$userIds = TurboData::fromPool(
-    fn () => DB::table('users')->pluck('id')->toArray()
-);
+// fromTable() loads user IDs once from the DB, then cycles deterministically
+$userIds = TurboData::fromTable('users');
 
-// then seed posts with user relationships
+// seed posts — each post gets a valid user_id with zero extra DB queries
 TurboSeeder::create('posts')
     ->columns(['user_id', 'title', 'content', 'created_at'])
     ->generate(fn ($index) => [
@@ -542,24 +540,38 @@ $ts = TurboData::sequentialDate('2024-01-01', 'hour', $index);
 $deletedAt = TurboData::nullable(0.15, fn () => now());
 ```
 
-#### Foreign Key Pools
+#### Seeding Related Tables
+
+**`fromTable()`** is the standard way to assign FK values. It plucks a column from an already-seeded table once, caches it in memory, and cycles or randomly picks from it on every generator call — zero extra DB queries after the first.
 
 ```php
-// Loads IDs once from DB, cycles deterministically - works with UUID PKs and ID gaps
-// Returns a closure: $userIds($index)
-$userIds = TurboData::fromPool(
-    fn () => DB::table('users')->pluck('id')->toArray()
-);
+$userIds     = TurboData::fromTable('users');                       // cycle (default)
+$categoryIds = TurboData::fromTable('categories', 'id', 'random'); // random pick
+$codes       = TurboData::fromTable('regions', 'code', 'cycle', 'reports'); // custom column + connection
 
 TurboSeeder::create('posts')
-    ->columns(['user_id', 'title'])
+    ->columns(['user_id', 'category_id', 'title'])
     ->generate(fn ($i) => [
-        'user_id' => $userIds($i),
-        'title'   => "Post {$i}",
+        'user_id'     => $userIds($i),
+        'category_id' => $categoryIds($i),
+        'title'       => "Post {$i}",
     ])
     ->count(1_000_000)
     ->run();
 ```
+
+> Seed the referenced table **before** calling `fromTable()`. The DB query fires once on the first generator call; all subsequent calls are O(1) array lookups.
+
+**`fromPool()`** — use this when `fromTable()` isn't enough: custom filters, joins, specific ordering, or any query that can't be expressed as a simple column pluck.
+
+```php
+// Only reference active users; fromTable() can't filter — fromPool() can
+$userIds = TurboData::fromPool(
+    fn () => DB::table('users')->where('active', 1)->orderBy('id')->pluck('id')->toArray()
+);
+```
+
+`fromPool()` accepts any callable that returns an array. Same lazy-load and cycle semantics as `fromTable()` — loaded once, cycled by index.
 
 #### Unique Values
 
