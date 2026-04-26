@@ -171,7 +171,7 @@ See [src/Examples/ExampleSeeder.php](src/Examples/ExampleSeeder.php) and [Common
 
 ## Common Use Cases
 
-### Seeding Users with Relationships
+### Seeding Tables with Relationships
 
 Create users with related posts using `fromTable()` for clean FK assignment:
 
@@ -193,7 +193,7 @@ TurboSeeder::create('users')
 // fromTable() loads user IDs once from the DB, then cycles deterministically
 $userIds = TurboData::fromTable('users');
 
-// seed posts — each post gets a valid user_id with zero extra DB queries
+// seed posts - each post gets a valid user_id with zero extra DB queries
 TurboSeeder::create('posts')
     ->columns(['user_id', 'title', 'content', 'created_at'])
     ->generate(fn ($index) => [
@@ -542,10 +542,10 @@ $deletedAt = TurboData::nullable(0.15, fn () => now());
 
 #### Seeding Related Tables
 
-**`fromTable()`** is the standard way to assign FK values. It plucks a column from an already-seeded table once, caches it in memory, and cycles or randomly picks from it on every generator call — zero extra DB queries after the first.
+**`fromTable()`** is the standard way to assign FK values. It plucks a column from an already-seeded table once, caches it in memory, then cycles or randomly picks from it on every generator call, ensuring zero extra DB queries after the first.
 
 ```php
-$userIds     = TurboData::fromTable('users');                       // cycle (default)
+$userIds     = TurboData::fromTable('users');                      // cycle (default)
 $categoryIds = TurboData::fromTable('categories', 'id', 'random'); // random pick
 $codes       = TurboData::fromTable('regions', 'code', 'cycle', 'reports'); // custom column + connection
 
@@ -562,16 +562,16 @@ TurboSeeder::create('posts')
 
 > Seed the referenced table **before** calling `fromTable()`. The DB query fires once on the first generator call; all subsequent calls are O(1) array lookups.
 
-**`fromPool()`** — use this when `fromTable()` isn't enough: custom filters, joins, specific ordering, or any query that can't be expressed as a simple column pluck.
+**`fromQuery()`** - use this when `fromTable()` isn't enough: custom filters, joins, specific ordering, or any query that can't be expressed as a simple column pluck.
 
 ```php
-// Only reference active users; fromTable() can't filter — fromPool() can
-$userIds = TurboData::fromPool(
+// Only referencing `active` users; fromTable() can't filter, but fromQuery() can
+$userIds = TurboData::fromQuery(
     fn () => DB::table('users')->where('active', 1)->orderBy('id')->pluck('id')->toArray()
 );
 ```
 
-`fromPool()` accepts any callable that returns an array. Same lazy-load and cycle semantics as `fromTable()` — loaded once, cycled by index.
+`fromQuery()` accepts any callable that returns an array. Same lazy-load and cycle semantics as the `fromTable()` (loaded once, then cycled by index).
 
 #### Unique Values
 

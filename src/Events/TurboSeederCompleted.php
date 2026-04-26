@@ -14,8 +14,6 @@ use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
  *
  * IMPORTANT: This event fires even for dry-run operations. Always check
  * $result->isDryRun before acting on the assumption that rows were committed.
- * When isDryRun is true, no rows exist in the database — the transaction was
- * rolled back immediately after the inserts.
  *
  * The event is NOT dispatched when seeding fails (an exception is thrown).
  */

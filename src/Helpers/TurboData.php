@@ -39,7 +39,7 @@ final class TurboData
 
     /**
      * Return a random value with weighted probability.
-     * Weights are relative — they don't need to sum to 100.
+     * Weights are relative - they don't need to sum to 100.
      *
      * Example: ['active' => 70, 'inactive' => 20, 'banned' => 10]
      *
@@ -126,7 +126,7 @@ final class TurboData
 
     /**
      * Return a random Carbon date between two date strings.
-     * Parses $from/$to once — safe to call 1M times.
+     * Parses $from/$to once - safe to call 1M times.
      */
     public static function dateRange(string $from, string $to): Carbon
     {
@@ -197,7 +197,7 @@ final class TurboData
     /**
      * Pluck a column from a table once and cycle or randomly pick on every generator call.
      * Loaded lazily on first call; all subsequent calls are O(1) array lookups.
-     * For custom queries (filters, joins) use fromPool() instead.
+     * For custom queries (filters, joins) use fromQuery() instead.
      *
      * @param  string  $mode  'cycle' (default) | 'random'
      * @return \Closure(int): mixed
@@ -227,7 +227,7 @@ final class TurboData
 
                 if (empty($pool)) {
                     throw new \RuntimeException(
-                        "TurboData::fromTable() — [{$table}.{$column}] returned no rows. Seed the table before referencing it."
+                        "TurboData::fromTable() - [{$table}.{$column}] returned no rows. Seed the table before referencing it."
                     );
                 }
 
@@ -242,12 +242,12 @@ final class TurboData
 
     /**
      * Load values once via a callable, then cycle through them by index.
-     * Use when fromTable() isn't enough — filters, joins, custom ordering.
+     * Use when fromTable() isn't enough. For filters, joins, custom ordering.
      *
      * @param  callable(): array<int, mixed>  $loader
      * @return \Closure(int): mixed
      */
-    public static function fromPool(callable $loader): \Closure
+    public static function fromQuery(callable $loader): \Closure
     {
         $pool = null;
         $count = 0;
@@ -257,7 +257,7 @@ final class TurboData
                 $pool = array_values($loader());
 
                 if (empty($pool)) {
-                    throw new \RuntimeException('TurboData::fromPool() loader returned an empty array.');
+                    throw new \RuntimeException('TurboData::fromQuery() loader returned an empty array.');
                 }
 
                 $count = count($pool);

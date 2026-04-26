@@ -94,7 +94,7 @@ return [
         |--------------------------------------------------------------------------
         |
         | The string used to represent NULL values in CSV files. MySQL and PostgreSQL
-        | native CSV import use \N by default — only change this for SQLite CSV strategy
+        | native CSV import use \N by default. only change this for SQLite CSV strategy
         | if your data may contain the literal string \N.
         |
         */
