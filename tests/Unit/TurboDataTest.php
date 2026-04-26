@@ -219,17 +219,17 @@ test('resetNowOnce allows new value to be generated', function () {
     expect($second)->toMatch('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/');
 });
 
-// ── fromPool() ────────────────────────────────────────────────────────────────
+// ── fromQuery() ────────────────────────────────────────────────────────────────
 
-test('fromPool returns a closure', function () {
-    $pool = TurboData::fromPool(fn () => [1, 2, 3]);
+test('fromQuery returns a closure', function () {
+    $pool = TurboData::fromQuery(fn () => [1, 2, 3]);
 
     expect($pool)->toBeInstanceOf(Closure::class);
 });
 
-test('fromPool cycles through loaded values', function () {
+test('fromQuery cycles through loaded values', function () {
     $loadCount = 0;
-    $pool = TurboData::fromPool(function () use (&$loadCount) {
+    $pool = TurboData::fromQuery(function () use (&$loadCount) {
         $loadCount++;
 
         return ['a', 'b', 'c'];
@@ -242,8 +242,8 @@ test('fromPool cycles through loaded values', function () {
     expect($loadCount)->toBe(1); // loaded only once
 });
 
-test('fromPool throws when loader returns empty array', function () {
-    $pool = TurboData::fromPool(fn () => []);
+test('fromQuery throws when loader returns empty array', function () {
+    $pool = TurboData::fromQuery(fn () => []);
     $pool(0);
 })->throws(RuntimeException::class);
 

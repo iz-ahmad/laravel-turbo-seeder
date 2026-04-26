@@ -28,8 +28,8 @@ class ExampleSeeder extends Seeder
         // Example 1: Basic fluent API with unique value helpers
         //
         // uniqueEmail(), uniqueUsername(), uniqueSlug(), uniqueUuid() all return closures
-        // that produce collision-free values across millions of records — no Faker needed.
-        // nowOnce() calls now() once for the whole run; all records share the same timestamp.
+        // that produce collision-free values across millions of records; no Faker needed.
+        // nowOnce() calls now() once for the whole run.
 
         $uniqueEmail = TurboData::uniqueEmail();
         $uniqueUsername = TurboData::uniqueUsername('usr');
@@ -132,12 +132,10 @@ class ExampleSeeder extends Seeder
             1000
         );
 
-        // Example 6: uniqueSlug, uniqueUuid, and fromPool
+        // Example 6: uniqueSlug, uniqueUuid, and fromQuery
         //
         // uniqueSlug() produces URL-safe slugs guaranteed unique per index.
         // uniqueUuid() produces a UUID (with optional prefix) per call.
-        // fromPool() is the escape hatch for fromTable() — accepts any callable that
-        // returns an array, enabling filters, joins, or specific ordering.
 
         $productSlug = TurboData::uniqueSlug('product');
         $productSku = TurboData::uniqueUuid('SKU-');
@@ -154,9 +152,9 @@ class ExampleSeeder extends Seeder
             ->count(5000)
             ->run();
 
-        // fromPool(): custom query — only active users, specific ordering.
+        // fromQuery(): custom query - only active users, specific ordering.
         // Use this when fromTable() isn't enough (filters, joins, etc.)
-        $activeUserIds = TurboData::fromPool(
+        $activeUserIds = TurboData::fromQuery(
             fn () => DB::table('users')->where('active', 1)->orderBy('id')->pluck('id')->toArray()
         );
 
