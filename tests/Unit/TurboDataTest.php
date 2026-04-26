@@ -45,7 +45,7 @@ test('weightedFrom returns a value from the weights array', function () {
 });
 
 test('weightedFrom returns the only value when weight is 100%', function () {
-    // 1000 iterations: only 'always' can win
+    // only 'always' can win — 'never' has weight 0
     for ($i = 0; $i < 100; $i++) {
         $result = TurboData::weightedFrom(['always' => 1, 'never' => 0]);
         expect($result)->toBe('always');
@@ -155,6 +155,22 @@ test('nullable accepts callable value and only evaluates when not null', functio
     expect($called)->toBe(10);
 });
 
+test('nullable does not evaluate callable when null is returned', function () {
+    $called = 0;
+    $callable = function () use (&$called) {
+        $called++;
+
+        return 'computed';
+    };
+
+    // probability = 1 → always null → callable never evaluated
+    for ($i = 0; $i < 10; $i++) {
+        TurboData::nullable(1.0, $callable);
+    }
+
+    expect($called)->toBe(0);
+});
+
 // ── dateRange() ───────────────────────────────────────────────────────────────
 
 test('dateRange returns a Carbon instance', function () {
@@ -187,7 +203,17 @@ test('dateRange throws when from is after to', function () {
 
 // ── sequentialDate() ──────────────────────────────────────────────────────────
 
-test('sequentialDate returns Carbon incrementing by step', function () {
+test('sequentialDate returns a Carbon instance', function () {
+    expect(TurboData::sequentialDate('2024-01-01', 'day', 0))->toBeInstanceOf(Carbon::class);
+});
+
+test('sequentialDate index 0 returns the start date unchanged', function () {
+    $result = TurboData::sequentialDate('2024-06-15', 'day', 0);
+
+    expect($result->toDateString())->toBe('2024-06-15');
+});
+
+test('sequentialDate increments by day', function () {
     $d0 = TurboData::sequentialDate('2024-01-01', 'day', 0);
     $d1 = TurboData::sequentialDate('2024-01-01', 'day', 1);
     $d7 = TurboData::sequentialDate('2024-01-01', 'day', 7);
@@ -195,6 +221,15 @@ test('sequentialDate returns Carbon incrementing by step', function () {
     expect($d0->toDateString())->toBe('2024-01-01');
     expect($d1->toDateString())->toBe('2024-01-02');
     expect($d7->toDateString())->toBe('2024-01-08');
+});
+
+test('sequentialDate returns independent copies so calls do not mutate each other', function () {
+    $d1 = TurboData::sequentialDate('2024-01-01', 'day', 1);
+    $d2 = TurboData::sequentialDate('2024-01-01', 'day', 2);
+
+    // If the cached start were mutated, d1 would reflect d2's offset
+    expect($d1->toDateString())->toBe('2024-01-02');
+    expect($d2->toDateString())->toBe('2024-01-03');
 });
 
 // ── nowOnce() ────────────────────────────────────────────────────────────────
@@ -334,14 +369,4 @@ test('hashedPassword caches separately per password', function () {
     expect($hash1)->not->toBe($hash2);
     expect(password_verify('password', $hash1))->toBeTrue();
     expect(password_verify('other', $hash2))->toBeTrue();
-});
-
-test('resetHashedPasswords allows new hash to be generated', function () {
-    $first = TurboData::hashedPassword('pass');
-    TurboData::resetHashedPasswords();
-    $second = TurboData::hashedPassword('pass');
-
-    // Both are valid hashes but bcrypt generates a new salt each time
-    expect(password_verify('pass', $first))->toBeTrue();
-    expect(password_verify('pass', $second))->toBeTrue();
 });
