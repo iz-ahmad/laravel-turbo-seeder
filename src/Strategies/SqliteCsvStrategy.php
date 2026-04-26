@@ -70,7 +70,7 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
         $singleRowPlaceholders = '('.str_repeat('?,', $columnCount - 1).'?)';
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE);
 
-        $maxRowsPerBatch = max(1, (int) floor(32766 / $columnCount));
+        $maxRowsPerBatch = max(1, (int) floor(999 / $columnCount));
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
             $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));
