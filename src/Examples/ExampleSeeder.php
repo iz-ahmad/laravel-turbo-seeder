@@ -8,18 +8,14 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
-use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
 
 /**
  * Demonstrates the TurboSeeder API usage.
  *
- * @see UsesTurboSeeder
  * @see TurboData
  */
 class ExampleSeeder extends Seeder
 {
-    use UsesTurboSeeder;
-
     public function run(): void
     {
         // ── Example 1: Basic fluent API ───────────────────────────────────────
@@ -45,26 +41,20 @@ class ExampleSeeder extends Seeder
             ->count(10000)
             ->run();
 
-        // ── Example 2: Trait shorthand (UsesTurboSeeder) ──────────────────────
-        //
-        // quickSeed() wraps the full fluent API for simple cases.
-        // quickCsvSeed() does the same but uses the CSV strategy.
-        // Use the trait when you don't need advanced options like chunkSize,
-        // disableForeignKeyChecks, upsert, etc.
+        // ── Example 2: Simple seeding (no advanced options needed) ────────────
         //
         // Seeding categories here (before orders) so the FK reference in
         // Example 4 finds rows in the table.
 
-        $this->quickSeed(
-            'categories',
-            ['name', 'slug', 'created_at'],
-            fn ($index) => [
+        TurboSeeder::create('categories')
+            ->columns(['name', 'slug', 'created_at'])
+            ->generate(fn ($index) => [
                 'name'       => "Category {$index}",
                 'slug'       => "category-{$index}",
                 'created_at' => TurboData::nowOnce(),
-            ],
-            500
-        );
+            ])
+            ->count(500)
+            ->run();
 
         // ── Example 3: CSV strategy for maximum speed ─────────────────────────
         //

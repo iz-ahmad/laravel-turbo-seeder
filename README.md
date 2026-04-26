@@ -359,28 +359,25 @@ class UserSeeder extends Seeder
 
 ```php
 use Illuminate\Database\Seeder;
-use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
+use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 class UserSeeder extends Seeder
 {
-    use UsesTurboSeeder;
-
     public function run(): void
     {
         $uniqueEmail = TurboData::uniqueEmail();
 
-        $this->quickSeed(
-            'users',
-            ['name', 'email', 'password', 'created_at'],
-            fn ($i) => [
+        TurboSeeder::create('users')
+            ->columns(['name', 'email', 'password', 'created_at'])
+            ->generate(fn ($i) => [
                 'name'       => "User {$i}",
                 'email'      => $uniqueEmail($i),
                 'password'   => TurboData::hashedPassword(),
                 'created_at' => TurboData::nowOnce(),
-            ],
-            10000
-        );
+            ])
+            ->count(10000)
+            ->run();
     }
 }
 ```
@@ -453,71 +450,6 @@ class SendTurboSeederCompletedNotification
 ```
 
 > **Note:** Always check `$event->result->isDryRun` before acting on the assumption that rows were committed. The event is **not** dispatched when seeding fails.
-
----
-
-### Using the `UsesTurboSeeder` Trait
-
-Add `use UsesTurboSeeder;` to any Laravel seeder to get three convenience methods:
-
-| Method | When to use |
-|--------|------------|
-| `quickSeed()` | Simple bulk insert — no extra options needed |
-| `quickCsvSeed()` | Same, but uses the CSV strategy for maximum speed |
-| `turboSeed()` | Returns the full fluent builder — use when you need `chunkSize()`, `disableForeignKeyChecks()`, `upsert()`, etc. |
-
-```php
-use Illuminate\Database\Seeder;
-use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
-use IzAhmad\TurboSeeder\Helpers\TurboData;
-
-class DatabaseSeeder extends Seeder
-{
-    use UsesTurboSeeder;
-
-    public function run(): void
-    {
-        // quickSeed: concise wrapper for simple tables
-        $this->quickSeed(
-            'categories',
-            ['name', 'slug', 'created_at'],
-            fn ($i) => [
-                'name'       => "Category {$i}",
-                'slug'       => "category-{$i}",
-                'created_at' => TurboData::nowOnce(),
-            ],
-            500
-        );
-
-        // quickCsvSeed: same API, uses CSV strategy (MySQL/PostgreSQL)
-        $userIds = TurboData::fromTable('users');
-
-        $this->quickCsvSeed(
-            'posts',
-            ['user_id', 'title', 'created_at'],
-            fn ($i) => [
-                'user_id'    => $userIds($i),
-                'title'      => "Post {$i}",
-                'created_at' => TurboData::nowOnce(),
-            ],
-            100000
-        );
-
-        // turboSeed: full fluent builder when you need advanced options
-        $this->turboSeed('orders')
-            ->columns(['user_id', 'total', 'status'])
-            ->generate(fn ($i) => [
-                'user_id' => $userIds($i),
-                'total'   => TurboData::randomFloat(2, 10.00, 999.99),
-                'status'  => TurboData::weightedFrom(['pending' => 50, 'completed' => 40, 'cancelled' => 10]),
-            ])
-            ->count(50000)
-            ->chunkSize(2000)
-            ->disableForeignKeyChecks()
-            ->run();
-    }
-}
-```
 
 ---
 
