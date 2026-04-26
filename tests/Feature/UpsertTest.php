@@ -36,7 +36,7 @@ test('upsert updates existing rows on unique key conflict', function () {
         ->upsert(['email'])
         ->run();
 
-    // Row count unchanged — no new rows were inserted
+    // Row count unchanged - no new rows were inserted
     expect(DB::table('test_users')->count())->toBe(3);
 
     // The updated values are persisted

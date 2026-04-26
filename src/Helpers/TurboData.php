@@ -39,7 +39,7 @@ final class TurboData
 
     /**
      * Return a random value with weighted probability.
-     * Weights are relative — they don't need to sum to 100.
+     * Weights are relative - they don't need to sum to 100.
      *
      * Example: ['active' => 70, 'inactive' => 20, 'banned' => 10]
      *
@@ -126,7 +126,7 @@ final class TurboData
 
     /**
      * Return a random Carbon date between two date strings.
-     * Parses $from/$to once — safe to call 1M times.
+     * Parses $from/$to once - safe to call 1M times.
      */
     public static function dateRange(string $from, string $to): Carbon
     {
@@ -227,7 +227,7 @@ final class TurboData
 
                 if (empty($pool)) {
                     throw new \RuntimeException(
-                        "TurboData::fromTable() — [{$table}.{$column}] returned no rows. Seed the table before referencing it."
+                        "TurboData::fromTable() - [{$table}.{$column}] returned no rows. Seed the table before referencing it."
                     );
                 }
 
@@ -242,7 +242,7 @@ final class TurboData
 
     /**
      * Load values once via a callable, then cycle through them by index.
-     * Use when fromTable() isn't enough — filters, joins, custom ordering.
+     * Use when fromTable() isn't enough - filters, joins, custom ordering.
      *
      * @param  callable(): array<int, mixed>  $loader
      * @return \Closure(int): mixed

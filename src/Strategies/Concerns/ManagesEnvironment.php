@@ -34,7 +34,7 @@ trait ManagesEnvironment
         }
 
         // Phase 1: prepare session-level settings that must run BEFORE the transaction
-        // (e.g. MySQL FK checks, SQLite PRAGMAs — SQLite rejects PRAGMA changes inside a txn).
+        // (e.g. MySQL FK checks, SQLite PRAGMAs - SQLite rejects PRAGMA changes inside a txn).
         $this->environmentContext = $this->prepareAction->prepareBeforeTransaction($this->dbConnection, $this->config);
 
         if ($this->config->shouldUseTransactions()) {

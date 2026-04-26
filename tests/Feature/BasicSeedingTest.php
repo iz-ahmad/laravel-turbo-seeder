@@ -187,7 +187,7 @@ test('seeding handles BackedEnum values in generator', function () {
         ->generate(fn ($i) => [
             'name' => "User {$i}",
             'email' => "user{$i}@test.com",
-            'age' => SeedingTestAge::Adult, // int BackedEnum — value is 18
+            'age' => SeedingTestAge::Adult, // int BackedEnum - value is 18
         ])
         ->count(5)
         ->run();

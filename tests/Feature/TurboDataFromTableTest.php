@@ -34,7 +34,7 @@ test('fromTable loads pool lazily on first call', function () {
 
     $fn = TurboData::fromTable('test_users');
 
-    // no DB hit yet — just a closure
+    // no DB hit yet - just a closure
     expect($fn)->toBeInstanceOf(Closure::class);
 
     // first call fires the query

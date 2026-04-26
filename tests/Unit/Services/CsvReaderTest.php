@@ -78,7 +78,7 @@ test('file handle is closed when generator is abandoned mid-stream', function ()
 
     $gen = $reader->readRows();
     $gen->current(); // read first row
-    $gen = null;     // abandon generator — triggers finally block
+    $gen = null;     // abandon generator - triggers finally block
 
     // File handle should be closed; opening for read again must succeed
     $reader2 = new CsvReader($this->tempFile);
