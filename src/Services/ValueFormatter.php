@@ -26,7 +26,7 @@ final class ValueFormatter
     /**
      * Format a value for PDO binding (preserves PHP scalar types).
      * bool → int, DateTimeInterface → 'Y-m-d H:i:s', BackedEnum → backing value,
-     * UnitEnum → its name, array/Collection/object → JSON string, null/scalar → unchanged.
+     * UnitEnum → its name, array/Collection/object → JSON string, null/scalar/JSON string → unchanged.
      */
     public static function format(mixed $value): mixed
     {
