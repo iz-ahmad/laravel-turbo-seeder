@@ -45,7 +45,7 @@ test('weightedFrom returns a value from the weights array', function () {
 });
 
 test('weightedFrom returns the only value when weight is 100%', function () {
-    // only 'always' can win — 'never' has weight 0
+    // only 'always' can win - 'never' has weight 0
     for ($i = 0; $i < 100; $i++) {
         $result = TurboData::weightedFrom(['always' => 1, 'never' => 0]);
         expect($result)->toBe('always');

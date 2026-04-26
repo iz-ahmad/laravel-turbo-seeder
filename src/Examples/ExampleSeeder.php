@@ -10,7 +10,9 @@ use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 /**
- * Demonstrates the TurboSeeder API usage.
+ * Demonstrates the TurboSeeder API usage with real-life examples.
+ * 
+ * See the documentation (README.md) for more details.
  *
  * @see TurboData
  */
@@ -22,8 +24,8 @@ class ExampleSeeder extends Seeder
         //
         // uniqueEmail(), uniqueUsername() return closures that produce
         // collision-free values across millions of records; no Faker needed.
-        // hashedPassword() hashes once and reuses the result — calling bcrypt()
-        // inside the generator would hash once per record (extremely slow).
+        // hashedPassword() hashes once and reuses the result.
+        // Calling bcrypt() inside the generator would hash once per record (will be slower).
         // nowOnce() calls now() a single time for the whole run.
 
         $uniqueEmail    = TurboData::uniqueEmail();
@@ -41,10 +43,7 @@ class ExampleSeeder extends Seeder
             ->count(10000)
             ->run();
 
-        // ── Example 2: Simple seeding (no advanced options needed) ────────────
-        //
-        // Seeding categories here (before orders) so the FK reference in
-        // Example 4 finds rows in the table.
+        // ── Example 2: Seeding categories ───────────────────────────────────────
 
         TurboSeeder::create('categories')
             ->columns(['name', 'slug', 'created_at'])
@@ -58,8 +57,8 @@ class ExampleSeeder extends Seeder
 
         // ── Example 3: CSV strategy for maximum speed ─────────────────────────
         //
-        // useCsvStrategy() uses LOAD DATA (MySQL) or COPY (PostgreSQL) — the
-        // fastest possible insert path. For SQLite use the default strategy.
+        // useCsvStrategy() uses LOAD DATA (MySQL) or COPY (PostgreSQL) - the
+        // fastest possible insert path. For SQLite, use the default strategy.
         // fromTable() plucks IDs once from the already-seeded users table,
         // then cycles or randomly picks with zero extra DB queries.
         // weightedFrom() produces realistic non-uniform distributions.
@@ -132,9 +131,9 @@ class ExampleSeeder extends Seeder
             )
             ->run();
 
-        // ── Example 6: fromQuery() for filtered FK pools ───────────────────────
+        // ── Example 6: fromQuery() for custom filtered FK pools ───────────────────────
         //
-        // Use fromQuery() when fromTable() isn't enough: custom filters, joins,
+        // Use fromQuery() when fromTable() isn't enough - for custom filters, joins,
         // or specific ordering. The loader runs once; all subsequent calls are
         // O(1) array lookups, same as fromTable().
 
@@ -172,12 +171,13 @@ class ExampleSeeder extends Seeder
 
         // ── Example 8: Automatic type handling via ValueFormatter ─────────────
         //
-        // No manual type conversion needed — TurboSeeder handles it:
-        //   PHP array / Collection  → JSON string
-        //   bool                    → 1 / 0
-        //   DateTime / Carbon       → Y-m-d H:i:s
-        //   BackedEnum / UnitEnum   → value / name
-        //   JSON string             → stored as-is (no double-encoding)
+        // No manual type conversion needed - TurboSeeder handles it:
+        //   bool                        → 1 / 0
+        //   DateTime / Carbon           → Y-m-d H:i:s
+        //   BackedEnum / UnitEnum       → value / name
+        //   array / Collection / object → JSON string
+        //   JSON string                 → stored as-is (no double-encoding)
+        // So you can pass all types of values in the generator function as needed.
 
         $themeSelector = TurboData::cycleFrom(['dark', 'light']);
 
