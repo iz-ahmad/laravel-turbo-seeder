@@ -262,7 +262,7 @@ final class TurboData
 
     /**
      * Load values once via a callable, then cycle through them by index.
-     * Use when fromTable() isn't enough, such as for filters, joins, custom ordering.
+     * Use when fromTable() isn't enough - for filters, joins, custom ordering etc.
      *
      * @param  callable(): array<int, mixed>  $loader
      * @return \Closure(int): mixed
