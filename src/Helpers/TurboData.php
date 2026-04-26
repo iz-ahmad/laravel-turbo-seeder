@@ -172,12 +172,8 @@ final class TurboData
     }
 
     /**
-     * Return the current timestamp as a string, computed only once per process.
-     * Use this instead of now() inside generate() to avoid 1M identical now() calls
-     * that differ only by microseconds.
-     *
-     * For records where all rows should share the same insert timestamp:
-     *   'created_at' => TurboData::nowOnce()
+     * Return the current timestamp as a string, computed once and cached.
+     * Use instead of now() inside generate() - avoids calling now() per record.
      */
     public static function nowOnce(): string
     {
@@ -199,11 +195,7 @@ final class TurboData
 
     /**
      * Hash a password once (bcrypt) and reuse the result across all records.
-     * Avoids running password_hash() 1M times inside a generator, which would be extremely slow.
-     *
-     * Multiple calls with the same $password return the cached hash.
-     * For records where all rows share one seeding password:
-     *   'password' => TurboData::hashedPassword()
+     * Multiple calls with the same $password return the same cached hash.
      */
     public static function hashedPassword(string $password = 'password'): string
     {
@@ -226,7 +218,6 @@ final class TurboData
     /**
      * Pluck a column from a table once and cycle or randomly pick on every generator call.
      * Loaded lazily on first call; all subsequent calls are O(1) array lookups.
-     * For custom queries (filters, joins) use fromQuery() instead.
      *
      * @param  string  $mode  'cycle' (default) | 'random'
      * @return \Closure(int): mixed
