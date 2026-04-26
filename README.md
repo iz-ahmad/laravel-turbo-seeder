@@ -306,6 +306,8 @@ To enable CSV strategy for MySQL, add `PDO::MYSQL_ATTR_LOCAL_INFILE` to your dat
 ],
 ```
 
+**MySQL server-side requirement:** The above enables the client side. MySQL also requires `local_infile` to be enabled on the server — it defaults to `OFF` in MySQL 8.0 and later. Enable it at runtime: `SET GLOBAL local_infile = 1;` or permanently via `local_infile = 1` under `[mysqld]` in your MySQL config file.
+
 **Security Note:** `LOAD DATA LOCAL INFILE` allows MySQL to read files from the client machine. Only enable this in trusted environments (development, staging). Consider disabling in production unless absolutely necessary.
 
 ### PostgreSQL Configuration
