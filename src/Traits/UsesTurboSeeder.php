@@ -47,7 +47,7 @@ trait UsesTurboSeeder
     }
 
     /**
-     * Quick seed helper (CSV based).
+     * Quick seed helper (CSV based) with default configuration.
      *
      * @param  array<int, string>  $columns
      */

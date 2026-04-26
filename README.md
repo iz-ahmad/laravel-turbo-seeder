@@ -396,32 +396,32 @@ class UserSeeder extends Seeder
 
 #### Strategy Methods
 
-- `useCsvStrategy()`: Native CSV file import (fastest)
-- `useDefaultStrategy()`: Bulk INSERT (default)
-- `strategy(SeederStrategy $strategy)`: Set via enum directly
+- `useCsvStrategy()` - Native CSV file import (fastest)
+- `useDefaultStrategy()` - Bulk INSERT (default)
+- `strategy(SeederStrategy $strategy)` - Set via enum directly
 
 #### Configuration Methods
 
-- `connection(string $connection)`: Database connection to use
-- `chunkSize(int $size)`: Records per chunk
-- `withProgressTracking()` / `withoutProgressTracking()`: Toggle progress bar
-- `disableForeignKeyChecks()` / `enableForeignKeyChecks()`: Toggle FK checks
-- `disableQueryLog()` / `enableQueryLog()`: Toggle query logging
-- `useTransactions()` / `withoutTransactions()`: Toggle transactions
-- `options(array $options)`: Merge custom options
-- `when(bool|callable $condition, callable $callback, ?callable $default)`: Conditional chaining
-- `unless(bool|callable $condition, callable $callback, ?callable $default)`: Inverse conditional
+- `connection(string $connection)` - Database connection to use
+- `chunkSize(int $size)` - Records per chunk
+- `withProgressTracking()` / `withoutProgressTracking()` - Toggle progress bar
+- `disableForeignKeyChecks()` / `enableForeignKeyChecks()` - Toggle FK checks
+- `disableQueryLog()` / `enableQueryLog()` - Toggle query logging
+- `useTransactions()` / `withoutTransactions()` - Toggle transactions
+- `options(array $options)` - Merge custom options
+- `when(bool|callable $condition, callable $callback, ?callable $default)` - Conditional chaining
+- `unless(bool|callable $condition, callable $callback, ?callable $default)` - Inverse conditional
 
 #### Advanced Methods
 
-- `dryRun(bool $enabled = true)`: Generate and validate data without committing. Uses transaction rollback; `$result->isDryRun` will be `true`.
+- `dryRun(bool $enabled = true)` - Generate and validate data without committing. Uses transaction rollback; `$result->isDryRun` will be `true`.
 > **Do not combine this with `withoutTransactions()`**; because without a transaction, there is nothing to roll back and rows will be permanently written.
 
-- `upsert(array $uniqueBy)`: On conflict, update non-key columns. Uses `ON DUPLICATE KEY UPDATE` (MySQL), `ON CONFLICT DO UPDATE SET` (PostgreSQL / SQLite 3.24+). Keys must be a subset of declared columns and must form a unique constraint on the table.
+- `upsert(array $uniqueBy)` - On conflict, update non-key columns. Uses `ON DUPLICATE KEY UPDATE` (MySQL), `ON CONFLICT DO UPDATE SET` (PostgreSQL / SQLite 3.24+). Keys must be a subset of declared columns and must form a unique constraint on the table.
 
-- `retryAttempts(int $attempts)`: Retry on transient deadlock / lock-timeout failures (SQLSTATE 40001, MySQL 1205) with exponential backoff. Accepts 1–10; defaults to 3.
+- `retryAttempts(int $attempts)` - Retry on transient deadlock / lock-timeout failures (SQLSTATE 40001, MySQL 1205) with exponential backoff. Accepts 1–10; defaults to 3.
 
-- `withoutColumnValidation()`: Skip the pre-seed schema check that validates declared columns exist on the table.
+- `withoutColumnValidation()` - Skip the pre-seed schema check that validates declared columns exist on the table.
 
 #### Events
 
