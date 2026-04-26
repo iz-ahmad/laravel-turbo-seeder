@@ -26,6 +26,7 @@ trait HandlesCsvFallback
             'error' => $exception->getMessage(),
             'table' => $config->table,
             'driver' => $this->dbConnection->driver->value,
+            'note' => 'The data generator will re-run from index 0. So non-idempotent generators (random values, UUIDs) will produce different values than the failed CSV run.',
         ]);
 
         $this->displayFallbackWarning($exception);

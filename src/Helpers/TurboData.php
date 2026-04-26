@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Helpers;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -194,15 +195,54 @@ final class TurboData
     }
 
     /**
-     * Load values once via $loader callable, then cycle through them using the index.
-     * Solves the fragile ($index % N) + 1 pattern for foreign key assignment.
+     * Pluck a column from a table once and cycle or randomly pick on every generator call.
+     * Loaded lazily on first call; all subsequent calls are O(1) array lookups.
+     * For custom queries (filters, joins) use fromPool() instead.
      *
-     * The loader is called once per unique pool key. Subsequent calls with the same
-     * loader identity reuse the cached pool.
-     *
-     * Example:
-     *   $userIds = TurboData::fromPool(fn() => DB::table('users')->pluck('id')->toArray());
-     *   ->generate(fn($i) => ['user_id' => $userIds($i)])
+     * @param  string  $mode  'cycle' (default) | 'random'
+     * @return \Closure(int): mixed
+     */
+    public static function fromTable(string $table, string $column = 'id', string $mode = 'cycle', ?string $connection = null): \Closure
+    {
+        if ($table === '') {
+            throw new \InvalidArgumentException('fromTable() $table must not be empty.');
+        }
+
+        if ($column === '') {
+            throw new \InvalidArgumentException('fromTable() $column must not be empty.');
+        }
+
+        if (! in_array($mode, ['cycle', 'random'], true)) {
+            throw new \InvalidArgumentException('fromTable() $mode must be "cycle" or "random".');
+        }
+
+        $pool = null;
+        $count = 0;
+
+        return static function (int $index) use ($table, $column, $mode, $connection, &$pool, &$count): mixed {
+            if ($pool === null) {
+                $pool = array_values(
+                    DB::connection($connection)->table($table)->pluck($column)->toArray()
+                );
+
+                if (empty($pool)) {
+                    throw new \RuntimeException(
+                        "TurboData::fromTable() — [{$table}.{$column}] returned no rows. Seed the table before referencing it."
+                    );
+                }
+
+                $count = count($pool);
+            }
+
+            return $mode === 'random'
+                ? $pool[array_rand($pool)]
+                : $pool[$index % $count];
+        };
+    }
+
+    /**
+     * Load values once via a callable, then cycle through them by index.
+     * Use when fromTable() isn't enough — filters, joins, custom ordering.
      *
      * @param  callable(): array<int, mixed>  $loader
      * @return \Closure(int): mixed

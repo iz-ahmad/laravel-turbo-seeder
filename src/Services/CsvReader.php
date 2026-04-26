@@ -17,8 +17,6 @@ final class CsvReader
 
     private string $enclosure = '"';
 
-    private string $escape = '\\';
-
     private int $bufferSize = 8192;
 
     /**
@@ -62,7 +60,6 @@ final class CsvReader
 
         $this->delimiter = $this->config['field_delimiter'] ?? ',';
         $this->enclosure = $this->config['field_enclosure'] ?? '"';
-        $this->escape = $this->config['escape_char'] ?? '\\';
 
         try {
             while (
@@ -71,7 +68,7 @@ final class CsvReader
                     0,
                     $this->delimiter,
                     $this->enclosure,
-                    $this->escape
+                    ''
                 )) !== false
             ) {
                 yield $row;

@@ -7,6 +7,7 @@ namespace IzAhmad\TurboSeeder\Strategies;
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
+use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 
 final class MySqlCsvStrategy extends AbstractCsvStrategy
 {
@@ -22,8 +23,6 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
      */
     protected function importFromCsv(string $table, array $columns): void
     {
-        $this->ensureLocalInfileEnabled();
-
         $pdo = DB::connection($this->dbConnection->name)->getPdo();
         $filepath = trim(
             $pdo->quote($this->getAbsoluteFilePath()),
@@ -31,13 +30,16 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
         );
 
         $columnNames = implode(',', array_map(fn ($col) => "`{$col}`", $columns));
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
 
+        // PDO::MYSQL_ATTR_LOCAL_INFILE must be enabled on the connection; if not,
+        // the import will fail and trigger an automatic fallback to the default strategy.
         $sql = "
             LOAD DATA LOCAL INFILE '{$filepath}'
-            INTO TABLE `{$table}`
+            INTO TABLE {$quotedTable}
             FIELDS TERMINATED BY ','
-            ENCLOSED BY '\"'
-            ESCAPED BY '\\\\'
+            OPTIONALLY ENCLOSED BY '\"'
+            ESCAPED BY ''
             LINES TERMINATED BY '\\n'
             ({$columnNames})
         ";
@@ -66,24 +68,6 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
                 0,
                 $e
             );
-        }
-    }
-
-    /**
-     * Ensure LOCAL INFILE is enabled for MySQL.
-     */
-    private function ensureLocalInfileEnabled(): void
-    {
-        $result = DB::connection($this->dbConnection->name)
-            ->select("SHOW VARIABLES LIKE 'local_infile'");
-
-        if (empty($result) || $result[0]->Value !== 'ON') {
-            try {
-                DB::connection($this->dbConnection->name)
-                    ->statement('SET GLOBAL local_infile = 1');
-            } catch (\Exception) {
-                // letting the actual import attempt fail and trigger fallback
-            }
         }
     }
 

@@ -7,6 +7,7 @@ namespace IzAhmad\TurboSeeder\Strategies;
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
+use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 
 final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
 {
@@ -29,15 +30,18 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
         );
 
         $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL);
 
+        // Server-side COPY requires superuser or pg_read_server_files privilege.
+        // Non-superuser connections will receive a permission error which is caught
+        // below and triggers automatic fallback to the default INSERT strategy.
         $sql = "
-            COPY \"{$table}\" ({$columnNames})
+            COPY {$quotedTable} ({$columnNames})
             FROM '{$filepath}'
             WITH (
                 FORMAT csv,
                 DELIMITER ',',
                 QUOTE '\"',
-                ESCAPE '\\',
                 NULL '\\N'
             )
         ";

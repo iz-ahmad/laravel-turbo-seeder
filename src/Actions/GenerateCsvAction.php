@@ -59,7 +59,7 @@ final class GenerateCsvAction
                 }
 
                 if ($batch > 0 && ($batch % ($csvConfig['gc_frequency'] ?? 5)) === 0) {
-                    $this->memoryManager->forceCleanup();
+                    $this->memoryManager->maybeCleanup();
                 }
             }
         } finally {

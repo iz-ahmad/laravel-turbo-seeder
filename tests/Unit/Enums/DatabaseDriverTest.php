@@ -18,7 +18,7 @@ test('throws exception for unsupported driver', function () {
 test('supports csv import correctly', function () {
     expect(DatabaseDriver::MYSQL->supportsCsvImport())->toBeTrue()
         ->and(DatabaseDriver::PGSQL->supportsCsvImport())->toBeTrue()
-        ->and(DatabaseDriver::SQLITE->supportsCsvImport())->toBeFalse();
+        ->and(DatabaseDriver::SQLITE->supportsCsvImport())->toBeTrue();
 });
 
 test('returns correct display name', function () {
