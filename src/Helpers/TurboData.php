@@ -17,6 +17,9 @@ final class TurboData
 {
     private static ?string $cachedNow = null;
 
+    /** @var array<string, string> */
+    private static array $cachedHashes = [];
+
     // -------------------------------------------------------------------------
     // Value selection
     // -------------------------------------------------------------------------
@@ -155,7 +158,7 @@ final class TurboData
      * Return a Carbon date offset by $step * $index from $start.
      * Useful for sequential timestamps.
      *
-     * @param  string  $step  Any valid Carbon modifier: '1 second', '1 minute', '1 hour', '1 day'
+     * @param  string  $step  A bare time unit: 'second', 'minute', 'hour', 'day', 'week', 'month'
      */
     public static function sequentialDate(string $start, string $step, int $index): Carbon
     {
@@ -192,6 +195,32 @@ final class TurboData
     public static function resetNowOnce(): void
     {
         self::$cachedNow = null;
+    }
+
+    /**
+     * Hash a password once (bcrypt) and reuse the result across all records.
+     * Avoids running password_hash() 1M times inside a generator, which would be extremely slow.
+     *
+     * Multiple calls with the same $password return the cached hash.
+     * For records where all rows share one seeding password:
+     *   'password' => TurboData::hashedPassword()
+     */
+    public static function hashedPassword(string $password = 'password'): string
+    {
+        if (! isset(self::$cachedHashes[$password])) {
+            self::$cachedHashes[$password] = password_hash($password, PASSWORD_BCRYPT);
+        }
+
+        return self::$cachedHashes[$password];
+    }
+
+    /**
+     * Reset all cached hashed passwords.
+     * Useful in tests to prevent state leakage between test cases.
+     */
+    public static function resetHashedPasswords(): void
+    {
+        self::$cachedHashes = [];
     }
 
     /**
@@ -242,7 +271,7 @@ final class TurboData
 
     /**
      * Load values once via a callable, then cycle through them by index.
-     * Use when fromTable() isn't enough - filters, joins, custom ordering.
+     * Use when fromTable() isn't enough, such as for filters, joins, custom ordering.
      *
      * @param  callable(): array<int, mixed>  $loader
      * @return \Closure(int): mixed

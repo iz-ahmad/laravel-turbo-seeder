@@ -7,6 +7,7 @@ use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 beforeEach(function () {
     TurboData::resetNowOnce();
+    TurboData::resetHashedPasswords();
 });
 
 // ── cycleFrom() ───────────────────────────────────────────────────────────────
@@ -305,4 +306,42 @@ test('uniqueUuid with prefix prepends it', function () {
     $gen = TurboData::uniqueUuid('ref_');
 
     expect($gen())->toStartWith('ref_');
+});
+
+// ── hashedPassword() ──────────────────────────────────────────────────────────
+
+test('hashedPassword returns a string', function () {
+    expect(TurboData::hashedPassword())->toBeString();
+});
+
+test('hashedPassword returns a valid bcrypt hash', function () {
+    $hash = TurboData::hashedPassword('secret');
+
+    expect(password_verify('secret', $hash))->toBeTrue();
+});
+
+test('hashedPassword returns the same hash on repeated calls', function () {
+    $first = TurboData::hashedPassword();
+    $second = TurboData::hashedPassword();
+
+    expect($first)->toBe($second);
+});
+
+test('hashedPassword caches separately per password', function () {
+    $hash1 = TurboData::hashedPassword('password');
+    $hash2 = TurboData::hashedPassword('other');
+
+    expect($hash1)->not->toBe($hash2);
+    expect(password_verify('password', $hash1))->toBeTrue();
+    expect(password_verify('other', $hash2))->toBeTrue();
+});
+
+test('resetHashedPasswords allows new hash to be generated', function () {
+    $first = TurboData::hashedPassword('pass');
+    TurboData::resetHashedPasswords();
+    $second = TurboData::hashedPassword('pass');
+
+    // Both are valid hashes but bcrypt generates a new salt each time
+    expect(password_verify('pass', $first))->toBeTrue();
+    expect(password_verify('pass', $second))->toBeTrue();
 });
