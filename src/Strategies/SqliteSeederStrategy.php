@@ -64,7 +64,7 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
             $updateColumns,
         ));
 
-        $maxRowsPerBatch = max(1, (int) floor(32766 / $columnCount));
+        $maxRowsPerBatch = max(1, (int) floor(999 / $columnCount));
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
             $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));
@@ -103,7 +103,7 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE);
 
-        $maxRowsPerBatch = max(1, (int) floor(32766 / $columnCount));
+        $maxRowsPerBatch = max(1, (int) floor(999 / $columnCount));
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
             $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));
