@@ -113,11 +113,14 @@ This creates `config/turbo-seeder.php` in your project.
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
+$uniqueEmail = TurboData::uniqueEmail();
+
 TurboSeeder::create('users')
-    ->columns(['name', 'email', 'created_at'])
+    ->columns(['name', 'email', 'password', 'created_at'])
     ->generate(fn ($index) => [
         'name'       => "User {$index}",
-        'email'      => "user{$index}@example.com",
+        'email'      => $uniqueEmail($index),
+        'password'   => TurboData::hashedPassword(),
         'created_at' => TurboData::nowOnce(),
     ])
     ->count(100000)
@@ -365,13 +368,15 @@ class UserSeeder extends Seeder
 
     public function run(): void
     {
+        $uniqueEmail = TurboData::uniqueEmail();
+
         $this->quickSeed(
             'users',
             ['name', 'email', 'password', 'created_at'],
             fn ($i) => [
                 'name'       => "User {$i}",
-                'email'      => "user{$i}@example.com",
-                'password'   => bcrypt('password'),
+                'email'      => $uniqueEmail($i),
+                'password'   => TurboData::hashedPassword(),
                 'created_at' => TurboData::nowOnce(),
             ],
             10000
@@ -451,13 +456,20 @@ class SendTurboSeederCompletedNotification
 
 ---
 
-### Using in Seeders
+### Using the `UsesTurboSeeder` Trait
 
-Use the `UsesTurboSeeder` trait for quick helpers inside standard Laravel seeders:
+Add `use UsesTurboSeeder;` to any Laravel seeder to get three convenience methods:
+
+| Method | When to use |
+|--------|------------|
+| `quickSeed()` | Simple bulk insert — no extra options needed |
+| `quickCsvSeed()` | Same, but uses the CSV strategy for maximum speed |
+| `turboSeed()` | Returns the full fluent builder — use when you need `chunkSize()`, `disableForeignKeyChecks()`, `upsert()`, etc. |
 
 ```php
 use Illuminate\Database\Seeder;
 use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
+use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 class DatabaseSeeder extends Seeder
 {
@@ -465,25 +477,44 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        // quickSeed: concise wrapper for simple tables
         $this->quickSeed(
-            'users',
-            ['name', 'email'],
+            'categories',
+            ['name', 'slug', 'created_at'],
             fn ($i) => [
-                'name' => "User {$i}",
-                'email' => "user{$i}@test.com"
+                'name'       => "Category {$i}",
+                'slug'       => "category-{$i}",
+                'created_at' => TurboData::nowOnce(),
             ],
-            10000
+            500
         );
+
+        // quickCsvSeed: same API, uses CSV strategy (MySQL/PostgreSQL)
+        $userIds = TurboData::fromTable('users');
 
         $this->quickCsvSeed(
             'posts',
-            ['user_id', 'title'],
+            ['user_id', 'title', 'created_at'],
             fn ($i) => [
-                'user_id' => ($i % 10000) + 1,
-                'title' => "Post {$i}",
+                'user_id'    => $userIds($i),
+                'title'      => "Post {$i}",
+                'created_at' => TurboData::nowOnce(),
             ],
             100000
         );
+
+        // turboSeed: full fluent builder when you need advanced options
+        $this->turboSeed('orders')
+            ->columns(['user_id', 'total', 'status'])
+            ->generate(fn ($i) => [
+                'user_id' => $userIds($i),
+                'total'   => TurboData::randomFloat(2, 10.00, 999.99),
+                'status'  => TurboData::weightedFrom(['pending' => 50, 'completed' => 40, 'cancelled' => 10]),
+            ])
+            ->count(50000)
+            ->chunkSize(2000)
+            ->disableForeignKeyChecks()
+            ->run();
     }
 }
 ```
@@ -531,6 +562,10 @@ $ts = TurboData::sequentialDate('2024-01-01', 'hour', $index);
 
 // Use nowOnce() inside generators for better performance - avoids calling now() 1M times
 'created_at' => TurboData::nowOnce()
+
+// Hash once, reuse across all records - never call bcrypt() inside the generator
+'password' => TurboData::hashedPassword()          // default: 'password'
+'password' => TurboData::hashedPassword('secret')  // custom password
 ```
 
 #### Nullable Values
