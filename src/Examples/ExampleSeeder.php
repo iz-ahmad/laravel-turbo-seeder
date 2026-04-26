@@ -11,10 +11,7 @@ use IzAhmad\TurboSeeder\Helpers\TurboData;
 use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
 
 /**
- * Demonstrates the full TurboSeeder API.
- *
- * Examples are ordered so each table is seeded before it is referenced
- * by a foreign key in a later example.
+ * Demonstrates the TurboSeeder API usage.
  *
  * @see UsesTurboSeeder
  * @see TurboData
