@@ -119,11 +119,9 @@ class TurboTestConnectionCommand extends Command
             ->select("SHOW VARIABLES LIKE 'local_infile'");
 
         if (empty($result) || $result[0]->Value !== 'ON') {
-            $this->warn('  ⚠ Warning: local_infile is disabled on the MySQL server');
+            $this->warn('  ⚠ Warning: local_infile is disabled');
             $this->line('  ℹ The DEFAULT strategy will be used as a fallback');
-            $this->line('  ℹ Enable it at runtime: SET GLOBAL local_infile = 1;');
-            $this->line('  ℹ Or permanently: add local_infile = 1 under [mysqld] in your MySQL config file');
-            $this->line('  ℹ See: https://dev.mysql.com/doc/refman/8.0/en/load-data-local-security.html');
+            $this->line('  ℹ Enable local_infile in MySQL config to use the CSV strategy. See README.md for details.');
         } else {
             $this->line('  ✓ local_infile is enabled');
         }
