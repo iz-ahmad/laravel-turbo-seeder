@@ -20,20 +20,10 @@ enum DatabaseDriver: string
         };
     }
 
-    public function getOptimalChunkSize(): int
-    {
-        return match ($this) {
-            self::MYSQL => 4000,
-            self::PGSQL => 3000,
-            self::SQLITE => 2000,
-        };
-    }
-
     public function supportsCsvImport(): bool
     {
         return match ($this) {
-            self::MYSQL, self::PGSQL => true,
-            self::SQLITE => false,
+            self::MYSQL, self::PGSQL, self::SQLITE => true,
         };
     }
 

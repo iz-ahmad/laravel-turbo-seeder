@@ -29,9 +29,9 @@ interface MemoryManagerInterface
     public function shouldGarbageCollect(): bool;
 
     /**
-     * Force garbage collection and memory cleanup.
+     * Run garbage collection (if the threshold has been reached).
      */
-    public function forceCleanup(): void;
+    public function maybeCleanup(): void;
 
     /**
      * Get the configured memory limit in bytes.

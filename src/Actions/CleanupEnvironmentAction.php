@@ -13,24 +13,25 @@ final class CleanupEnvironmentAction
 {
     /**
      * Restore the database environment to its normal state after seeding.
+     *
+     * @param  array<string, mixed>  $context  Values captured by PrepareEnvironmentAction.
      */
     public function __invoke(
         DatabaseConnectionDTO $dbConnection,
-        SeederConfigurationDTO $config
+        SeederConfigurationDTO $config,
+        array $context = []
     ): void {
         $connection = $dbConnection->connection;
 
         match ($dbConnection->driver) {
             DatabaseDriver::MYSQL => $this->cleanupMySql($connection, $config),
             DatabaseDriver::PGSQL => $this->cleanupPostgreSql($connection, $config),
-            DatabaseDriver::SQLITE => $this->cleanupSqlite($connection, $config),
+            DatabaseDriver::SQLITE => $this->cleanupSqlite($connection, $config, $context),
         };
     }
 
     private function cleanupMySql(Connection $connection, SeederConfigurationDTO $config): void
     {
-        $connection->statement('SET autocommit=1');
-
         if ($config->shouldDisableForeignKeyChecks()) {
             $connection->statement('SET unique_checks=1');
             $connection->statement('SET FOREIGN_KEY_CHECKS=1');
@@ -39,16 +40,21 @@ final class CleanupEnvironmentAction
 
     private function cleanupPostgreSql(Connection $connection, SeederConfigurationDTO $config): void
     {
-        // psql constraints are automatically re-enabled after transaction commit, so no need to cleanup anything here.
+        // PG constraints are automatically re-enabled after the transaction commits.
     }
 
-    private function cleanupSqlite(Connection $connection, SeederConfigurationDTO $config): void
+    /** @param  array<string, mixed>  $context */
+    private function cleanupSqlite(Connection $connection, SeederConfigurationDTO $config, array $context): void
     {
-        $connection->statement('PRAGMA synchronous=ON');
-        $connection->statement('PRAGMA journal_mode=DELETE');
+        $synchronous = $context['synchronous'] ?? 2;
+        $journalMode = $context['journal_mode'] ?? 'delete';
+
+        $connection->statement("PRAGMA synchronous={$synchronous}");
+        $connection->statement("PRAGMA journal_mode={$journalMode}");
 
         if ($config->shouldDisableForeignKeyChecks()) {
-            $connection->statement('PRAGMA foreign_keys=ON');
+            $foreignKeys = $context['foreign_keys'] ?? 1;
+            $connection->statement("PRAGMA foreign_keys={$foreignKeys}");
         }
     }
 }
