@@ -64,7 +64,6 @@ test('upsert keys that are not in declared columns are rejected', function () {
         ->toThrow(InvalidArgumentException::class, 'nonexistent_key');
 });
 
-
 test('upsert rejects invalid column names to prevent sql injection', function () {
     expect(fn () => TurboSeeder::create('test_users')
         ->columns(['name', 'email'])

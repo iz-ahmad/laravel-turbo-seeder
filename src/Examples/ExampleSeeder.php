@@ -31,17 +31,17 @@ class ExampleSeeder extends Seeder
         // that produce collision-free values across millions of records — no Faker needed.
         // nowOnce() calls now() once for the whole run; all records share the same timestamp.
 
-        $uniqueEmail    = TurboData::uniqueEmail();
+        $uniqueEmail = TurboData::uniqueEmail();
         $uniqueUsername = TurboData::uniqueUsername('usr');
         $hashedPassword = bcrypt('password'); // hashed once, reused across all records
 
         TurboSeeder::create('users')
             ->columns(['name', 'username', 'email', 'password', 'created_at'])
             ->generate(fn ($index) => [
-                'name'       => "User {$index}",
-                'username'   => $uniqueUsername($index),
-                'email'      => $uniqueEmail($index),
-                'password'   => $hashedPassword,
+                'name' => "User {$index}",
+                'username' => $uniqueUsername($index),
+                'email' => $uniqueEmail($index),
+                'password' => $hashedPassword,
                 'created_at' => TurboData::nowOnce(),
             ])
             ->count(10000)
@@ -76,7 +76,7 @@ class ExampleSeeder extends Seeder
         // randomly picks from the cached pool. Zero DB overhead after the first call.
         // Use 'random' mode when you want non-deterministic FK distribution.
 
-        $userIds     = TurboData::fromTable('users');                          // cycle (default)
+        $userIds = TurboData::fromTable('users');                          // cycle (default)
         $categoryIds = TurboData::fromTable('categories', 'id', 'random');    // random pick
 
         TurboSeeder::create('orders')
@@ -140,15 +140,15 @@ class ExampleSeeder extends Seeder
         // returns an array, enabling filters, joins, or specific ordering.
 
         $productSlug = TurboData::uniqueSlug('product');
-        $productSku  = TurboData::uniqueUuid('SKU-');
+        $productSku = TurboData::uniqueUuid('SKU-');
 
         TurboSeeder::create('products')
             ->columns(['sku', 'slug', 'name', 'price', 'created_at'])
             ->generate(fn ($index) => [
-                'sku'        => $productSku(),
-                'slug'       => $productSlug($index),
-                'name'       => "Product {$index}",
-                'price'      => TurboData::randomFloat(2, 1.00, 999.99),
+                'sku' => $productSku(),
+                'slug' => $productSlug($index),
+                'name' => "Product {$index}",
+                'price' => TurboData::randomFloat(2, 1.00, 999.99),
                 'created_at' => TurboData::nowOnce(),
             ])
             ->count(5000)
@@ -163,9 +163,9 @@ class ExampleSeeder extends Seeder
         TurboSeeder::create('reviews')
             ->columns(['user_id', 'product_id', 'rating', 'created_at'])
             ->generate(fn ($index) => [
-                'user_id'    => $activeUserIds($index),
+                'user_id' => $activeUserIds($index),
                 'product_id' => TurboData::randomInt(1, 5000),
-                'rating'     => TurboData::randomInt(1, 5),
+                'rating' => TurboData::randomInt(1, 5),
                 'created_at' => TurboData::dateRange('2023-01-01', '2024-12-31'),
             ])
             ->count(20000)

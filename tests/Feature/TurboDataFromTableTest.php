@@ -78,7 +78,7 @@ test('fromTable cycles values deterministically by index', function () {
     ]);
 
     $ids = DB::table('test_users')->orderBy('id')->pluck('id')->toArray();
-    $fn  = TurboData::fromTable('test_users');
+    $fn = TurboData::fromTable('test_users');
 
     expect($fn(0))->toBe($ids[0]);
     expect($fn(1))->toBe($ids[1]);
@@ -93,8 +93,8 @@ test('fromTable cycle is the default mode', function () {
         ['name' => 'Q', 'email' => 'q@t.test'],
     ]);
 
-    $ids     = DB::table('test_users')->orderBy('id')->pluck('id')->toArray();
-    $cycle   = TurboData::fromTable('test_users');
+    $ids = DB::table('test_users')->orderBy('id')->pluck('id')->toArray();
+    $cycle = TurboData::fromTable('test_users');
     $explicit = TurboData::fromTable('test_users', 'id', 'cycle');
 
     // both should produce identical deterministic sequence
@@ -113,7 +113,7 @@ test('fromTable random mode returns values from the pool', function () {
     ]);
 
     $ids = DB::table('test_users')->pluck('id')->toArray();
-    $fn  = TurboData::fromTable('test_users', 'id', 'random');
+    $fn = TurboData::fromTable('test_users', 'id', 'random');
 
     for ($i = 0; $i < 30; $i++) {
         expect($fn($i))->toBeIn($ids);
@@ -149,14 +149,14 @@ test('fromTable works inside a seeder generator for FK assignment', function () 
         ->columns(['user_id', 'title', 'content'])
         ->generate(fn ($i) => [
             'user_id' => $userIds($i),
-            'title'   => "Post {$i}",
+            'title' => "Post {$i}",
             'content' => "Content {$i}",
         ])
         ->count(20)
         ->run();
 
     $seededUserIds = DB::table('test_users')->pluck('id')->toArray();
-    $postUserIds   = DB::table('test_posts')->pluck('user_id')->toArray();
+    $postUserIds = DB::table('test_posts')->pluck('user_id')->toArray();
 
     expect(DB::table('test_posts')->count())->toBe(20);
 
