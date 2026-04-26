@@ -120,8 +120,8 @@ class TurboTestConnectionCommand extends Command
 
         if (empty($result) || $result[0]->Value !== 'ON') {
             $this->warn('  ⚠ Warning: local_infile is disabled');
-            $this->line('  ℹ CSV strategy will attempt to enable it automatically');
-            $this->line('  ℹ If it fails, enable it in MySQL configuration');
+            $this->line('  ℹ The DEFAULT strategy will be used as a fallback');
+            $this->line('  ℹ Enable local_infile in MySQL configuration to use the CSV strategy');
         } else {
             $this->line('  ✓ local_infile is enabled');
         }
