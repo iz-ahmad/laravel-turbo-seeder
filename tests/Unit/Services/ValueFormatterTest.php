@@ -32,6 +32,12 @@ test('format returns string unchanged', function () {
     expect(ValueFormatter::format('hello'))->toBe('hello');
 });
 
+test('format passes JSON string through unchanged without double-encoding', function () {
+    $json = '{"key":"value","count":5}';
+
+    expect(ValueFormatter::format($json))->toBe($json);
+});
+
 test('format converts DateTimeInterface to Y-m-d H:i:s string', function () {
     $dt = new DateTime('2024-06-15 10:30:00');
     expect(ValueFormatter::format($dt))->toBe('2024-06-15 10:30:00');
@@ -104,6 +110,18 @@ test('formatForCsv converts BackedEnum to string value', function () {
 test('formatForCsv converts array to JSON string', function () {
     $result = ValueFormatter::formatForCsv(['key' => 'val']);
     expect($result)->toBe('{"key":"val"}');
+});
+
+test('formatForCsv converts UnitEnum to its name as string', function () {
+    expect(ValueFormatter::formatForCsv(ColorFixture::Red))->toBe('Red');
+});
+
+test('formatForCsv converts int to string', function () {
+    expect(ValueFormatter::formatForCsv(42))->toBe('42');
+});
+
+test('formatForCsv converts float to string', function () {
+    expect(ValueFormatter::formatForCsv(3.14))->toBe('3.14');
 });
 
 // ── extend() ─────────────────────────────────────────────────────────────────

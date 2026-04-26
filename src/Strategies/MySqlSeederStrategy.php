@@ -6,6 +6,7 @@ namespace IzAhmad\TurboSeeder\Strategies;
 
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
+use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Services\ValueFormatter;
 
 final class MySqlSeederStrategy extends AbstractSeederStrategy
@@ -47,6 +48,7 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
         $recordCount = count($records);
 
         $columnNames = implode(',', array_map(fn ($col) => "`{$col}`", $columns));
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
 
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));
@@ -64,7 +66,7 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
             $updateColumns,
         ));
 
-        $sql = "INSERT INTO `{$table}` ({$columnNames}) VALUES {$allPlaceholders} ON DUPLICATE KEY UPDATE {$updateClause}";
+        $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders} ON DUPLICATE KEY UPDATE {$updateClause}";
 
         $bindings = [];
         foreach ($records as $record) {
@@ -97,11 +99,12 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
         $recordCount = count($records);
 
         $columnNames = implode(',', array_map(fn ($col) => "`{$col}`", $columns));
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
 
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));
 
-        $sql = "INSERT INTO `{$table}` ({$columnNames}) VALUES {$allPlaceholders}";
+        $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders}";
 
         $bindings = [];
         foreach ($records as $record) {

@@ -47,9 +47,9 @@ final class TurboSeederBuilder
      */
     public function table(string $table): self
     {
-        if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table)) {
+        if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/', $table)) {
             throw new \InvalidArgumentException(
-                "Invalid table name [{$table}]. Table names must start with a letter or underscore and contain only letters, digits, and underscores."
+                "Invalid table name [{$table}]. Table names must start with a letter or underscore, contain only letters, digits, and underscores, and may include one schema prefix (schema.table)."
             );
         }
 

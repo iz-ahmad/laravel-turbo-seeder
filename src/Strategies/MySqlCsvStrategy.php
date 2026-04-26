@@ -7,6 +7,7 @@ namespace IzAhmad\TurboSeeder\Strategies;
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
+use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 
 final class MySqlCsvStrategy extends AbstractCsvStrategy
 {
@@ -29,12 +30,13 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
         );
 
         $columnNames = implode(',', array_map(fn ($col) => "`{$col}`", $columns));
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
 
         // PDO::MYSQL_ATTR_LOCAL_INFILE must be enabled on the connection; if not,
         // the import will fail and trigger an automatic fallback to the default strategy.
         $sql = "
             LOAD DATA LOCAL INFILE '{$filepath}'
-            INTO TABLE `{$table}`
+            INTO TABLE {$quotedTable}
             FIELDS TERMINATED BY ','
             OPTIONALLY ENCLOSED BY '\"'
             ESCAPED BY ''
