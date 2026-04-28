@@ -11,7 +11,7 @@ use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 /**
  * Demonstrates the TurboSeeder API usage with real-life examples.
- * 
+ *
  * See the documentation (README.md) for more details.
  *
  * @see TurboData
@@ -28,16 +28,16 @@ class ExampleSeeder extends Seeder
         // Calling bcrypt() inside the generator would hash once per record (will be slower).
         // nowOnce() calls now() a single time for the whole run.
 
-        $uniqueEmail    = TurboData::uniqueEmail();
+        $uniqueEmail = TurboData::uniqueEmail();
         $uniqueUsername = TurboData::uniqueUsername('usr');
 
         TurboSeeder::create('users')
             ->columns(['name', 'username', 'email', 'password', 'created_at'])
             ->generate(fn ($index) => [
-                'name'       => "User {$index}",
-                'username'   => $uniqueUsername($index),
-                'email'      => $uniqueEmail($index),
-                'password'   => TurboData::hashedPassword(),
+                'name' => "User {$index}",
+                'username' => $uniqueUsername($index),
+                'email' => $uniqueEmail($index),
+                'password' => TurboData::hashedPassword(),
                 'created_at' => TurboData::nowOnce(),
             ])
             ->count(10000)
@@ -48,8 +48,8 @@ class ExampleSeeder extends Seeder
         TurboSeeder::create('categories')
             ->columns(['name', 'slug', 'created_at'])
             ->generate(fn ($index) => [
-                'name'       => "Category {$index}",
-                'slug'       => "category-{$index}",
+                'name' => "Category {$index}",
+                'slug' => "category-{$index}",
                 'created_at' => TurboData::nowOnce(),
             ])
             ->count(500)
@@ -69,8 +69,8 @@ class ExampleSeeder extends Seeder
             ->columns(['user_id', 'title', 'status', 'content', 'created_at'])
             ->generate(fn ($index) => [
                 'user_id' => $userIds($index),
-                'title'   => "Post Title {$index}",
-                'status'  => TurboData::weightedFrom(['published' => 60, 'draft' => 30, 'archived' => 10]),
+                'title' => "Post Title {$index}",
+                'status' => TurboData::weightedFrom(['published' => 60, 'draft' => 30, 'archived' => 10]),
                 'content' => "Content for post {$index}",
                 'created_at' => TurboData::nowOnce(),
             ])
@@ -90,12 +90,12 @@ class ExampleSeeder extends Seeder
         TurboSeeder::create('orders')
             ->columns(['user_id', 'category_id', 'total', 'status', 'payment_method', 'created_at'])
             ->generate(fn ($index) => [
-                'user_id'        => $userIds($index),
-                'category_id'    => $categoryIds($index),
-                'total'          => TurboData::randomFloat(2, 10.00, 999.99),
-                'status'         => TurboData::weightedFrom(['pending' => 50, 'completed' => 40, 'cancelled' => 10]),
+                'user_id' => $userIds($index),
+                'category_id' => $categoryIds($index),
+                'total' => TurboData::randomFloat(2, 10.00, 999.99),
+                'status' => TurboData::weightedFrom(['pending' => 50, 'completed' => 40, 'cancelled' => 10]),
                 'payment_method' => TurboData::randomFrom(['paypal', 'bank_transfer', 'credit_card']),
-                'created_at'     => TurboData::dateRange('2023-01-01', '2024-12-31'),
+                'created_at' => TurboData::dateRange('2023-01-01', '2024-12-31'),
             ])
             ->count(50000)
             ->chunkSize(2000)
@@ -111,16 +111,16 @@ class ExampleSeeder extends Seeder
         // when() conditionally chains options without breaking the fluent API.
 
         $productSlug = TurboData::uniqueSlug('product');
-        $productSku  = TurboData::uniqueUuid('SKU-');
+        $productSku = TurboData::uniqueUuid('SKU-');
 
         TurboSeeder::create('products')
             ->columns(['sku', 'slug', 'name', 'price', 'stock', 'deleted_at', 'created_at'])
             ->generate(fn ($index) => [
-                'sku'        => $productSku(),
-                'slug'       => $productSlug($index),
-                'name'       => "Product {$index}",
-                'price'      => TurboData::randomFloat(2, 1.00, 9999.99),
-                'stock'      => TurboData::randomInt(0, 1000),
+                'sku' => $productSku(),
+                'slug' => $productSlug($index),
+                'name' => "Product {$index}",
+                'price' => TurboData::randomFloat(2, 1.00, 9999.99),
+                'stock' => TurboData::randomInt(0, 1000),
                 'deleted_at' => TurboData::nullable(0.05, TurboData::nowOnce()),
                 'created_at' => TurboData::nowOnce(),
             ])
@@ -144,9 +144,9 @@ class ExampleSeeder extends Seeder
         TurboSeeder::create('reviews')
             ->columns(['user_id', 'product_id', 'rating', 'created_at'])
             ->generate(fn ($index) => [
-                'user_id'    => $activeUserIds($index),
+                'user_id' => $activeUserIds($index),
                 'product_id' => TurboData::randomInt(1, 5000),
-                'rating'     => TurboData::randomInt(1, 5),
+                'rating' => TurboData::randomInt(1, 5),
                 'created_at' => TurboData::dateRange('2023-01-01', '2024-12-31'),
             ])
             ->count(20000)
@@ -163,7 +163,7 @@ class ExampleSeeder extends Seeder
         TurboSeeder::create('events')
             ->columns(['name', 'occurred_at'])
             ->generate(fn ($index) => [
-                'name'        => $eventType($index),
+                'name' => $eventType($index),
                 'occurred_at' => TurboData::sequentialDate('2024-01-01', 'hour', $index),
             ])
             ->count(8760) // one year of hourly data
@@ -184,15 +184,15 @@ class ExampleSeeder extends Seeder
         TurboSeeder::create('settings')
             ->columns(['user_id', 'preferences', 'is_dark', 'updated_at', 'metadata'])
             ->generate(fn ($index) => [
-                'user_id'     => TurboData::randomInt(1, 10000),
+                'user_id' => TurboData::randomInt(1, 10000),
                 'preferences' => [                                        // array → JSON
-                    'theme'         => $themeSelector($index),
+                    'theme' => $themeSelector($index),
                     'notifications' => TurboData::randomBool(0.8),
-                    'language'      => TurboData::randomFrom(['en', 'es', 'fr']),
+                    'language' => TurboData::randomFrom(['en', 'es', 'fr']),
                 ],
-                'is_dark'     => TurboData::randomBool(0.5),              // bool → 1/0
-                'updated_at'  => TurboData::dateRange('2024-01-01', '2024-12-31'), // Carbon → string
-                'metadata'    => '{"status":"synced","priority":3}',      // JSON string → as-is
+                'is_dark' => TurboData::randomBool(0.5),              // bool → 1/0
+                'updated_at' => TurboData::dateRange('2024-01-01', '2024-12-31'), // Carbon → string
+                'metadata' => '{"status":"synced","priority":3}',      // JSON string → as-is
             ])
             ->count(5000)
             ->run();
