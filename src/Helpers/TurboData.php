@@ -17,6 +17,9 @@ final class TurboData
 {
     private static ?string $cachedNow = null;
 
+    /** @var array<string, string> */
+    private static array $cachedHashes = [];
+
     // -------------------------------------------------------------------------
     // Value selection
     // -------------------------------------------------------------------------
@@ -155,7 +158,7 @@ final class TurboData
      * Return a Carbon date offset by $step * $index from $start.
      * Useful for sequential timestamps.
      *
-     * @param  string  $step  Any valid Carbon modifier: '1 second', '1 minute', '1 hour', '1 day'
+     * @param  string  $step  A bare time unit: 'second', 'minute', 'hour', 'day', 'week', 'month'
      */
     public static function sequentialDate(string $start, string $step, int $index): Carbon
     {
@@ -169,12 +172,8 @@ final class TurboData
     }
 
     /**
-     * Return the current timestamp as a string, computed only once per process.
-     * Use this instead of now() inside generate() to avoid 1M identical now() calls
-     * that differ only by microseconds.
-     *
-     * For records where all rows should share the same insert timestamp:
-     *   'created_at' => TurboData::nowOnce()
+     * Return the current timestamp as a string, computed once and cached.
+     * Use instead of now() inside generate() - avoids calling now() per record.
      */
     public static function nowOnce(): string
     {
@@ -195,9 +194,30 @@ final class TurboData
     }
 
     /**
+     * Hash a password once (bcrypt) and reuse the result across all records.
+     * Multiple calls with the same $password return the same cached hash.
+     */
+    public static function hashedPassword(string $password = 'password'): string
+    {
+        if (! isset(self::$cachedHashes[$password])) {
+            self::$cachedHashes[$password] = password_hash($password, PASSWORD_BCRYPT);
+        }
+
+        return self::$cachedHashes[$password];
+    }
+
+    /**
+     * Reset all cached hashed passwords.
+     * Useful in tests to prevent state leakage between test cases.
+     */
+    public static function resetHashedPasswords(): void
+    {
+        self::$cachedHashes = [];
+    }
+
+    /**
      * Pluck a column from a table once and cycle or randomly pick on every generator call.
      * Loaded lazily on first call; all subsequent calls are O(1) array lookups.
-     * For custom queries (filters, joins) use fromQuery() instead.
      *
      * @param  string  $mode  'cycle' (default) | 'random'
      * @return \Closure(int): mixed
@@ -242,7 +262,7 @@ final class TurboData
 
     /**
      * Load values once via a callable, then cycle through them by index.
-     * Use when fromTable() isn't enough. For filters, joins, custom ordering.
+     * Use when fromTable() isn't enough - for filters, joins, custom ordering etc.
      *
      * @param  callable(): array<int, mixed>  $loader
      * @return \Closure(int): mixed

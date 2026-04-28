@@ -113,11 +113,14 @@ This creates `config/turbo-seeder.php` in your project.
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
+$uniqueEmail = TurboData::uniqueEmail();
+
 TurboSeeder::create('users')
-    ->columns(['name', 'email', 'created_at'])
+    ->columns(['name', 'email', 'password', 'created_at'])
     ->generate(fn ($index) => [
         'name'       => "User {$index}",
-        'email'      => "user{$index}@example.com",
+        'email'      => $uniqueEmail($index),
+        'password'   => TurboData::hashedPassword(),
         'created_at' => TurboData::nowOnce(),
     ])
     ->count(100000)
@@ -303,6 +306,8 @@ To enable CSV strategy for MySQL, add `PDO::MYSQL_ATTR_LOCAL_INFILE` to your dat
 ],
 ```
 
+**MySQL server-side requirement:** The above enables the client side. MySQL also requires `local_infile` to be enabled on the server — it defaults to `OFF` in MySQL 8.0 and later. Enable it at runtime: `SET GLOBAL local_infile = 1;` or permanently via `local_infile = 1` under `[mysqld]` in your MySQL config file.
+
 **Security Note:** `LOAD DATA LOCAL INFILE` allows MySQL to read files from the client machine. Only enable this in trusted environments (development, staging). Consider disabling in production unless absolutely necessary.
 
 ### PostgreSQL Configuration
@@ -356,26 +361,25 @@ class UserSeeder extends Seeder
 
 ```php
 use Illuminate\Database\Seeder;
-use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
+use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 class UserSeeder extends Seeder
 {
-    use UsesTurboSeeder;
-
     public function run(): void
     {
-        $this->quickSeed(
-            'users',
-            ['name', 'email', 'password', 'created_at'],
-            fn ($i) => [
+        $uniqueEmail = TurboData::uniqueEmail();
+
+        TurboSeeder::create('users')
+            ->columns(['name', 'email', 'password', 'created_at'])
+            ->generate(fn ($i) => [
                 'name'       => "User {$i}",
-                'email'      => "user{$i}@example.com",
-                'password'   => bcrypt('password'),
+                'email'      => $uniqueEmail($i),
+                'password'   => TurboData::hashedPassword(),
                 'created_at' => TurboData::nowOnce(),
-            ],
-            10000
-        );
+            ])
+            ->count(10000)
+            ->run();
     }
 }
 ```
@@ -396,32 +400,32 @@ class UserSeeder extends Seeder
 
 #### Strategy Methods
 
-- `useCsvStrategy()`: Native CSV file import (fastest)
-- `useDefaultStrategy()`: Bulk INSERT (default)
-- `strategy(SeederStrategy $strategy)`: Set via enum directly
+- `useCsvStrategy()` - Native CSV file import (fastest)
+- `useDefaultStrategy()` - Bulk INSERT (default)
+- `strategy(SeederStrategy $strategy)` - Set via enum directly
 
 #### Configuration Methods
 
-- `connection(string $connection)`: Database connection to use
-- `chunkSize(int $size)`: Records per chunk
-- `withProgressTracking()` / `withoutProgressTracking()`: Toggle progress bar
-- `disableForeignKeyChecks()` / `enableForeignKeyChecks()`: Toggle FK checks
-- `disableQueryLog()` / `enableQueryLog()`: Toggle query logging
-- `useTransactions()` / `withoutTransactions()`: Toggle transactions
-- `options(array $options)`: Merge custom options
-- `when(bool|callable $condition, callable $callback, ?callable $default)`: Conditional chaining
-- `unless(bool|callable $condition, callable $callback, ?callable $default)`: Inverse conditional
+- `connection(string $connection)` - Database connection to use
+- `chunkSize(int $size)` - Records per chunk
+- `withProgressTracking()` / `withoutProgressTracking()` - Toggle progress bar
+- `disableForeignKeyChecks()` / `enableForeignKeyChecks()` - Toggle FK checks
+- `disableQueryLog()` / `enableQueryLog()` - Toggle query logging
+- `useTransactions()` / `withoutTransactions()` - Toggle transactions
+- `options(array $options)` - Merge custom options
+- `when(bool|callable $condition, callable $callback, ?callable $default)` - Conditional chaining
+- `unless(bool|callable $condition, callable $callback, ?callable $default)` - Inverse conditional
 
 #### Advanced Methods
 
-- `dryRun(bool $enabled = true)`: Generate and validate data without committing. Uses transaction rollback; `$result->isDryRun` will be `true`.
+- `dryRun(bool $enabled = true)` - Generate and validate data without committing. Uses transaction rollback; `$result->isDryRun` will be `true`.
 > **Do not combine this with `withoutTransactions()`**; because without a transaction, there is nothing to roll back and rows will be permanently written.
 
-- `upsert(array $uniqueBy)`: On conflict, update non-key columns. Uses `ON DUPLICATE KEY UPDATE` (MySQL), `ON CONFLICT DO UPDATE SET` (PostgreSQL / SQLite 3.24+). Keys must be a subset of declared columns and must form a unique constraint on the table.
+- `upsert(array $uniqueBy)` - On conflict, update non-key columns. Uses `ON DUPLICATE KEY UPDATE` (MySQL), `ON CONFLICT DO UPDATE SET` (PostgreSQL / SQLite 3.24+). Keys must be a subset of declared columns and must form a unique constraint on the table.
 
-- `retryAttempts(int $attempts)`: Retry on transient deadlock / lock-timeout failures (SQLSTATE 40001, MySQL 1205) with exponential backoff. Accepts 1–10; defaults to 3.
+- `retryAttempts(int $attempts)` - Retry on transient deadlock / lock-timeout failures (SQLSTATE 40001, MySQL 1205) with exponential backoff. Accepts 1–10; defaults to 3.
 
-- `withoutColumnValidation()`: Skip the pre-seed schema check that validates declared columns exist on the table.
+- `withoutColumnValidation()` - Skip the pre-seed schema check that validates declared columns exist on the table.
 
 #### Events
 
@@ -448,45 +452,6 @@ class SendTurboSeederCompletedNotification
 ```
 
 > **Note:** Always check `$event->result->isDryRun` before acting on the assumption that rows were committed. The event is **not** dispatched when seeding fails.
-
----
-
-### Using in Seeders
-
-Use the `UsesTurboSeeder` trait for quick helpers inside standard Laravel seeders:
-
-```php
-use Illuminate\Database\Seeder;
-use IzAhmad\TurboSeeder\Traits\UsesTurboSeeder;
-
-class DatabaseSeeder extends Seeder
-{
-    use UsesTurboSeeder;
-
-    public function run(): void
-    {
-        $this->quickSeed(
-            'users',
-            ['name', 'email'],
-            fn ($i) => [
-                'name' => "User {$i}",
-                'email' => "user{$i}@test.com"
-            ],
-            10000
-        );
-
-        $this->quickCsvSeed(
-            'posts',
-            ['user_id', 'title'],
-            fn ($i) => [
-                'user_id' => ($i % 10000) + 1,
-                'title' => "Post {$i}",
-            ],
-            100000
-        );
-    }
-}
-```
 
 ---
 
@@ -531,6 +496,10 @@ $ts = TurboData::sequentialDate('2024-01-01', 'hour', $index);
 
 // Use nowOnce() inside generators for better performance - avoids calling now() 1M times
 'created_at' => TurboData::nowOnce()
+
+// Hash once, reuse across all records - never call bcrypt() inside the generator
+'password' => TurboData::hashedPassword()          // default: 'password'
+'password' => TurboData::hashedPassword('secret')  // custom password
 ```
 
 #### Nullable Values

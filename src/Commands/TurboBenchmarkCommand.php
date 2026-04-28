@@ -14,7 +14,7 @@ class TurboBenchmarkCommand extends Command
     public $signature = 'turbo-seeder:benchmark
                         {--connection= : Database connection name}
                         {--table=benchmark_test : Table name for benchmarking}
-                        {--records=10000 : Number of records to seed}';
+                        {--records=50000 : Number of records to seed}';
 
     public $description = 'Benchmark TurboSeeder performance (default vs CSV strategies)';
 
