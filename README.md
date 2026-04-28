@@ -107,6 +107,10 @@ This creates `config/turbo-seeder.php` in your project.
 
 ## Quick Start
 
+No extra configuration required to get started.  
+The default strategy works out of the box with sensible, performance-optimized settings **already configured** for you. So you just have to: 
+Install → write your generator → run.
+
 ### Basic Usage
 
 ```php
