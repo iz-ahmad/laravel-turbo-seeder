@@ -57,9 +57,7 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
         $this->progressBar->setMessage('0', 'rate');
         $this->progressBar->setMessage('calculating..', 'eta');
 
-        if ($this->progressBar->getProgress() > 0) {
-            $this->progressBar->start();
-        }
+        $this->progressBar->start();
     }
 
     public function advance(int $step = 1): void
