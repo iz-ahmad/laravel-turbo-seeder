@@ -53,8 +53,7 @@ final class CleanupCsvAction
         }
 
         foreach ($files as $file) {
-            if (is_file($file)) {
-                unlink($file);
+            if (is_file($file) && unlink($file)) {
                 $deleted++;
             }
         }

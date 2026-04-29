@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\DTOs;
 
 use Illuminate\Database\Connection;
+use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 
 final readonly class DatabaseConnectionDTO
@@ -20,7 +21,7 @@ final readonly class DatabaseConnectionDTO
      */
     public static function fromName(string $name): self
     {
-        $connection = \DB::connection($name);
+        $connection = DB::connection($name);
         $driverName = $connection->getDriverName();
 
         $driver = DatabaseDriver::fromString($driverName);
