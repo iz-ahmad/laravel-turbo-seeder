@@ -105,10 +105,6 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
             return null;
         }
 
-        if ($value === '0' || $value === '1') {
-            return (int) $value;
-        }
-
         return $value;
     }
 
