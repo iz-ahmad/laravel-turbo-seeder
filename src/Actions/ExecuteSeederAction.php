@@ -62,6 +62,10 @@ final class ExecuteSeederAction
             return $result;
 
         } catch (\Throwable $e) {
+            if ($config->hasProgressTracking()) {
+                $this->progressTracker->finish();
+            }
+
             $strategy->cleanup(fromException: true);
 
             Log::error('TurboSeeder: seeding failed', [
