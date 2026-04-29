@@ -87,7 +87,6 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
             'permission denied',
             'could not open file',
             'must be superuser',
-            'COPY',
             'access denied',
             'file not found',
         ];
