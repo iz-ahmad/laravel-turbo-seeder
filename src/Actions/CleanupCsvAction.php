@@ -52,10 +52,17 @@ final class CleanupCsvAction
             return 0;
         }
 
-        foreach ($files as $file) {
-            if (is_file($file) && unlink($file)) {
-                $deleted++;
+        try {
+            foreach ($files as $file) {
+                if (is_file($file) && unlink($file)) {
+                    $deleted++;
+                }
             }
+        } catch (\Throwable $e) {
+            Log::error('TurboSeeder: Failed to clean up CSV files', [
+                'directory' => $directory,
+                'error' => $e,
+            ]);
         }
 
         return $deleted;
