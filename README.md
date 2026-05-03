@@ -103,6 +103,36 @@ php artisan vendor:publish --tag="turbo-seeder-config"
 
 This creates `config/turbo-seeder.php` in your project.
 
+> **Note:** This package is not publicly released yet.
+> So for now, you can use it locally by cloning the repository and installing it in your Laravel application via a path repository in `composer.json`.
+
+### Local Installation
+
+1. Clone the repository somewhere on your machine:
+
+```bash
+git clone https://github.com/iz-ahmad/laravel-turbo-seeder.git
+```
+
+2. In your Laravel project's `composer.json`, add:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../path-to-laravel-turbo-seeder"
+        }
+    ]
+}
+```
+
+3. Then require it:
+
+```bash
+composer require iz-ahmad/laravel-turbo-seeder:@dev
+```
+
 ---
 
 ## Quick Start
