@@ -79,6 +79,19 @@ final readonly class SeederConfigurationDTO
     }
 
     /**
+     * Check if unique-index checks should be disabled (MySQL only).
+     *
+     * Separate, opt-in flag (default OFF): bulk-loading with unique_checks=0 can
+     * let duplicate values slip into unique secondary indexes, so it is never
+     * implied by disabling foreign key checks.
+     */
+    public function shouldDisableUniqueChecks(): bool
+    {
+        return $this->options['disable_unique_checks']
+            ?? config('turbo-seeder.performance.disable_unique_checks', false);
+    }
+
+    /**
      * Check if query log should be disabled.
      *
      * Falls back to config (performance.disable_query_log) when not set
