@@ -12,10 +12,12 @@ use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface;
 use IzAhmad\TurboSeeder\DTOs\DatabaseConnectionDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
+use IzAhmad\TurboSeeder\Strategies\Concerns\ClassifiesDatabaseErrors;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ManagesEnvironment;
 
 abstract class AbstractSeederStrategy implements SeederStrategyInterface
 {
+    use ClassifiesDatabaseErrors;
     use ManagesEnvironment;
 
     protected int $chunkSize;
@@ -144,7 +146,7 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
 
                 return;
             } catch (\Throwable $e) {
-                if (! $this->isRetryableException($e) || $attempt >= $maxAttempts - 1) {
+                if (! $this->isTransientLockError($e) || $attempt >= $maxAttempts - 1) {
                     throw $e;
                 }
 
@@ -153,21 +155,6 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
                 usleep(100_000 * (2 ** $attempt));
             }
         }
-    }
-
-    /**
-     * Determine whether an exception is a transient lock/deadlock error worth retrying.
-     */
-    private function isRetryableException(\Throwable $e): bool
-    {
-        $message = strtolower($e->getMessage());
-
-        // SQLSTATE 40001 = serialization failure / deadlock detected (MySQL + PostgreSQL)
-        // MySQL error 1205 = lock wait timeout exceeded
-        return str_contains($message, 'deadlock')
-            || str_contains($message, 'lock wait timeout')
-            || (string) $e->getCode() === '40001'
-            || (int) $e->getCode() === 1205;
     }
 
     /**
