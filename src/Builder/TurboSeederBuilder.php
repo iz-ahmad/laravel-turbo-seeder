@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Builder;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy;
@@ -84,6 +85,44 @@ final class TurboSeederBuilder
         $this->columns = array_values($columns);
 
         return $this;
+    }
+
+    /**
+     * Derive the columns to seed from the table schema (every column except the
+     * auto-incrementing key). Opt-in convenience so you don't repeat the column
+     * list; the generator must still produce values for the non-nullable ones.
+     */
+    public function columnsFromSchema(): self
+    {
+        if ($this->table === null || $this->table === '') {
+            throw new \InvalidArgumentException('Call create()/table() before columnsFromSchema().');
+        }
+
+        $schema = DB::connection($this->connection ?? config('database.default'))->getSchemaBuilder();
+
+        try {
+            $columns = [];
+
+            foreach ($schema->getColumns($this->table) as $column) {
+                if ($column['auto_increment'] === true) {
+                    continue;
+                }
+
+                $columns[] = $column['name'];
+            }
+        } catch (\Throwable) {
+            // Older Laravel / driver without getColumns(): fall back to the full
+            // listing (which may include the key column — override if needed).
+            $columns = $schema->getColumnListing($this->table);
+        }
+
+        if (empty($columns)) {
+            throw new \InvalidArgumentException(
+                "columnsFromSchema(): no columns found for table [{$this->table}]."
+            );
+        }
+
+        return $this->columns($columns);
     }
 
     /**
