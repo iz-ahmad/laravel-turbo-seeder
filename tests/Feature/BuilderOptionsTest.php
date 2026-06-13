@@ -26,6 +26,28 @@ test('can enable foreign key checks', function () {
     expect($result->success)->toBeTrue();
 });
 
+test('can disable unique checks', function () {
+    $builder = TurboSeeder::create('test_users')
+        ->columns(['name', 'email'])
+        ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
+        ->count(10)
+        ->disableUniqueChecks();
+
+    expect($builder->getOptions())->toHaveKey('disable_unique_checks')
+        ->and($builder->getOptions()['disable_unique_checks'])->toBeTrue()
+        ->and($builder->run()->success)->toBeTrue();
+});
+
+test('unique checks are not disabled by default or via foreign key flag', function () {
+    $builder = TurboSeeder::create('test_users')
+        ->columns(['name', 'email'])
+        ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
+        ->count(1)
+        ->disableForeignKeyChecks();
+
+    expect($builder->getOptions())->not->toHaveKey('disable_unique_checks');
+});
+
 test('can disable query log', function () {
     $result = TurboSeeder::create('test_users')
         ->columns(['name', 'email'])
