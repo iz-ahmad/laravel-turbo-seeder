@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Strategies;
 
+use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Actions\CleanupEnvironmentAction;
 use IzAhmad\TurboSeeder\Actions\PrepareEnvironmentAction;
 use IzAhmad\TurboSeeder\Contracts\MemoryManagerInterface;
@@ -40,27 +41,54 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
         $totalChunks = (int) ceil($config->count / $this->chunkSize);
         $recordsInserted = 0;
 
-        for ($chunkIndex = 0; $chunkIndex < $totalChunks; $chunkIndex++) {
-            $recordsInChunk = min(
-                $this->chunkSize,
-                $config->count - ($chunkIndex * $this->chunkSize)
-            );
+        // commitEvery() trades all-or-nothing atomicity for a small redo log /
+        // WAL: instead of one wrapping transaction it commits every N chunks.
+        $commitEvery = $config->getCommitEvery();
+        $usePeriodicCommits = $commitEvery !== null && ! $config->isDryRun();
+        $connection = DB::connection($this->dbConnection->name);
 
-            $records = $this->generateChunk(
-                $config->generator,
-                $config->columns,
-                $chunkIndex,
-                $recordsInChunk
-            );
+        if ($usePeriodicCommits) {
+            $connection->beginTransaction();
+        }
 
-            $this->insertChunkWithRetry($config->table, $config->columns, $records, $config->getRetryAttempts());
+        try {
+            for ($chunkIndex = 0; $chunkIndex < $totalChunks; $chunkIndex++) {
+                $recordsInChunk = min(
+                    $this->chunkSize,
+                    $config->count - ($chunkIndex * $this->chunkSize)
+                );
 
-            $recordsInserted += $recordsInChunk;
+                $records = $this->generateChunk(
+                    $config->generator,
+                    $config->columns,
+                    $chunkIndex,
+                    $recordsInChunk
+                );
 
-            $this->memoryManager->maybeCleanup();
-            $this->progressTracker->advance($recordsInChunk);
+                $this->insertChunkWithRetry($config->table, $config->columns, $records, $config->getRetryAttempts());
 
-            unset($records);
+                $recordsInserted += $recordsInChunk;
+
+                if ($usePeriodicCommits && ($chunkIndex + 1) % $commitEvery === 0) {
+                    $connection->commit();
+                    $connection->beginTransaction();
+                }
+
+                $this->memoryManager->maybeCleanup();
+                $this->progressTracker->advance($recordsInChunk);
+
+                unset($records);
+            }
+        } catch (\Throwable $e) {
+            if ($usePeriodicCommits && $connection->transactionLevel() > 0) {
+                $connection->rollBack();
+            }
+
+            throw $e;
+        }
+
+        if ($usePeriodicCommits && $connection->transactionLevel() > 0) {
+            $connection->commit();
         }
 
         return $recordsInserted;
