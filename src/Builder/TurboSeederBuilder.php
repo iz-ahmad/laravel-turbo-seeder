@@ -451,8 +451,12 @@ final class TurboSeederBuilder
         $result = $this->orchestrator->execute($config);
 
         if (! $result->success) {
+            // Preserve the original failure (class, SQLSTATE, stack trace) as the
+            // previous exception so callers and error trackers do not lose it.
             throw new \RuntimeException(
-                $result->errorMessage ?? 'Seeding operation failed without error message'
+                $result->errorMessage ?? 'Seeding operation failed without error message',
+                0,
+                $result->exception,
             );
         }
 
