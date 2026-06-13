@@ -48,7 +48,23 @@ final class GenerateCsvAction
 
                     $row = [];
                     foreach ($columns as $column) {
-                        $row[] = ValueFormatter::formatForCsv($record[$column] ?? null, $nullMarker);
+                        $raw = $record[$column] ?? null;
+                        $formatted = ValueFormatter::formatForCsv($raw, $nullMarker);
+
+                        // A non-null value that serializes to exactly the null marker
+                        // would be imported as NULL (silent corruption). Fail loudly
+                        // instead and tell the user how to resolve it.
+                        if ($raw !== null && $formatted === $nullMarker) {
+                            throw new \RuntimeException(sprintf(
+                                'CSV null-marker collision: column [%s] produced a value identical to the configured null marker [%s] at row %d. '
+                                .'Set turbo-seeder.csv_strategy.null_marker to a string your data never contains.',
+                                $column,
+                                $nullMarker,
+                                $index,
+                            ));
+                        }
+
+                        $row[] = $formatted;
                     }
 
                     $writer->writeRow($row);
