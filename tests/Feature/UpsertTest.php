@@ -73,16 +73,30 @@ test('upsert rejects invalid column names to prevent sql injection', function ()
         ->toThrow(InvalidArgumentException::class, 'Invalid upsert key column name');
 });
 
-test('upsert where all seeded columns are keys falls back to plain insert', function () {
-    // When every seeded column is also an upsert key there is nothing to update.
-    // The strategy must fall back to a plain INSERT rather than producing invalid SQL.
-    $result = TurboSeeder::create('test_users')
+test('upsert keys not backed by a unique index are rejected', function () {
+    // (name, email) is not a unique constraint on test_users.
+    expect(fn () => TurboSeeder::create('test_users')
         ->columns(['name', 'email'])
-        ->generate(fn ($i) => ['name' => "AllKey {$i}", 'email' => "allkey{$i}@fallback.test"])
+        ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@noindex.test"])
         ->count(3)
-        ->upsert(['name', 'email'])  // all seeded columns are keys → updateColumns empty → falls back to INSERT
+        ->upsert(['name', 'email'])
+        ->run())
+        ->toThrow(RuntimeException::class, 'unique or primary index');
+});
+
+test('upsert where all seeded columns are keys does nothing on conflict', function () {
+    // test_counters.slug is unique; seeding only the key column means there is
+    // nothing to update, so a re-seed must DO NOTHING rather than error.
+    $seed = fn () => TurboSeeder::create('test_counters')
+        ->columns(['slug'])
+        ->generate(fn ($i) => ['slug' => "slug-{$i}"])
+        ->count(3)
+        ->upsert(['slug'])
         ->run();
 
+    $seed();
+    $result = $seed(); // same slugs again → conflicts ignored
+
     expect($result->success)->toBeTrue()
-        ->and($result->recordsInserted)->toBe(3);
+        ->and(DB::table('test_counters')->count())->toBe(3);
 });
