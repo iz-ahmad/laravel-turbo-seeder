@@ -82,6 +82,7 @@ final class ExecuteSeederAction
                 success: false,
                 recordsInserted: 0,
                 errorMessage: $e->getMessage(),
+                exception: $e,
             );
         }
     }
