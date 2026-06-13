@@ -319,6 +319,10 @@ final class TurboData
      * time and cycled sequentially (wrapping around at the end). Use this when the
      * referenced table is too large to materialise within the memory budget.
      *
+     * Uses keyset (cursor) pagination on $column, which must be unique and
+     * orderable (e.g. a primary key) — this keeps each page O(pageSize) instead
+     * of the O(N) cost of OFFSET on deep pages.
+     *
      * @return \Closure(int): mixed
      */
     public static function fromTableStream(string $table, string $column = 'id', int $pageSize = 10000, ?string $connection = null): \Closure
@@ -338,30 +342,28 @@ final class TurboData
         /** @var array<int, mixed> $buffer */
         $buffer = [];
         $position = 0;
-        $page = 0;
+        $lastValue = null;
 
-        return static function (int $index) use ($table, $column, $pageSize, $connection, &$buffer, &$position, &$page): mixed {
+        $loadPage = static function (mixed $after) use ($table, $column, $pageSize, $connection): array {
+            $query = DB::connection($connection)->table($table)
+                ->orderBy($column)
+                ->limit($pageSize);
+
+            if ($after !== null) {
+                $query->where($column, '>', $after);
+            }
+
+            return array_values($query->pluck($column)->toArray());
+        };
+
+        return static function (int $index) use ($table, $column, $loadPage, &$buffer, &$position, &$lastValue): mixed {
             if ($position >= count($buffer)) {
-                $buffer = array_values(
-                    DB::connection($connection)->table($table)
-                        ->orderBy($column)
-                        ->offset($page * $pageSize)
-                        ->limit($pageSize)
-                        ->pluck($column)
-                        ->toArray()
-                );
+                $buffer = $loadPage($lastValue);
 
                 if (empty($buffer)) {
                     // Reached the end: wrap back to the first page.
-                    $page = 0;
-                    $buffer = array_values(
-                        DB::connection($connection)->table($table)
-                            ->orderBy($column)
-                            ->offset(0)
-                            ->limit($pageSize)
-                            ->pluck($column)
-                            ->toArray()
-                    );
+                    $lastValue = null;
+                    $buffer = $loadPage(null);
 
                     if (empty($buffer)) {
                         throw new \RuntimeException(
@@ -370,7 +372,7 @@ final class TurboData
                     }
                 }
 
-                $page++;
+                $lastValue = end($buffer);
                 $position = 0;
             }
 
