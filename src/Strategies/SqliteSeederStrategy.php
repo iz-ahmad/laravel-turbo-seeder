@@ -8,9 +8,12 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Services\ValueFormatter;
+use IzAhmad\TurboSeeder\Strategies\Concerns\ResolvesSqliteVariableLimit;
 
 final class SqliteSeederStrategy extends AbstractSeederStrategy
 {
+    use ResolvesSqliteVariableLimit;
+
     public function supports(DatabaseDriver $driver): bool
     {
         return $driver === DatabaseDriver::SQLITE;
@@ -63,7 +66,7 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
                 $updateColumns,
             ));
 
-        $maxRowsPerBatch = max(1, (int) floor(999 / $columnCount));
+        $maxRowsPerBatch = $this->sqliteMaxRowsPerBatch($columnCount);
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
             $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));
@@ -102,7 +105,7 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE);
 
-        $maxRowsPerBatch = max(1, (int) floor(999 / $columnCount));
+        $maxRowsPerBatch = $this->sqliteMaxRowsPerBatch($columnCount);
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
             $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));
