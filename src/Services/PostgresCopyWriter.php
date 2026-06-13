@@ -18,8 +18,15 @@ final class PostgresCopyWriter
     /** Column delimiter for COPY text format. */
     public const DELIMITER = "\t";
 
-    /** NULL sentinel for COPY text format. */
-    public const NULL_MARKER = '\N';
+    /**
+     * NULL sentinel for COPY text format.
+     *
+     * Deliberately backslash-free: PDO's pgsqlCopyFromFile embeds this value
+     * into a PostgreSQL E'...' string literal, where a backslash would be
+     * mangled (e.g. E'\N' collapses to "N"). A plain ASCII token survives the
+     * E-string intact and is matched verbatim by COPY before any de-escaping.
+     */
+    public const NULL_MARKER = '@@TURBO_NULL@@';
 
     /** @var resource|null */
     private $handle = null;
@@ -101,9 +108,20 @@ final class PostgresCopyWriter
             return self::NULL_MARKER;
         }
 
+        $formatted = (string) $formatted;
+
+        // A non-null value identical to the null sentinel would be imported as
+        // NULL (COPY matches the null string verbatim). Fail loudly instead.
+        if ($formatted === self::NULL_MARKER) {
+            throw new \RuntimeException(
+                'PostgreSQL COPY null-marker collision: a value equals the null sentinel ['.self::NULL_MARKER.']. '
+                .'This value cannot be distinguished from NULL on the PostgreSQL CSV path.'
+            );
+        }
+
         // Escape backslash first, then the structural characters. strtr applies
         // replacements simultaneously, so escaped output is not re-scanned.
-        return strtr((string) $formatted, [
+        return strtr($formatted, [
             '\\' => '\\\\',
             "\t" => '\\t',
             "\n" => '\\n',
