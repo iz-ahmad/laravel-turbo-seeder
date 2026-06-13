@@ -10,6 +10,7 @@ use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ClassifiesDatabaseErrors;
+use Pdo\Mysql;
 
 final class MySqlCsvStrategy extends AbstractCsvStrategy
 {
@@ -18,6 +19,20 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
     public function supports(DatabaseDriver $driver): bool
     {
         return $driver === DatabaseDriver::MYSQL;
+    }
+
+    /**
+     * The PDO "local infile" attribute, resolved in a version-safe way.
+     *
+     * PDO::MYSQL_ATTR_LOCAL_INFILE is deprecated in PHP 8.4+ in favour of
+     * Pdo\Mysql::ATTR_LOCAL_INFILE (same integer value). Fetched via constant()
+     * on older versions so static analysis never sees the deprecated symbol.
+     */
+    private function localInfileAttribute(): int
+    {
+        return PHP_VERSION_ID >= 80400
+            ? Mysql::ATTR_LOCAL_INFILE
+            : (int) constant('PDO::MYSQL_ATTR_LOCAL_INFILE');
     }
 
     /**
@@ -30,13 +45,16 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
         $connection = DB::connection($this->dbConnection->name);
 
         $options = $connection->getConfig('options') ?? [];
-        $clientEnabled = ! empty($options[\PDO::MYSQL_ATTR_LOCAL_INFILE]);
+        $clientEnabled = ! empty($options[$this->localInfileAttribute()]);
 
         $serverEnabled = true;
 
         try {
             $row = $connection->selectOne('SELECT @@GLOBAL.local_infile AS enabled');
-            $serverEnabled = $row !== null && (int) ($row->enabled ?? 0) === 1;
+            // The value may come back as an int (1/0) or a string ('ON'/'OFF'),
+            // depending on driver/version — treat any truthy form as enabled.
+            $value = strtolower((string) ($row->enabled ?? ''));
+            $serverEnabled = $row !== null && in_array($value, ['1', 'on', 'true'], true);
         } catch (\Throwable) {
             // Cannot determine the server setting; let the real import attempt it.
             $serverEnabled = true;
@@ -68,7 +86,9 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
     protected function importFromCsv(string $table, array $columns): void
     {
         $pdo = DB::connection($this->dbConnection->name)->getPdo();
-        $filepath = $this->assertSafeCsvPath($this->getAbsoluteFilePath());
+        // Normalise to forward slashes: MySQL treats backslashes in the LOAD DATA
+        // path as escape characters, which would corrupt Windows paths.
+        $filepath = str_replace('\\', '/', $this->assertSafeCsvPath($this->getAbsoluteFilePath()));
 
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
 
