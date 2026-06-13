@@ -135,6 +135,7 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
         $configuredSize = $this->config->getChunkSize();
         $defaultSize = config('turbo-seeder.chunk_sizes.pgsql', config('turbo-seeder.default_chunk_size', 500));
 
-        return $configuredSize ?? $defaultSize;
+        // PostgreSQL rejects a statement with more than 65,535 bind parameters.
+        return $this->clampChunkSizeToBindLimit($configuredSize ?? $defaultSize, 65535);
     }
 }
