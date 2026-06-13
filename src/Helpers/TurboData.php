@@ -6,6 +6,7 @@ namespace IzAhmad\TurboSeeder\Helpers;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -15,6 +16,12 @@ use Illuminate\Support\Str;
  */
 final class TurboData
 {
+    /**
+     * Pool size above which fromTable()/fromQuery() log a memory warning and
+     * suggest the streaming variant.
+     */
+    public const POOL_WARNING_THRESHOLD = 500_000;
+
     private static ?string $cachedNow = null;
 
     /** @var array<string, string> */
@@ -252,6 +259,8 @@ final class TurboData
                 }
 
                 $count = count($pool);
+
+                self::warnIfPoolTooLarge($count, "fromTable('{$table}', '{$column}')");
             }
 
             return $mode === 'random'
@@ -281,10 +290,96 @@ final class TurboData
                 }
 
                 $count = count($pool);
+
+                self::warnIfPoolTooLarge($count, 'fromQuery()');
             }
 
             return $pool[$index % $count];
         };
+    }
+
+    /**
+     * Memory-bounded alternative to fromTable() for very large reference tables.
+     *
+     * Instead of loading every value into memory, IDs are streamed one page at a
+     * time and cycled sequentially (wrapping around at the end). Use this when the
+     * referenced table is too large to materialise within the memory budget.
+     *
+     * @return \Closure(int): mixed
+     */
+    public static function fromTableStream(string $table, string $column = 'id', int $pageSize = 10000, ?string $connection = null): \Closure
+    {
+        if ($table === '') {
+            throw new \InvalidArgumentException('fromTableStream() $table must not be empty.');
+        }
+
+        if ($column === '') {
+            throw new \InvalidArgumentException('fromTableStream() $column must not be empty.');
+        }
+
+        if ($pageSize < 1) {
+            throw new \InvalidArgumentException('fromTableStream() $pageSize must be at least 1.');
+        }
+
+        /** @var array<int, mixed> $buffer */
+        $buffer = [];
+        $position = 0;
+        $page = 0;
+
+        return static function (int $index) use ($table, $column, $pageSize, $connection, &$buffer, &$position, &$page): mixed {
+            if ($position >= count($buffer)) {
+                $buffer = array_values(
+                    DB::connection($connection)->table($table)
+                        ->orderBy($column)
+                        ->offset($page * $pageSize)
+                        ->limit($pageSize)
+                        ->pluck($column)
+                        ->toArray()
+                );
+
+                if (empty($buffer)) {
+                    // Reached the end: wrap back to the first page.
+                    $page = 0;
+                    $buffer = array_values(
+                        DB::connection($connection)->table($table)
+                            ->orderBy($column)
+                            ->offset(0)
+                            ->limit($pageSize)
+                            ->pluck($column)
+                            ->toArray()
+                    );
+
+                    if (empty($buffer)) {
+                        throw new \RuntimeException(
+                            "TurboData::fromTableStream() - [{$table}.{$column}] returned no rows. Seed the table before referencing it."
+                        );
+                    }
+                }
+
+                $page++;
+                $position = 0;
+            }
+
+            return $buffer[$position++];
+        };
+    }
+
+    /**
+     * Log a one-time warning when an in-memory reference pool is large enough to
+     * threaten the memory budget, pointing users at fromTableStream().
+     */
+    private static function warnIfPoolTooLarge(int $count, string $source): void
+    {
+        if ($count <= self::POOL_WARNING_THRESHOLD) {
+            return;
+        }
+
+        Log::warning(sprintf(
+            'TurboData::%s loaded %s values into memory (over %s). Consider TurboData::fromTableStream() to avoid high memory use.',
+            $source,
+            number_format($count),
+            number_format(self::POOL_WARNING_THRESHOLD),
+        ));
     }
 
     /**
