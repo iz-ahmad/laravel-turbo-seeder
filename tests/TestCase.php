@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Tests;
 
 use Illuminate\Support\Facades\DB;
+use IzAhmad\TurboSeeder\Helpers\TurboData;
 use IzAhmad\TurboSeeder\TurboSeederServiceProvider;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
@@ -22,6 +23,9 @@ class TestCase extends OrchestraTestCase
 
         DB::table('test_posts')->delete();
         DB::table('test_users')->delete();
+
+        // Clear TurboData's cached values so state never leaks between tests.
+        TurboData::reset();
     }
 
     protected function getPackageProviders($app): array
@@ -34,7 +38,7 @@ class TestCase extends OrchestraTestCase
     protected function defineEnvironment($app): void
     {
         $app['config']->set('database.default', 'testing');
-        $app['config']->set('database.connections.testing', $this->testingConnectionConfig());
+        $app['config']->set('database.connections.testing', $this->connectionConfigFromEnv());
 
         $app['config']->set('turbo-seeder', [
             'default_chunk_size' => 100,
@@ -76,7 +80,7 @@ class TestCase extends OrchestraTestCase
      *
      * @return array<string, mixed>
      */
-    protected function testingConnectionConfig(): array
+    protected function connectionConfigFromEnv(): array
     {
         $driver = env('DB_CONNECTION', 'sqlite');
 
