@@ -29,8 +29,25 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
             "'"
         );
 
-        $columnNames = implode(',', array_map(fn ($col) => "`{$col}`", $columns));
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
+
+        $nullMarker = config('turbo-seeder.csv_strategy.null_marker', '\\N');
+        $quotedNullMarker = $pdo->quote($nullMarker);
+
+        // Each column is read into a user variable, then assigned via NULLIF so the
+        // null marker becomes a real NULL. Without this, `ESCAPED BY ''` disables
+        // MySQL's native \N interpretation and every NULL would import as the literal
+        // marker string (silent corruption).
+        $userVars = [];
+        $setClauses = [];
+        foreach ($columns as $i => $col) {
+            $var = "@ts_col_{$i}";
+            $userVars[] = $var;
+            $setClauses[] = "`{$col}` = NULLIF({$var}, {$quotedNullMarker})";
+        }
+
+        $columnVarList = implode(',', $userVars);
+        $setClause = implode(', ', $setClauses);
 
         // PDO::MYSQL_ATTR_LOCAL_INFILE must be enabled on the connection; if not,
         // the import will fail and trigger an automatic fallback to the default strategy.
@@ -41,7 +58,8 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
             OPTIONALLY ENCLOSED BY '\"'
             ESCAPED BY ''
             LINES TERMINATED BY '\\n'
-            ({$columnNames})
+            ({$columnVarList})
+            SET {$setClause}
         ";
 
         try {
