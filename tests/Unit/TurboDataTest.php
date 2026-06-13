@@ -6,8 +6,19 @@ use Carbon\Carbon;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 beforeEach(function () {
-    TurboData::resetNowOnce();
-    TurboData::resetHashedPasswords();
+    TurboData::reset();
+});
+
+test('reset clears every cached value including date caches', function () {
+    TurboData::nowOnce();
+    TurboData::dateRange('2020-01-01', '2020-12-31');
+    TurboData::sequentialDate('2020-01-01', 'day', 1);
+
+    TurboData::reset();
+
+    expect(TurboData::nowOnce())->toBeString()
+        ->and(TurboData::dateRange('2020-01-01', '2020-12-31'))->toBeInstanceOf(Carbon::class)
+        ->and(TurboData::sequentialDate('2020-01-01', 'day', 1))->toBeInstanceOf(Carbon::class);
 });
 
 // ── cycleFrom() ───────────────────────────────────────────────────────────────
