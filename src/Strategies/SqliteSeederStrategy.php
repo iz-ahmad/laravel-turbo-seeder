@@ -53,22 +53,21 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
         $conflictTarget = implode(', ', array_map(fn ($col) => "\"{$col}\"", $upsertKeys));
         $updateColumns = array_diff($columns, $upsertKeys);
 
-        if (empty($updateColumns)) {
-            $this->insertUsingMultiRowStatement($table, $columns, $records);
-
-            return;
-        }
-
-        $updateClause = implode(', ', array_map(
-            fn ($col) => "\"{$col}\" = EXCLUDED.\"{$col}\"",
-            $updateColumns,
-        ));
+        // Every column is a key, so there is nothing to update: DO NOTHING on
+        // conflict (consistent with PostgreSQL and MySQL) instead of a plain
+        // INSERT that would throw a unique-constraint error on re-seed.
+        $conflictAction = empty($updateColumns)
+            ? 'DO NOTHING'
+            : 'DO UPDATE SET '.implode(', ', array_map(
+                fn ($col) => "\"{$col}\" = EXCLUDED.\"{$col}\"",
+                $updateColumns,
+            ));
 
         $maxRowsPerBatch = max(1, (int) floor(999 / $columnCount));
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
             $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));
-            $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) DO UPDATE SET {$updateClause}";
+            $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) {$conflictAction}";
 
             $bindings = [];
             foreach ($batch as $record) {
