@@ -8,9 +8,12 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
+use IzAhmad\TurboSeeder\Strategies\Concerns\ClassifiesDatabaseErrors;
 
 final class MySqlCsvStrategy extends AbstractCsvStrategy
 {
+    use ClassifiesDatabaseErrors;
+
     public function supports(DatabaseDriver $driver): bool
     {
         return $driver === DatabaseDriver::MYSQL;
@@ -67,7 +70,7 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
         } catch (\Throwable $e) {
             $errorMessage = $e->getMessage();
 
-            if ($this->isLocalInfileError($errorMessage)) {
+            if ($this->isLocalInfileError($e)) {
                 $shouldFallback = config('turbo-seeder.csv_strategy.fallback_to_default_strategy_on_config_error', true);
 
                 throw new CsvImportFailedException(
@@ -90,28 +93,15 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
     }
 
     /**
-     * Check if error is related to LOCAL_INFILE configuration.
+     * Whether the failure is a LOCAL INFILE capability error worth falling back
+     * to the default strategy for. Classified by MySQL error number rather than
+     * by matching English error text.
      */
-    private function isLocalInfileError(string $errorMessage): bool
+    private function isLocalInfileError(\Throwable $e): bool
     {
-        $localInfilePatterns = [
-            'LOAD DATA LOCAL INFILE is forbidden',
-            'local_infile',
-            'MYSQL_ATTR_LOCAL_INFILE',
-            'mysqli.allow_local_infile',
-            'mysqli.local_infile_directory',
-            'PDO::MYSQL_ATTR_LOCAL_INFILE',
-            'PDO::MYSQL_ATTR_LOCAL_INFILE_DIRECTORY',
-            'LOCAL INFILE',
-        ];
-
-        foreach ($localInfilePatterns as $pattern) {
-            if (stripos($errorMessage, $pattern) !== false) {
-                return true;
-            }
-        }
-
-        return false;
+        // 1148 ER_NOT_ALLOWED_COMMAND, 3948 ER_LOAD_DATA_LOCAL_INFILE_DISABLED,
+        // 2068 CR_LOAD_DATA_LOCAL_INFILE_REJECTED (client-side rejection).
+        return in_array($this->driverErrno($e), [1148, 3948, 2068], true);
     }
 
     /**
