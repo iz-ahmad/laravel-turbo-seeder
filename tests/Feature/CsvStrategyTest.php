@@ -70,7 +70,13 @@ test('csv strategy fails loudly on null-marker collision', function () {
         ->run();
 
     expect($run)->toThrow(RuntimeException::class);
-});
+})->skip(
+    // PostgreSQL uses its own COPY sentinel, not csv_strategy.null_marker, so a
+    // value equal to that config marker is not a collision there. PostgreSQL's
+    // own sentinel collision is covered by PostgresCopyWriterTest.
+    fn () => config('database.connections.testing.driver') === 'pgsql',
+    'PostgreSQL uses a separate COPY null sentinel',
+);
 
 test('can switch between default and csv strategies', function () {
     test()->truncateTable('test_users');
