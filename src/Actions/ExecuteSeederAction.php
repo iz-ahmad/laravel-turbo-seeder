@@ -187,8 +187,8 @@ final class ExecuteSeederAction
      * Validate that all declared columns exist on the target table.
      * Skipped when shouldValidateColumns() returns false.
      * Throws when the table itself does not exist.
-     * Silently skips column-level checks only when the schema builder cannot
-     * introspect the driver (getColumnListing returns empty on an existing table).
+     * Logs a warning (rather than silently skipping) when the schema builder
+     * cannot introspect the driver (getColumnListing returns empty).
      */
     private function validateColumns(SeederConfigurationDTO $config): void
     {
@@ -207,6 +207,11 @@ final class ExecuteSeederAction
         $tableColumns = $schemaBuilder->getColumnListing($config->table);
 
         if (empty($tableColumns)) {
+            Log::warning('TurboSeeder: skipping column validation; schema introspection returned no columns.', [
+                'table' => $config->table,
+                'connection' => $config->connection,
+            ]);
+
             return;
         }
 
