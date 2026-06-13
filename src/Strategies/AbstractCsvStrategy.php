@@ -37,6 +37,7 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
         protected readonly ProgressTrackerInterface $progressTracker,
         protected readonly PrepareEnvironmentAction $prepareAction,
         protected readonly CleanupEnvironmentAction $cleanupAction,
+        protected readonly GenerateCsvAction $generateCsvAction,
     ) {
         $this->chunkSize = $this->determineOptimalChunkSize();
     }
@@ -92,10 +93,10 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
      */
     protected function generateCsvFile(SeederConfigurationDTO $config): void
     {
-        $generateAction = app(GenerateCsvAction::class);
+        $filepath = $this->tempFilePath ?? throw new \RuntimeException('Temp file path not set');
 
-        $generateAction(
-            $this->tempFilePath,
+        ($this->generateCsvAction)(
+            $filepath,
             $config->columns,
             $config->generator,
             $config->count,
