@@ -10,9 +10,12 @@ use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\PostgresCopyWriter;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
+use IzAhmad\TurboSeeder\Strategies\Concerns\ClassifiesDatabaseErrors;
 
 final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
 {
+    use ClassifiesDatabaseErrors;
+
     public function supports(DatabaseDriver $driver): bool
     {
         return $driver === DatabaseDriver::PGSQL;
@@ -130,20 +133,6 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
         $fallbackStates = ['42501', '42P01', '28000', '28P01'];
 
         return in_array($this->sqlState($e), $fallbackStates, true);
-    }
-
-    /**
-     * Extract the SQLSTATE code from a PDO exception, if present.
-     */
-    private function sqlState(\Throwable $e): ?string
-    {
-        if ($e instanceof \PDOException && is_array($e->errorInfo ?? null)) {
-            return $e->errorInfo[0] ?? null;
-        }
-
-        $code = $e->getCode();
-
-        return $code === 0 ? null : (string) $code;
     }
 
     /**
