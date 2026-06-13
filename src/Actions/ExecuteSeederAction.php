@@ -147,9 +147,13 @@ final class ExecuteSeederAction
     /**
      * Empty the target table before seeding when truncate() was requested.
      *
-     * Runs before the seeding transaction so it is a real, committed wipe.
-     * Foreign key checks are disabled around it on MySQL so a single referenced
-     * table can be cleared; it never cascades to other tables.
+     * Runs before the seeding transaction so it is a real, committed wipe and
+     * never cascades to other tables. On MySQL, TRUNCATE resets AUTO_INCREMENT
+     * with foreign key checks disabled around it. On PostgreSQL and SQLite a
+     * DELETE is used instead: PostgreSQL refuses to TRUNCATE a table that is
+     * referenced by a foreign key (even by an empty child), and DELETE needs no
+     * superuser. If the target still has referencing rows, empty those child
+     * tables first.
      */
     private function truncateIfRequested(SeederConfigurationDTO $config): void
     {
@@ -158,9 +162,8 @@ final class ExecuteSeederAction
         }
 
         $connection = DB::connection($config->connection);
-        $driver = $connection->getDriverName();
 
-        if ($driver === 'mysql') {
+        if ($connection->getDriverName() === 'mysql') {
             $connection->statement('SET FOREIGN_KEY_CHECKS=0');
 
             try {
@@ -172,15 +175,7 @@ final class ExecuteSeederAction
             return;
         }
 
-        if ($driver === 'pgsql') {
-            $connection->statement(
-                'TRUNCATE TABLE '.$connection->getQueryGrammar()->wrapTable($config->table).' RESTART IDENTITY'
-            );
-
-            return;
-        }
-
-        $connection->table($config->table)->truncate();
+        $connection->table($config->table)->delete();
     }
 
     /**
