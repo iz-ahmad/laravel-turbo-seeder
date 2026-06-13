@@ -14,6 +14,20 @@ test('handles invalid table name gracefully', function () {
         ->toThrow(RuntimeException::class);
 });
 
+test('the original exception is preserved as previous', function () {
+    try {
+        TurboSeeder::create('nonexistent_table')
+            ->columns(['name'])
+            ->generate(fn ($i) => ['name' => "User {$i}"])
+            ->count(1)
+            ->run();
+
+        $this->fail('Expected a RuntimeException to be thrown.');
+    } catch (RuntimeException $e) {
+        expect($e->getPrevious())->toBeInstanceOf(InvalidArgumentException::class);
+    }
+});
+
 test('handles generator returning wrong columns', function () {
     expect(fn () => TurboSeeder::create('test_users')
         ->columns(['name', 'email'])
