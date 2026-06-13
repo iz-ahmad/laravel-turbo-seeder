@@ -133,14 +133,46 @@ final readonly class SeederConfigurationDTO
     }
 
     /**
-     * Check if database transactions should be used during seeding.
+     * Check if a single wrapping transaction should be used during seeding.
      *
-     * Falls back to config (performance.use_transactions) when not set
-     * explicitly on the builder.
+     * Precedence:
+     *  1. Dry-run always needs a transaction to roll back.
+     *  2. An explicit useTransactions()/withoutTransactions() wins.
+     *  3. commitEvery() replaces the single wrap with periodic commits.
+     *  4. The CSV strategy skips the wrap by default — LOAD DATA / COPY are
+     *     atomic per statement, and wrapping millions of rows in one
+     *     transaction strains the redo log / WAL and stalls replicas.
+     *  5. Otherwise fall back to config (performance.use_transactions).
      */
     public function shouldUseTransactions(): bool
     {
-        return $this->options['use_transactions']
-            ?? config('turbo-seeder.performance.use_transactions', true);
+        if ($this->isDryRun()) {
+            return true;
+        }
+
+        if (array_key_exists('use_transactions', $this->options)) {
+            return (bool) $this->options['use_transactions'];
+        }
+
+        if ($this->getCommitEvery() !== null) {
+            return false;
+        }
+
+        if ($this->strategy === SeederStrategy::CSV) {
+            return false;
+        }
+
+        return config('turbo-seeder.performance.use_transactions', true);
+    }
+
+    /**
+     * Number of chunks to commit per transaction for the default strategy.
+     * Null means a single wrapping transaction (or none) is used instead.
+     */
+    public function getCommitEvery(): ?int
+    {
+        $value = $this->options['commit_every'] ?? null;
+
+        return $value === null ? null : max(1, (int) $value);
     }
 }
