@@ -266,11 +266,10 @@ final class TurboSeederBuilder
      * Enable dry-run mode: data is generated and validated but not committed.
      * The result will report how many records would have been inserted.
      *
-     * WARNING: Dry-run discards inserts by rolling back a transaction.
-     * If you also call withoutTransactions(), the rollback cannot happen and
-     * rows WILL be permanently written to the database even though
-     * $result->isDryRun will be true. Do not combine dryRun() with
-     * withoutTransactions() unless you intentionally want this behaviour.
+     * Dry-run discards inserts by rolling back a transaction, so it always
+     * runs inside one. Combining dryRun() with withoutTransactions() is a
+     * hard error (run() throws InvalidArgumentException) to prevent rows
+     * being silently committed.
      */
     public function dryRun(bool $enabled = true): self
     {
@@ -436,6 +435,17 @@ final class TurboSeederBuilder
                     'Upsert key column(s) ['.implode(', ', $invalidKeys).'] are not in the declared columns. Upsert keys must be a subset of the seeded columns.'
                 );
             }
+        }
+
+        // dryRun() rolls back via a transaction. Without one there is nothing to
+        // roll back, so rows would be permanently committed despite isDryRun being
+        // true. Refuse the combination loudly instead of silently writing data.
+        if (($this->options['dry_run'] ?? false) === true
+            && ($this->options['use_transactions'] ?? true) === false) {
+            throw new \InvalidArgumentException(
+                'dryRun() cannot be combined with withoutTransactions(): a dry run relies on a transaction rollback to discard rows. '
+                .'Remove withoutTransactions() (dry runs always run inside a transaction).'
+            );
         }
     }
 
