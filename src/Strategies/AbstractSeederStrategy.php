@@ -158,6 +158,19 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
     }
 
     /**
+     * Clamp a chunk size so a single multi-row INSERT never exceeds the driver's
+     * bind-parameter ceiling (chunk rows × column count). PostgreSQL and MySQL
+     * both hard-fail past 65,535 placeholders in one statement.
+     */
+    protected function clampChunkSizeToBindLimit(int $chunkSize, int $maxParameters): int
+    {
+        $columnCount = max(1, count($this->config->columns));
+        $maxRows = max(1, intdiv($maxParameters, $columnCount));
+
+        return min($chunkSize, $maxRows);
+    }
+
+    /**
      * Build (and cache) the single-row placeholder string, e.g. "(?,?,?)".
      * Column count is fixed per seeding operation, so this is safe to cache.
      */
