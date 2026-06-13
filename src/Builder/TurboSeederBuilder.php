@@ -287,6 +287,22 @@ final class TurboSeederBuilder
     }
 
     /**
+     * Commit every N chunks (default strategy only) instead of wrapping the
+     * whole run in one transaction. Keeps the redo log / WAL small on very
+     * large seeds at the cost of all-or-nothing atomicity.
+     */
+    public function commitEvery(int $chunks): self
+    {
+        if ($chunks < 1) {
+            throw new \InvalidArgumentException('commitEvery() must be at least 1.');
+        }
+
+        $this->options['commit_every'] = $chunks;
+
+        return $this;
+    }
+
+    /**
      * Set custom options.
      *
      * @param  array<string, mixed>  $options
