@@ -398,7 +398,7 @@ final class TurboData
 
     /**
      * Generate a unique email address with realistic format.
-     * Example output: u_a3f9b2c1@turbo.test
+     * Example output: u_a3f9b2c1_0@turbo.test
      */
     public static function uniqueEmail(string $domain = 'turbo.test'): \Closure
     {
