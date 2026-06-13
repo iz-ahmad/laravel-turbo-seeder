@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Strategies;
 
 use Illuminate\Support\Facades\DB;
+use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
@@ -17,6 +18,46 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
     public function supports(DatabaseDriver $driver): bool
     {
         return $driver === DatabaseDriver::MYSQL;
+    }
+
+    /**
+     * Fall back before generating the CSV when LOCAL INFILE is unavailable —
+     * either the PDO client option is off or the server's local_infile is
+     * disabled. Avoids writing a large file that could never be imported.
+     */
+    protected function preflightImportCapability(SeederConfigurationDTO $config): void
+    {
+        $connection = DB::connection($this->dbConnection->name);
+
+        $options = $connection->getConfig('options') ?? [];
+        $clientEnabled = ! empty($options[\PDO::MYSQL_ATTR_LOCAL_INFILE]);
+
+        $serverEnabled = true;
+
+        try {
+            $row = $connection->selectOne('SELECT @@GLOBAL.local_infile AS enabled');
+            $serverEnabled = $row !== null && (int) ($row->enabled ?? 0) === 1;
+        } catch (\Throwable) {
+            // Cannot determine the server setting; let the real import attempt it.
+            $serverEnabled = true;
+        }
+
+        if ($clientEnabled && $serverEnabled) {
+            return;
+        }
+
+        $reason = ! $clientEnabled
+            ? 'PDO::MYSQL_ATTR_LOCAL_INFILE is not enabled on the connection'
+            : 'local_infile is disabled on the MySQL server';
+
+        throw new CsvImportFailedException(
+            "MySQL CSV import is unavailable ({$reason}); falling back without generating the CSV. See README for configuration.",
+            config('turbo-seeder.csv_strategy.fallback_to_default_strategy_on_config_error', true),
+            null,
+            'mysql',
+            $config->table,
+            null,
+        );
     }
 
     /**
