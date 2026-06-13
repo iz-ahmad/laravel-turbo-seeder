@@ -31,6 +31,7 @@ final class ExecuteSeederAction
 
         try {
             $this->validateColumns($config);
+            $this->validateUpsertKeys($config);
 
             $this->truncateIfRequested($config);
 
@@ -83,6 +84,52 @@ final class ExecuteSeederAction
                 errorMessage: $e->getMessage(),
             );
         }
+    }
+
+    /**
+     * Fail fast when upsert keys are not backed by a unique/primary index.
+     *
+     * ON CONFLICT (PostgreSQL/SQLite) and ON DUPLICATE KEY (MySQL) require the
+     * conflict target to match a real unique constraint, otherwise the statement
+     * errors mid-run. Skipped when column validation is disabled or when the
+     * driver's schema builder cannot introspect indexes (older Laravel).
+     */
+    private function validateUpsertKeys(SeederConfigurationDTO $config): void
+    {
+        if (! $config->isUpsert() || ! $config->shouldValidateColumns()) {
+            return;
+        }
+
+        try {
+            $indexes = DB::connection($config->connection)->getSchemaBuilder()->getIndexes($config->table);
+        } catch (\Throwable) {
+            // Index introspection is unavailable on this driver/Laravel version;
+            // skip the pre-flight check rather than block seeding.
+            return;
+        }
+
+        $keys = $config->getUpsertKeys();
+        sort($keys);
+
+        foreach ($indexes as $index) {
+            if ($index['unique'] !== true && $index['primary'] !== true) {
+                continue;
+            }
+
+            $columns = array_values(array_filter($index['columns'], 'is_string'));
+            sort($columns);
+
+            if ($columns === $keys) {
+                return;
+            }
+        }
+
+        throw new \InvalidArgumentException(sprintf(
+            'upsert(): column(s) [%s] are not backed by a unique or primary index on table [%s]. '
+            .'Add a matching unique constraint, or use the exact column(s) of an existing one.',
+            implode(', ', $config->getUpsertKeys()),
+            $config->table,
+        ));
     }
 
     /**
