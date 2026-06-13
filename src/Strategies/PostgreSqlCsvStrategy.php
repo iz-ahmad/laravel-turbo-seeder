@@ -11,6 +11,7 @@ use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\PostgresCopyWriter;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ClassifiesDatabaseErrors;
+use Pdo\Pgsql;
 
 final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
 {
@@ -76,13 +77,7 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
         $fieldList = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
 
         try {
-            $result = $pdo->pgsqlCopyFromFile(
-                $quotedTable,
-                $this->getAbsoluteFilePath(),
-                PostgresCopyWriter::DELIMITER,
-                PostgresCopyWriter::NULL_MARKER,
-                $fieldList,
-            );
+            $result = $this->copyFromFile($pdo, $quotedTable, $this->getAbsoluteFilePath(), $fieldList);
 
             if ($result === false) {
                 $errorInfo = $pdo->errorInfo();
@@ -112,6 +107,38 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
                 $e
             );
         }
+    }
+
+    /**
+     * Stream a file into the table via COPY ... FROM STDIN, version-safely.
+     *
+     * PDO::pgsqlCopyFromFile() is deprecated on the base PDO class in PHP 8.4+
+     * (superseded by Pdo\Pgsql::copyFromFile()). Laravel provides a base PDO
+     * instance, so the modern method is used when it actually is a Pdo\Pgsql and
+     * the still-functional base method is called dynamically otherwise — which
+     * also keeps static analysis from seeing the deprecated symbol.
+     */
+    private function copyFromFile(\PDO $pdo, string $table, string $path, string $fieldList): bool
+    {
+        if (PHP_VERSION_ID >= 80400 && $pdo instanceof Pgsql) {
+            return $pdo->copyFromFile(
+                $table,
+                $path,
+                PostgresCopyWriter::DELIMITER,
+                PostgresCopyWriter::NULL_MARKER,
+                $fieldList,
+            );
+        }
+
+        $copyFromFile = 'pgsqlCopyFromFile';
+
+        return (bool) $pdo->{$copyFromFile}(
+            $table,
+            $path,
+            PostgresCopyWriter::DELIMITER,
+            PostgresCopyWriter::NULL_MARKER,
+            $fieldList,
+        );
     }
 
     protected function determineOptimalChunkSize(): int
