@@ -56,26 +56,38 @@ final readonly class SeederConfigurationDTO
 
     /**
      * Check if progress tracking is enabled.
+     *
+     * Falls back to the published config (progress.enabled) before the
+     * hardcoded default so a user's config/turbo-seeder.php is respected.
      */
     public function hasProgressTracking(): bool
     {
-        return $this->options['progress_tracking'] ?? true;
+        return $this->options['progress_tracking']
+            ?? config('turbo-seeder.progress.enabled', true);
     }
 
     /**
      * Check if foreign key checks should be disabled.
+     *
+     * Falls back to config (performance.disable_foreign_keys) when not set
+     * explicitly on the builder.
      */
     public function shouldDisableForeignKeyChecks(): bool
     {
-        return $this->options['disable_foreign_keys'] ?? true;
+        return $this->options['disable_foreign_keys']
+            ?? config('turbo-seeder.performance.disable_foreign_keys', true);
     }
 
     /**
      * Check if query log should be disabled.
+     *
+     * Falls back to config (performance.disable_query_log) when not set
+     * explicitly on the builder.
      */
     public function shouldDisableQueryLog(): bool
     {
-        return $this->options['disable_query_log'] ?? true;
+        return $this->options['disable_query_log']
+            ?? config('turbo-seeder.performance.disable_query_log', true);
     }
 
     /**
@@ -122,9 +134,13 @@ final readonly class SeederConfigurationDTO
 
     /**
      * Check if database transactions should be used during seeding.
+     *
+     * Falls back to config (performance.use_transactions) when not set
+     * explicitly on the builder.
      */
     public function shouldUseTransactions(): bool
     {
-        return $this->options['use_transactions'] ?? true;
+        return $this->options['use_transactions']
+            ?? config('turbo-seeder.performance.use_transactions', true);
     }
 }
