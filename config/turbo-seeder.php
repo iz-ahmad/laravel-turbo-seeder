@@ -77,10 +77,8 @@ return [
     |
     */
     'csv_strategy' => [
-        'enabled' => true,
         'temp_path' => storage_path('app/turbo-seeder'),
         'buffer_size' => 8192,
-        'line_terminator' => "\n",
         'field_delimiter' => ',',
         'field_enclosure' => '"',
         'batch_size' => 10000,
@@ -111,7 +109,6 @@ return [
     */
     'progress' => [
         'enabled' => true,
-        'update_frequency' => 1000,
     ],
 
     /*
