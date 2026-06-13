@@ -10,6 +10,7 @@ use IzAhmad\TurboSeeder\Actions\ExecuteSeederAction;
 use IzAhmad\TurboSeeder\Actions\GenerateCsvAction;
 use IzAhmad\TurboSeeder\Actions\PrepareEnvironmentAction;
 use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
+use IzAhmad\TurboSeeder\Commands\MakeTurboSeederCommand;
 use IzAhmad\TurboSeeder\Commands\TurboBenchmarkCommand;
 use IzAhmad\TurboSeeder\Commands\TurboClearCacheCommand;
 use IzAhmad\TurboSeeder\Commands\TurboSeederCommand;
@@ -42,6 +43,7 @@ class TurboSeederServiceProvider extends PackageServiceProvider
                 TurboBenchmarkCommand::class,
                 TurboTestConnectionCommand::class,
                 TurboClearCacheCommand::class,
+                MakeTurboSeederCommand::class,
             ]);
     }
 
