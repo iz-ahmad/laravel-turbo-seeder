@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
+use IzAhmad\TurboSeeder\Enums\FromTableMode;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
@@ -221,4 +222,22 @@ test('fromTableStream assigns valid foreign keys when seeding', function () {
 
     expect(DB::table('test_posts')->count())->toBe(40)
         ->and(DB::table('test_posts')->pluck('user_id')->all())->each->toBeIn($seededUserIds);
+});
+
+// ── mode enum (M11) ──────────────────────────────────────────────────────────
+
+test('fromTable accepts the FromTableMode enum', function () {
+    DB::table('test_users')->insert([
+        ['name' => 'A', 'email' => 'a@mode.test'],
+        ['name' => 'B', 'email' => 'b@mode.test'],
+    ]);
+
+    $ids = DB::table('test_users')->orderBy('id')->pluck('id')->all();
+
+    $cycle = TurboData::fromTable('test_users', 'id', FromTableMode::CYCLE);
+    $random = TurboData::fromTable('test_users', 'id', FromTableMode::RANDOM);
+
+    expect($cycle(0))->toBe($ids[0])
+        ->and($cycle(1))->toBe($ids[1])
+        ->and($random(0))->toBeIn($ids);
 });
