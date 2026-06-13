@@ -19,10 +19,10 @@ test('dry-run does not commit any rows', function () {
         ->and(DB::table('test_users')->count())->toBe(0);
 });
 
-test('dry-run without transactions still reports records but inserts nothing useful', function () {
-    // When transactions are disabled, dry-run cannot roll back. Rows will be inserted.
-    // But isDryRun flag should still be set on the result.
-    $result = TurboSeeder::create('test_users')
+test('dry-run combined with withoutTransactions throws and writes nothing', function () {
+    // Without a transaction there is nothing to roll back, so rows would be
+    // permanently committed. The builder must refuse this combination loudly.
+    $run = fn () => TurboSeeder::create('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@dryrun-notx.test"])
         ->count(5)
@@ -30,8 +30,8 @@ test('dry-run without transactions still reports records but inserts nothing use
         ->withoutTransactions()
         ->run();
 
-    expect($result->isDryRun)->toBeTrue()
-        ->and($result->success)->toBeTrue();
+    expect($run)->toThrow(InvalidArgumentException::class)
+        ->and(DB::table('test_users')->count())->toBe(0);
 });
 
 test('dryRun false behaves as normal seeding', function () {
