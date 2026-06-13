@@ -135,6 +135,7 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
         $configuredSize = $this->config->getChunkSize();
         $defaultSize = config('turbo-seeder.chunk_sizes.mysql', config('turbo-seeder.default_chunk_size', 500));
 
-        return $configuredSize ?? $defaultSize;
+        // MySQL caps a prepared statement at 65,535 placeholders.
+        return $this->clampChunkSizeToBindLimit($configuredSize ?? $defaultSize, 65535);
     }
 }
