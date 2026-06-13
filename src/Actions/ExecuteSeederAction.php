@@ -12,6 +12,8 @@ use IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 use IzAhmad\TurboSeeder\Events\TurboSeederCompleted;
+use IzAhmad\TurboSeeder\Events\TurboSeederFailed;
+use IzAhmad\TurboSeeder\Events\TurboSeederStarting;
 
 final class ExecuteSeederAction
 {
@@ -34,6 +36,13 @@ final class ExecuteSeederAction
             $this->validateUpsertKeys($config);
 
             $this->truncateIfRequested($config);
+
+            Event::dispatch(new TurboSeederStarting(
+                $config->table,
+                $config->count,
+                $config->strategy,
+                $config->connection,
+            ));
 
             $strategy->prepareEnvironment();
 
@@ -77,6 +86,8 @@ final class ExecuteSeederAction
                 'file' => $e->getFile(),
                 'exception' => $e,
             ]);
+
+            Event::dispatch(new TurboSeederFailed($config->table, $config->connection, $e));
 
             return new SeederResultDTO(
                 success: false,
