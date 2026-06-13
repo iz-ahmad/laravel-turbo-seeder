@@ -86,7 +86,12 @@ final class PrepareEnvironmentAction
         // create foreign keys as NOT DEFERRABLE by default, so for a typical
         // schema PostgreSQL still validates foreign keys row-by-row. It is kept
         // because it does help schemas that declare deferrable constraints.
-        if ($config->shouldDisableForeignKeyChecks()) {
+        //
+        // SET CONSTRAINTS is only meaningful inside a transaction; skip it
+        // otherwise (e.g. the CSV strategy, which runs without a wrapping
+        // transaction) to avoid a useless "can only be used in transaction
+        // blocks" warning.
+        if ($config->shouldDisableForeignKeyChecks() && $connection->transactionLevel() > 0) {
             $connection->statement('SET CONSTRAINTS ALL DEFERRED');
         }
     }
