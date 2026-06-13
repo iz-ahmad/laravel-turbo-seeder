@@ -38,6 +38,40 @@ test('csv strategy handles large datasets', function () {
         ->and(DB::table('test_users')->count())->toBe(1000);
 });
 
+test('csv strategy imports null values as real NULLs', function () {
+    $result = TurboSeeder::create('test_users')
+        ->columns(['name', 'email', 'age'])
+        ->generate(fn ($i) => [
+            'name' => "User {$i}",
+            'email' => "user{$i}@test.com",
+            'age' => $i % 2 === 0 ? null : 30,
+        ])
+        ->count(10)
+        ->useCsvStrategy()
+        ->run();
+
+    expect($result->success)->toBeTrue()
+        ->and(DB::table('test_users')->whereNull('age')->count())->toBe(5)
+        ->and(DB::table('test_users')->where('age', 30)->count())->toBe(5);
+});
+
+test('csv strategy fails loudly on null-marker collision', function () {
+    $marker = config('turbo-seeder.csv_strategy.null_marker', '\\N');
+
+    $run = fn () => TurboSeeder::create('test_users')
+        ->columns(['name', 'email', 'age'])
+        ->generate(fn ($i) => [
+            'name' => $marker, // legitimately equals the null marker
+            'email' => "user{$i}@test.com",
+            'age' => 20,
+        ])
+        ->count(3)
+        ->useCsvStrategy()
+        ->run();
+
+    expect($run)->toThrow(RuntimeException::class);
+});
+
 test('can switch between default and csv strategies', function () {
     test()->truncateTable('test_users');
 
