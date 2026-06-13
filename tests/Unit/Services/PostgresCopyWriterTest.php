@@ -24,7 +24,11 @@ test('encodes null as the COPY null sentinel', function () {
         ['name', 'age'],
     );
 
-    expect($line)->toBe("Bob\t\\N\n");
+    expect($line)->toBe('Bob'."\t".PostgresCopyWriter::NULL_MARKER."\n");
+});
+
+test('the null sentinel contains no backslash (survives the COPY E-string)', function () {
+    expect(PostgresCopyWriter::NULL_MARKER)->not->toContain('\\');
 });
 
 test('escapes backslash, tab, newline and carriage return', function () {
@@ -36,16 +40,20 @@ test('escapes backslash, tab, newline and carriage return', function () {
     expect($line)->toBe("a\\\\b\\tc\\nd\\re\n");
 });
 
-test('a literal backslash-N value stays distinct from the null sentinel', function () {
+test('a literal backslash-N value is escaped and not treated as null', function () {
     $line = copyWriter()->formatLine(
         ['v' => '\N'],
         ['v'],
     );
 
-    // Real value "\N" becomes "\\N"; the NULL sentinel is the unescaped "\N".
+    // Real value "\N" becomes "\\N"; the NULL sentinel is a distinct token.
     expect($line)->toBe("\\\\N\n")
-        ->and($line)->not->toBe("\\N\n");
+        ->and(trim($line))->not->toBe(PostgresCopyWriter::NULL_MARKER);
 });
+
+test('a value equal to the null sentinel fails loudly', function () {
+    copyWriter()->formatLine(['v' => PostgresCopyWriter::NULL_MARKER], ['v']);
+})->throws(RuntimeException::class, 'collision');
 
 test('encodes booleans and arrays via ValueFormatter', function () {
     $line = copyWriter()->formatLine(
