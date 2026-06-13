@@ -11,8 +11,14 @@ test('can run turbo seeder test connection command', function () {
 });
 
 test('test connection command shows driver info', function () {
+    $displayName = match (config('database.connections.testing.driver')) {
+        'mysql' => 'MySQL',
+        'pgsql' => 'PostgreSQL',
+        default => 'SQLite',
+    };
+
     $this->artisan('turbo-seeder:test-connection', ['connection' => 'testing'])
-        ->expectsOutputToContain('SQLite')
+        ->expectsOutputToContain($displayName)
         ->expectsOutputToContain('DEFAULT strategy')
         ->assertSuccessful();
 });
