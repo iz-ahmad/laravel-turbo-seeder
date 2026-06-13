@@ -32,6 +32,8 @@ final class ExecuteSeederAction
         try {
             $this->validateColumns($config);
 
+            $this->truncateIfRequested($config);
+
             $strategy->prepareEnvironment();
 
             if ($config->hasProgressTracking()) {
@@ -81,6 +83,45 @@ final class ExecuteSeederAction
                 errorMessage: $e->getMessage(),
             );
         }
+    }
+
+    /**
+     * Empty the target table before seeding when truncate() was requested.
+     *
+     * Runs before the seeding transaction so it is a real, committed wipe.
+     * Foreign key checks are disabled around it on MySQL so a single referenced
+     * table can be cleared; it never cascades to other tables.
+     */
+    private function truncateIfRequested(SeederConfigurationDTO $config): void
+    {
+        if (($config->options['truncate'] ?? false) !== true) {
+            return;
+        }
+
+        $connection = DB::connection($config->connection);
+        $driver = $connection->getDriverName();
+
+        if ($driver === 'mysql') {
+            $connection->statement('SET FOREIGN_KEY_CHECKS=0');
+
+            try {
+                $connection->table($config->table)->truncate();
+            } finally {
+                $connection->statement('SET FOREIGN_KEY_CHECKS=1');
+            }
+
+            return;
+        }
+
+        if ($driver === 'pgsql') {
+            $connection->statement(
+                'TRUNCATE TABLE '.$connection->getQueryGrammar()->wrapTable($config->table).' RESTART IDENTITY'
+            );
+
+            return;
+        }
+
+        $connection->table($config->table)->truncate();
     }
 
     /**
