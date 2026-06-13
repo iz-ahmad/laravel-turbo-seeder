@@ -49,6 +49,11 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
         $this->tempFilePath = $this->generateTempFilePath($config->table);
 
         try {
+            // Check import capability BEFORE generating the file so a misconfigured
+            // connection falls back immediately instead of wasting minutes writing a
+            // CSV that can never be imported.
+            $this->preflightImportCapability($config);
+
             $this->displayStep1Message();
             $this->generateCsvFile($config);
 
@@ -68,6 +73,18 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
         } finally {
             $this->cleanupTempFile();
         }
+    }
+
+    /**
+     * Check whether the native CSV import can run before generating the file.
+     *
+     * Default: no preflight (drivers without special requirements). Drivers with
+     * configuration prerequisites (e.g. MySQL LOCAL INFILE) override this and
+     * throw a CsvImportFailedException(shouldFallback: true) when unavailable.
+     */
+    protected function preflightImportCapability(SeederConfigurationDTO $config): void
+    {
+        // No-op by default.
     }
 
     /**
