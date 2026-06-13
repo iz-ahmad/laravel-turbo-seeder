@@ -56,17 +56,19 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
         $updateColumns = array_diff($columns, $upsertKeys);
 
         if (empty($updateColumns)) {
-            $this->insertUsingMultiRowStatement($table, $columns, $records);
+            // Every column is a key, so there is nothing to update. Make conflicts
+            // a no-op (consistent with PostgreSQL/SQLite DO NOTHING) by assigning a
+            // key column to itself, rather than throwing a duplicate-key error.
+            $firstKey = (string) reset($upsertKeys);
+            $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders} ON DUPLICATE KEY UPDATE `{$firstKey}` = `{$firstKey}`";
+        } else {
+            $updateClause = implode(', ', array_map(
+                fn ($col) => "`{$col}` = VALUES(`{$col}`)",
+                $updateColumns,
+            ));
 
-            return;
+            $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders} ON DUPLICATE KEY UPDATE {$updateClause}";
         }
-
-        $updateClause = implode(', ', array_map(
-            fn ($col) => "`{$col}` = VALUES(`{$col}`)",
-            $updateColumns,
-        ));
-
-        $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders} ON DUPLICATE KEY UPDATE {$updateClause}";
 
         $bindings = [];
         foreach ($records as $record) {
