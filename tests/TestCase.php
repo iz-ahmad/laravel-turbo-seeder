@@ -34,18 +34,7 @@ class TestCase extends OrchestraTestCase
     protected function defineEnvironment($app): void
     {
         $app['config']->set('database.default', 'testing');
-
-        $app['config']->set('database.connections.testing', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
-            // 'driver' => 'mysql',
-            // 'host' => '127.0.0.1',
-            // 'port' => '3306',
-            // 'database' => 'test_database',
-            // 'username' => 'root',
-            // 'password' => '',
-        ]);
+        $app['config']->set('database.connections.testing', $this->testingConnectionConfig());
 
         $app['config']->set('turbo-seeder', [
             'default_chunk_size' => 100,
@@ -77,6 +66,48 @@ class TestCase extends OrchestraTestCase
                 'update_frequency' => 100,
             ],
         ]);
+    }
+
+    /**
+     * Build the testing connection config from env, defaulting to in-memory SQLite.
+     *
+     * The MySQL and PostgreSQL CI jobs set DB_CONNECTION so the native CSV import
+     * paths (LOAD DATA / COPY) are actually exercised, not just SQLite.
+     *
+     * @return array<string, mixed>
+     */
+    protected function testingConnectionConfig(): array
+    {
+        $driver = env('DB_CONNECTION', 'sqlite');
+
+        return match ($driver) {
+            'mysql' => [
+                'driver' => 'mysql',
+                'host' => env('DB_HOST', '127.0.0.1'),
+                'port' => env('DB_PORT', '3306'),
+                'database' => env('DB_DATABASE', 'turbo_test'),
+                'username' => env('DB_USERNAME', 'root'),
+                'password' => env('DB_PASSWORD', ''),
+                'prefix' => '',
+                'options' => extension_loaded('pdo_mysql')
+                    ? [\PDO::MYSQL_ATTR_LOCAL_INFILE => true]
+                    : [],
+            ],
+            'pgsql' => [
+                'driver' => 'pgsql',
+                'host' => env('DB_HOST', '127.0.0.1'),
+                'port' => env('DB_PORT', '5432'),
+                'database' => env('DB_DATABASE', 'turbo_test'),
+                'username' => env('DB_USERNAME', 'turbo'),
+                'password' => env('DB_PASSWORD', 'secret'),
+                'prefix' => '',
+            ],
+            default => [
+                'driver' => 'sqlite',
+                'database' => ':memory:',
+                'prefix' => '',
+            ],
+        };
     }
 
     protected function tearDown(): void
