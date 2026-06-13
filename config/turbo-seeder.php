@@ -65,6 +65,14 @@ return [
     'performance' => [
         'disable_query_log' => true,
         'disable_foreign_keys' => true,
+
+        /*
+        | MySQL only. Disabling unique_checks speeds up bulk loads but can let
+        | duplicate values into unique secondary indexes, so it is opt-in and
+        | defaults to false. Only enable it when your data is known unique.
+        */
+        'disable_unique_checks' => false,
+
         'use_transactions' => true,
     ],
 
