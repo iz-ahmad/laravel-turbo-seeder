@@ -27,6 +27,12 @@ final class TurboData
     /** @var array<string, string> */
     private static array $cachedHashes = [];
 
+    /** @var array<string, int> Parsed dateRange() bounds, keyed by date string. */
+    private static array $cachedDateBounds = [];
+
+    /** @var array<string, Carbon> Parsed sequentialDate() start points. */
+    private static array $cachedSequentialStarts = [];
+
     // -------------------------------------------------------------------------
     // Value selection
     // -------------------------------------------------------------------------
@@ -140,23 +146,21 @@ final class TurboData
      */
     public static function dateRange(string $from, string $to): Carbon
     {
-        static $parsed = [];
-
-        if (! isset($parsed[$from])) {
-            $parsed[$from] = Carbon::parse($from)->timestamp;
+        if (! isset(self::$cachedDateBounds[$from])) {
+            self::$cachedDateBounds[$from] = Carbon::parse($from)->timestamp;
         }
 
-        if (! isset($parsed[$to])) {
-            $parsed[$to] = Carbon::parse($to)->timestamp;
+        if (! isset(self::$cachedDateBounds[$to])) {
+            self::$cachedDateBounds[$to] = Carbon::parse($to)->timestamp;
         }
 
-        if ($parsed[$from] > $parsed[$to]) {
+        if (self::$cachedDateBounds[$from] > self::$cachedDateBounds[$to]) {
             throw new \InvalidArgumentException(
                 "dateRange() \$from [{$from}] must not be after \$to [{$to}]."
             );
         }
 
-        $timestamp = random_int($parsed[$from], $parsed[$to]);
+        $timestamp = random_int(self::$cachedDateBounds[$from], self::$cachedDateBounds[$to]);
 
         return Carbon::createFromTimestamp($timestamp);
     }
@@ -169,13 +173,11 @@ final class TurboData
      */
     public static function sequentialDate(string $start, string $step, int $index): Carbon
     {
-        static $startParsed = [];
-
-        if (! isset($startParsed[$start])) {
-            $startParsed[$start] = Carbon::parse($start);
+        if (! isset(self::$cachedSequentialStarts[$start])) {
+            self::$cachedSequentialStarts[$start] = Carbon::parse($start);
         }
 
-        return $startParsed[$start]->copy()->modify("+{$index} {$step}");
+        return self::$cachedSequentialStarts[$start]->copy()->modify("+{$index} {$step}");
     }
 
     /**
@@ -220,6 +222,18 @@ final class TurboData
     public static function resetHashedPasswords(): void
     {
         self::$cachedHashes = [];
+    }
+
+    /**
+     * Reset every cached value held by TurboData.
+     * Useful in tests to prevent state leakage between test cases.
+     */
+    public static function reset(): void
+    {
+        self::$cachedNow = null;
+        self::$cachedHashes = [];
+        self::$cachedDateBounds = [];
+        self::$cachedSequentialStarts = [];
     }
 
     /**
