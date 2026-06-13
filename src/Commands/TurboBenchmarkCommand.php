@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 class TurboBenchmarkCommand extends Command
 {
+    use ConfirmableTrait;
+
     public $signature = 'turbo-seeder:benchmark
                         {--connection= : Database connection name}
                         {--table=benchmark_test : Table name for benchmarking}
-                        {--records=50000 : Number of records to seed}';
+                        {--records=50000 : Number of records to seed}
+                        {--force : Skip the production confirmation prompt}';
 
     public $description = 'Benchmark TurboSeeder performance (default vs CSV strategies)';
 
@@ -25,6 +29,15 @@ class TurboBenchmarkCommand extends Command
         $records = (int) $this->option('records');
         $columnCount = 5;
 
+        // This command CREATES, TRUNCATEs and DROPs the benchmark table. Guard
+        // against running it outside local/testing (e.g. a production typo).
+        if (! $this->confirmToProceed(
+            'This command creates and DROPS a benchmark table.',
+            fn () => ! app()->environment('local', 'testing'),
+        )) {
+            return self::FAILURE;
+        }
+
         $this->info('🏁 Starting TurboSeeder Performance Benchmark...');
         $this->info("Connection: {$connection}");
         $this->info("Table: {$table} (containing {$columnCount} columns)");
@@ -33,6 +46,15 @@ class TurboBenchmarkCommand extends Command
 
         try {
             $driver = $this->detectDriver($connection);
+
+            // Never drop a table we did not create. If the target name already
+            // exists, refuse rather than destroy real data.
+            if (DB::connection($connection)->getSchemaBuilder()->hasTable($table)) {
+                $this->error("✗ Table [{$table}] already exists on connection [{$connection}].");
+                $this->line('  Refusing to drop an existing table. Pass a different --table name for benchmarking.');
+
+                return self::FAILURE;
+            }
             $this->info("Detected Driver: {$driver->getDisplayName()}");
             $this->newLine();
 
