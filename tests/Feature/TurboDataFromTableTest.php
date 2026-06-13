@@ -164,3 +164,61 @@ test('fromTable works inside a seeder generator for FK assignment', function () 
         expect($uid)->toBeIn($seededUserIds);
     }
 });
+
+// ── fromTableStream (memory-bounded) ─────────────────────────────────────────
+
+test('fromTableStream throws on empty table name', function () {
+    TurboData::fromTableStream('');
+})->throws(InvalidArgumentException::class, '$table must not be empty');
+
+test('fromTableStream throws on a page size below one', function () {
+    TurboData::fromTableStream('test_users', 'id', 0);
+})->throws(InvalidArgumentException::class, '$pageSize must be at least 1');
+
+test('fromTableStream cycles through ids across page boundaries', function () {
+    DB::table('test_users')->insert(
+        collect(range(1, 25))
+            ->map(fn ($n) => ['name' => "U{$n}", 'email' => "u{$n}@stream.test"])
+            ->all()
+    );
+
+    $ids = DB::table('test_users')->orderBy('id')->pluck('id')->all();
+
+    // Page size smaller than the row count forces multiple page loads + wrap.
+    $stream = TurboData::fromTableStream('test_users', 'id', 10);
+
+    $produced = [];
+    for ($i = 0; $i < 30; $i++) {
+        $produced[] = $stream($i);
+    }
+
+    // First 25 follow id order; then it wraps around to the start.
+    expect(array_slice($produced, 0, 25))->toBe($ids)
+        ->and(array_slice($produced, 25, 5))->toBe(array_slice($ids, 0, 5))
+        ->and($produced)->each->toBeIn($ids);
+});
+
+test('fromTableStream assigns valid foreign keys when seeding', function () {
+    DB::table('test_users')->insert(
+        collect(range(1, 12))
+            ->map(fn ($n) => ['name' => "U{$n}", 'email' => "u{$n}@fk.test"])
+            ->all()
+    );
+
+    $userIds = TurboData::fromTableStream('test_users', 'id', 5);
+
+    TurboSeeder::create('test_posts')
+        ->columns(['user_id', 'title', 'content'])
+        ->generate(fn ($i) => [
+            'user_id' => $userIds($i),
+            'title' => "Post {$i}",
+            'content' => "Content {$i}",
+        ])
+        ->count(40)
+        ->run();
+
+    $seededUserIds = DB::table('test_users')->pluck('id')->all();
+
+    expect(DB::table('test_posts')->count())->toBe(40)
+        ->and(DB::table('test_posts')->pluck('user_id')->all())->each->toBeIn($seededUserIds);
+});
