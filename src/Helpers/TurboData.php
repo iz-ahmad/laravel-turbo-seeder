@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use IzAhmad\TurboSeeder\Enums\FromTableMode;
 
 /**
  * Fast, Faker-free data generation helpers for use inside ->generate() closures.
@@ -240,10 +241,11 @@ final class TurboData
      * Pluck a column from a table once and cycle or randomly pick on every generator call.
      * Loaded lazily on first call; all subsequent calls are O(1) array lookups.
      *
-     * @param  string  $mode  'cycle' (default) | 'random'
+     * @param  FromTableMode|string  $mode  FromTableMode::CYCLE (default) | ::RANDOM, or the
+     *                                      legacy strings 'cycle' | 'random'
      * @return \Closure(int): mixed
      */
-    public static function fromTable(string $table, string $column = 'id', string $mode = 'cycle', ?string $connection = null): \Closure
+    public static function fromTable(string $table, string $column = 'id', FromTableMode|string $mode = FromTableMode::CYCLE, ?string $connection = null): \Closure
     {
         if ($table === '') {
             throw new \InvalidArgumentException('fromTable() $table must not be empty.');
@@ -253,9 +255,7 @@ final class TurboData
             throw new \InvalidArgumentException('fromTable() $column must not be empty.');
         }
 
-        if (! in_array($mode, ['cycle', 'random'], true)) {
-            throw new \InvalidArgumentException('fromTable() $mode must be "cycle" or "random".');
-        }
+        $mode = FromTableMode::normalize($mode);
 
         $pool = null;
         $count = 0;
@@ -277,7 +277,7 @@ final class TurboData
                 self::warnIfPoolTooLarge($count, "fromTable('{$table}', '{$column}')");
             }
 
-            return $mode === 'random'
+            return $mode === FromTableMode::RANDOM
                 ? $pool[array_rand($pool)]
                 : $pool[$index % $count];
         };
