@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Builder;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 use IzAhmad\TurboSeeder\Services\SeederOrchestrator;
+use IzAhmad\TurboSeeder\Support\FactoryDataGenerator;
 
 /**
  * Fluent builder for configuring and executing TurboSeeder operations.
@@ -26,6 +28,12 @@ final class TurboSeederBuilder
     private array $columns = [];
 
     private ?\Closure $generator = null;
+
+    private ?FactoryDataGenerator $factoryGenerator = null;
+
+    private ?bool $withTimestamps = null;
+
+    private bool $timestampsApplied = false;
 
     private int $count = 1000;
 
@@ -84,6 +92,60 @@ final class TurboSeederBuilder
     public function generate(\Closure $generator): self
     {
         $this->generator = $generator;
+
+        return $this;
+    }
+
+    /**
+     * Generate rows from an existing Laravel model factory.
+     *
+     * Reuses the factory's definition, states and Faker as the single source of
+     * truth for the row shape, then bulk-inserts the raw attributes. Model
+     * events, observers and accessors are skipped for speed; timestamps are
+     * filled automatically when the model uses them.
+     */
+    public function fromFactory(Factory $factory): self
+    {
+        $this->factoryGenerator = new FactoryDataGenerator($factory);
+
+        if ($this->table === null) {
+            $this->table($this->factoryGenerator->table());
+        }
+
+        $this->generator = $this->factoryGenerator->toGenerator();
+
+        return $this;
+    }
+
+    /**
+     * Auto-fill created_at/updated_at with a single timestamp for every row.
+     *
+     * Enabled by default on the factory path when the model uses timestamps.
+     * Explicit calls always win.
+     */
+    public function withTimestamps(bool $enabled = true): self
+    {
+        $this->withTimestamps = $enabled;
+
+        return $this;
+    }
+
+    /**
+     * Do not auto-fill timestamps (even on the factory path).
+     */
+    public function withoutTimestamps(): self
+    {
+        return $this->withTimestamps(false);
+    }
+
+    /**
+     * Empty the target table before seeding (a fresh, committed operation).
+     *
+     * Cannot be combined with dryRun(): the wipe is not rolled back.
+     */
+    public function truncate(bool $enabled = true): self
+    {
+        $this->options['truncate'] = $enabled;
 
         return $this;
     }
@@ -374,6 +436,7 @@ final class TurboSeederBuilder
      */
     private function buildConfiguration(): SeederConfigurationDTO
     {
+        $this->applyTimestamps();
         $this->validate();
 
         return new SeederConfigurationDTO(
@@ -385,6 +448,61 @@ final class TurboSeederBuilder
             strategy: $this->strategy,
             options: $this->options
         );
+    }
+
+    /**
+     * Whether timestamps should be auto-filled for this run.
+     * Explicit withTimestamps()/withoutTimestamps() wins; otherwise the factory
+     * path defaults to on when the model uses timestamps.
+     */
+    private function shouldApplyTimestamps(): bool
+    {
+        if ($this->withTimestamps !== null) {
+            return $this->withTimestamps;
+        }
+
+        return $this->factoryGenerator?->usesTimestamps() ?? false;
+    }
+
+    /**
+     * Wrap the generator so created_at/updated_at are filled once per run.
+     * Must run before column inference so the timestamp columns are included.
+     */
+    private function applyTimestamps(): void
+    {
+        if ($this->timestampsApplied || $this->generator === null || ! $this->shouldApplyTimestamps()) {
+            return;
+        }
+
+        $createdAt = $this->factoryGenerator?->createdAtColumn() ?? 'created_at';
+        $updatedAt = $this->factoryGenerator?->updatedAtColumn() ?? 'updated_at';
+
+        $timestamp = now()->toDateTimeString();
+        $inner = $this->generator;
+
+        $this->generator = static function (int $index) use ($inner, $createdAt, $updatedAt, $timestamp): array {
+            $record = $inner($index);
+
+            if (! array_key_exists($createdAt, $record)) {
+                $record[$createdAt] = $timestamp;
+            }
+
+            if (! array_key_exists($updatedAt, $record)) {
+                $record[$updatedAt] = $timestamp;
+            }
+
+            return $record;
+        };
+
+        if (! empty($this->columns)) {
+            foreach ([$createdAt, $updatedAt] as $column) {
+                if (! in_array($column, $this->columns, true)) {
+                    $this->columns[] = $column;
+                }
+            }
+        }
+
+        $this->timestampsApplied = true;
     }
 
     /**
@@ -445,6 +563,15 @@ final class TurboSeederBuilder
             throw new \InvalidArgumentException(
                 'dryRun() cannot be combined with withoutTransactions(): a dry run relies on a transaction rollback to discard rows. '
                 .'Remove withoutTransactions() (dry runs always run inside a transaction).'
+            );
+        }
+
+        // truncate() permanently empties the table before seeding and is not part
+        // of the dry-run rollback, so refuse the misleading combination.
+        if (($this->options['truncate'] ?? false) === true
+            && ($this->options['dry_run'] ?? false) === true) {
+            throw new \InvalidArgumentException(
+                'truncate() cannot be combined with dryRun(): truncation is committed immediately and would not be rolled back.'
             );
         }
     }
