@@ -68,10 +68,7 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
     protected function importFromCsv(string $table, array $columns): void
     {
         $pdo = DB::connection($this->dbConnection->name)->getPdo();
-        $filepath = trim(
-            $pdo->quote($this->getAbsoluteFilePath()),
-            "'"
-        );
+        $filepath = $this->assertSafeCsvPath($this->getAbsoluteFilePath());
 
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
 
