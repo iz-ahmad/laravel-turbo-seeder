@@ -251,6 +251,27 @@ final class TurboSeederBuilder
     }
 
     /**
+     * Disable MySQL unique-index checks during seeding (opt-in, MySQL only).
+     *
+     * Speeds up bulk loads but can let duplicate values into unique secondary
+     * indexes — only use it when the data is known to be unique.
+     */
+    public function disableUniqueChecks(bool $disabled = true): self
+    {
+        $this->options['disable_unique_checks'] = $disabled;
+
+        return $this;
+    }
+
+    /**
+     * Enable MySQL unique-index checks when seeding.
+     */
+    public function enableUniqueChecks(): self
+    {
+        return $this->disableUniqueChecks(false);
+    }
+
+    /**
      * Enable or disable query log when seeding.
      */
     public function disableQueryLog(bool $disabled = true): self
