@@ -12,6 +12,13 @@ use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 use IzAhmad\TurboSeeder\Services\SeederOrchestrator;
 use IzAhmad\TurboSeeder\Support\FactoryDataGenerator;
 
+/**
+ * Fluent builder for configuring and executing TurboSeeder operations.
+ *
+ * Provides a chainable interface for setting up seeding operations with
+ * various configuration options. Supports method chaining for intuitive
+ * and readable configuration.
+ */
 final class TurboSeederBuilder
 {
     private ?string $table = null;
@@ -44,6 +51,9 @@ final class TurboSeederBuilder
         private readonly SeederOrchestrator $orchestrator
     ) {}
 
+    /**
+     * Set the table name.
+     */
     public function table(string $table): self
     {
         if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/', $table)) {
@@ -58,6 +68,8 @@ final class TurboSeederBuilder
     }
 
     /**
+     * Set the columns to be seeded.
+     *
      * @param  array<int, string>  $columns
      */
     public function columns(array $columns): self
@@ -115,6 +127,9 @@ final class TurboSeederBuilder
         return $this->columns($columns);
     }
 
+    /**
+     * Set the data generator closure.
+     */
     public function generate(\Closure $generator): self
     {
         $this->generator = $generator;
@@ -156,6 +171,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Do not auto-fill timestamps (even on the factory path).
+     */
     public function withoutTimestamps(): self
     {
         return $this->withTimestamps(false);
@@ -173,6 +191,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Set the number of records to seed.
+     */
     public function count(int $count): self
     {
         $this->count = $count;
@@ -180,6 +201,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Set the database connection.
+     */
     public function connection(?string $connection): self
     {
         $this->connection = $connection;
@@ -187,6 +211,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Use the CSV based seeding strategy.
+     */
     public function useCsvStrategy(): self
     {
         $this->strategy = SeederStrategy::CSV;
@@ -194,6 +221,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Use the default (bulk insert based) seeding strategy.
+     */
     public function useDefaultStrategy(): self
     {
         $this->strategy = SeederStrategy::DEFAULT;
@@ -201,6 +231,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Set a specific seeding strategy using the strategy enum.
+     */
     public function strategy(SeederStrategy $strategy): self
     {
         $this->strategy = $strategy;
@@ -208,6 +241,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Set custom chunk size.
+     */
     public function chunkSize(int $size): self
     {
         if ($size < 1) {
@@ -219,6 +255,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Enable or disable progress tracking for seeding operation.
+     */
     public function withProgressTracking(bool $enabled = true): self
     {
         $this->options['progress_tracking'] = $enabled;
@@ -226,11 +265,17 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Disable progress tracking for seeding operation.
+     */
     public function withoutProgressTracking(): self
     {
         return $this->withProgressTracking(false);
     }
 
+    /**
+     * Enable or disable foreign key checks when seeding.
+     */
     public function disableForeignKeyChecks(bool $disabled = true): self
     {
         $this->options['disable_foreign_keys'] = $disabled;
@@ -238,6 +283,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Enable foreign key checks when seeding.
+     */
     public function enableForeignKeyChecks(): self
     {
         return $this->disableForeignKeyChecks(false);
@@ -256,11 +304,17 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Enable MySQL unique-index checks when seeding.
+     */
     public function enableUniqueChecks(): self
     {
         return $this->disableUniqueChecks(false);
     }
 
+    /**
+     * Enable or disable query log when seeding.
+     */
     public function disableQueryLog(bool $disabled = true): self
     {
         $this->options['disable_query_log'] = $disabled;
@@ -268,11 +322,17 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Enable query log when seeding.
+     */
     public function enableQueryLog(): self
     {
         return $this->disableQueryLog(false);
     }
 
+    /**
+     * Enable or disable db transactions when seeding.
+     */
     public function useTransactions(bool $use = true): self
     {
         $this->options['use_transactions'] = $use;
@@ -280,6 +340,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Disable transactions.
+     */
     public function withoutTransactions(): self
     {
         return $this->useTransactions(false);
@@ -302,6 +365,8 @@ final class TurboSeederBuilder
     }
 
     /**
+     * Set custom options.
+     *
      * @param  array<string, mixed>  $options
      */
     public function options(array $options): self
@@ -311,6 +376,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Set a single option.
+     */
     public function option(string $key, mixed $value): self
     {
         $this->options[$key] = $value;
@@ -318,6 +386,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * conditionally apply callback on the builder.
+     */
     public function when(bool|callable $condition, callable $callback, ?callable $default = null): self
     {
         $conditionResult = is_callable($condition) ? $condition($this) : $condition;
@@ -348,6 +419,9 @@ final class TurboSeederBuilder
     }
 
     /**
+     * Enable upsert mode using the given unique key columns.
+     * On conflict, non-key columns are updated with the new values.
+     *
      * @param  array<int, string>  $uniqueBy  Column(s) that identify a unique row
      */
     public function upsert(array $uniqueBy): self
@@ -369,6 +443,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Set the number of retry attempts on transient lock/deadlock failures.
+     */
     public function retryAttempts(int $attempts): self
     {
         if ($attempts < 1) {
@@ -384,6 +461,10 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Disable schema column validation before seeding.
+     * By default, declared columns are checked against the actual table schema.
+     */
     public function withoutColumnValidation(): self
     {
         $this->options['validate_columns'] = false;
@@ -391,6 +472,9 @@ final class TurboSeederBuilder
         return $this;
     }
 
+    /**
+     * Apply callback unless condition is true.
+     */
     public function unless(bool|callable $condition, callable $callback, ?callable $default = null): self
     {
         $conditionResult = is_callable($condition) ? $condition($this) : $condition;
@@ -398,6 +482,9 @@ final class TurboSeederBuilder
         return $this->when(! $conditionResult, $callback, $default);
     }
 
+    /**
+     * Execute the seeding operation.
+     */
     public function run(): SeederResultDTO
     {
         $config = $this->buildConfiguration();
@@ -417,11 +504,18 @@ final class TurboSeederBuilder
         return $result;
     }
 
+    /**
+     * get the current configuration as DTO without executing the seeding operation.
+     */
     public function toConfiguration(): SeederConfigurationDTO
     {
         return $this->buildConfiguration();
     }
 
+    /**
+     * Validate state and build the configuration DTO.
+     * Shared by run() and toConfiguration() to avoid duplicate logic.
+     */
     private function buildConfiguration(): SeederConfigurationDTO
     {
         $this->applyTimestamps();
@@ -438,6 +532,11 @@ final class TurboSeederBuilder
         );
     }
 
+    /**
+     * Whether timestamps should be auto-filled for this run.
+     * Explicit withTimestamps()/withoutTimestamps() wins; otherwise the factory
+     * path defaults to on when the model uses timestamps.
+     */
     private function shouldApplyTimestamps(): bool
     {
         if ($this->withTimestamps !== null) {
@@ -447,6 +546,10 @@ final class TurboSeederBuilder
         return $this->factoryGenerator?->usesTimestamps() ?? false;
     }
 
+    /**
+     * Wrap the generator so created_at/updated_at are filled once per run.
+     * Must run before column inference so the timestamp columns are included.
+     */
     private function applyTimestamps(): void
     {
         if ($this->timestampsApplied || $this->generator === null || ! $this->shouldApplyTimestamps()) {
@@ -484,6 +587,10 @@ final class TurboSeederBuilder
         $this->timestampsApplied = true;
     }
 
+    /**
+     * Validate the builder state.
+     * If columns were not set explicitly, they are inferred from the first generator record.
+     */
     private function validate(): void
     {
         if ($this->table === null || $this->table === '') {
@@ -551,12 +658,17 @@ final class TurboSeederBuilder
         }
     }
 
+    /**
+     * Get the current table name for seeding.
+     */
     public function getTable(): ?string
     {
         return $this->table;
     }
 
     /**
+     * Get the current columns for seeding.
+     *
      * @return array<int, string>
      */
     public function getColumns(): array
@@ -564,17 +676,25 @@ final class TurboSeederBuilder
         return $this->columns;
     }
 
+    /**
+     * Get the current count of records to seed.
+     */
     public function getCount(): int
     {
         return $this->count;
     }
 
+    /**
+     * Get the current seeder strategy.
+     */
     public function getStrategy(): SeederStrategy
     {
         return $this->strategy;
     }
 
     /**
+     * Get all configured options of the builder.
+     *
      * @return array<string, mixed>
      */
     public function getOptions(): array

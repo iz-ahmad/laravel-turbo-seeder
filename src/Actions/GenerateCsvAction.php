@@ -18,6 +18,8 @@ final class GenerateCsvAction
     ) {}
 
     /**
+     * Generate CSV file from the data generator.
+     *
      * @param  array<int, string>  $columns
      */
     public function __invoke(

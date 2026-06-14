@@ -17,6 +17,8 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
     }
 
     /**
+     * Insert a chunk of records into the database.
+     *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
      */
@@ -34,6 +36,8 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
     }
 
     /**
+     * Upsert records using INSERT ... ON CONFLICT (...) DO UPDATE SET ...
+     *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
      * @param  array<int, string>  $upsertKeys
@@ -84,6 +88,8 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
     }
 
     /**
+     * Insert records using multi-row INSERT statement.
+     *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
      */

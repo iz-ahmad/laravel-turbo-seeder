@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Log;
 
 final class CleanupCsvAction
 {
+    /**
+     * Clean up temporary CSV file.
+     */
     public function __invoke(string $filepath): void
     {
         if (file_exists($filepath)) {
@@ -33,6 +36,9 @@ final class CleanupCsvAction
         }
     }
 
+    /**
+     * Clean up all CSV files in a directory.
+     */
     public function cleanupDirectory(string $directory, string $pattern = '*.csv'): int
     {
         if (! is_dir($directory)) {

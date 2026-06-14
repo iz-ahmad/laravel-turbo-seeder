@@ -21,6 +21,9 @@ final class ExecuteSeederAction
         private readonly ProgressTrackerInterface $progressTracker,
     ) {}
 
+    /**
+     * Execute the seeding operation using the provided strategy.
+     */
     public function __invoke(
         SeederStrategyInterface $strategy,
         SeederConfigurationDTO $config
@@ -142,10 +145,15 @@ final class ExecuteSeederAction
     }
 
     /**
-     * On PostgreSQL and SQLite a DELETE is used instead of TRUNCATE: PostgreSQL
-     * refuses to TRUNCATE a table referenced by a foreign key (even by an empty
-     * child), and DELETE needs no superuser. Empty child tables first if the
-     * target still has referencing rows.
+     * Empty the target table before seeding when truncate() was requested.
+     *
+     * Runs before the seeding transaction so it is a real, committed wipe and
+     * never cascades to other tables. On MySQL, TRUNCATE resets AUTO_INCREMENT
+     * with foreign key checks disabled around it. On PostgreSQL and SQLite a
+     * DELETE is used instead: PostgreSQL refuses to TRUNCATE a table that is
+     * referenced by a foreign key (even by an empty child), and DELETE needs no
+     * superuser. If the target still has referencing rows, empty those child
+     * tables first.
      */
     private function truncateIfRequested(SeederConfigurationDTO $config): void
     {

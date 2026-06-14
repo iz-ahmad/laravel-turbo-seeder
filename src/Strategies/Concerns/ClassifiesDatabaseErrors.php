@@ -10,6 +10,9 @@ namespace IzAhmad\TurboSeeder\Strategies\Concerns;
  */
 trait ClassifiesDatabaseErrors
 {
+    /**
+     * Extract the five-character SQLSTATE from a PDO exception, if present.
+     */
     protected function sqlState(\Throwable $e): ?string
     {
         if ($e instanceof \PDOException && is_array($e->errorInfo ?? null)) {
@@ -22,6 +25,9 @@ trait ClassifiesDatabaseErrors
         return ($code === 0 || $code === '00000') ? null : (string) $code;
     }
 
+    /**
+     * Extract the driver-specific error number (e.g. MySQL errno) if present.
+     */
     protected function driverErrno(\Throwable $e): ?int
     {
         if ($e instanceof \PDOException && is_array($e->errorInfo ?? null) && isset($e->errorInfo[1])) {
@@ -31,6 +37,9 @@ trait ClassifiesDatabaseErrors
         return null;
     }
 
+    /**
+     * Whether the failure is a transient deadlock / lock-timeout worth retrying.
+     */
     protected function isTransientLockError(\Throwable $e): bool
     {
         // 40001 serialization_failure (MySQL + PostgreSQL), 40P01 PG deadlock_detected.

@@ -77,6 +77,8 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
     }
 
     /**
+     * Import data from a CSV file into the database.
+     *
      * @param  array<int, string>  $columns
      */
     protected function importFromCsv(string $table, array $columns): void
@@ -156,6 +158,9 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
         return in_array($this->driverErrno($e), [1148, 3948, 2068], true);
     }
 
+    /**
+     * Get user-friendly error message for LOCAL_INFILE errors.
+     */
     private function getLocalInfileErrorMessage(string $originalError): string
     {
         return sprintf(

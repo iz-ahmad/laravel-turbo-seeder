@@ -24,6 +24,9 @@ final readonly class SeederConfigurationDTO
         $this->validate();
     }
 
+    /**
+     * validate the configuration.
+     */
     private function validate(): void
     {
         if (empty($this->table)) {
@@ -43,6 +46,9 @@ final readonly class SeederConfigurationDTO
         }
     }
 
+    /**
+     * Get chunk size from options or use default.
+     */
     public function getChunkSize(): ?int
     {
         return $this->options['chunk_size'] ?? null;
@@ -85,23 +91,37 @@ final readonly class SeederConfigurationDTO
             ?? config('turbo-seeder.performance.disable_unique_checks', false);
     }
 
+    /**
+     * Check if query log should be disabled.
+     *
+     * Falls back to config (performance.disable_query_log) when not set
+     * explicitly on the builder.
+     */
     public function shouldDisableQueryLog(): bool
     {
         return $this->options['disable_query_log']
             ?? config('turbo-seeder.performance.disable_query_log', true);
     }
 
+    /**
+     * Check if this is a dry-run (no rows committed).
+     */
     public function isDryRun(): bool
     {
         return $this->options['dry_run'] ?? false;
     }
 
+    /**
+     * Check if upsert mode is enabled.
+     */
     public function isUpsert(): bool
     {
         return ! empty($this->options['upsert_keys']);
     }
 
     /**
+     * Get the unique key columns for upsert operations.
+     *
      * @return array<int, string>
      */
     public function getUpsertKeys(): array
@@ -109,11 +129,17 @@ final readonly class SeederConfigurationDTO
         return $this->options['upsert_keys'] ?? [];
     }
 
+    /**
+     * Get the maximum number of retry attempts on lock/deadlock failures.
+     */
     public function getRetryAttempts(): int
     {
         return max(1, (int) ($this->options['retry_attempts'] ?? 3));
     }
 
+    /**
+     * Check if schema column validation is enabled.
+     */
     public function shouldValidateColumns(): bool
     {
         return $this->options['validate_columns'] ?? true;

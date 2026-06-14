@@ -42,6 +42,9 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
         $this->chunkSize = $this->determineOptimalChunkSize();
     }
 
+    /**
+     * Seed the database using a CSV file.
+     */
     public function seed(SeederConfigurationDTO $config): int
     {
         $this->tempFilePath = $this->generateTempFilePath($config->table);
@@ -85,6 +88,9 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
         // No-op by default.
     }
 
+    /**
+     * Generate CSV file from data generator.
+     */
     protected function generateCsvFile(SeederConfigurationDTO $config): void
     {
         $filepath = $this->tempFilePath ?? throw new \RuntimeException('Temp file path not set');
@@ -98,6 +104,9 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
         );
     }
 
+    /**
+     * Perform CSV import into database.
+     */
     protected function performCsvImport(SeederConfigurationDTO $config): int
     {
         try {
@@ -118,12 +127,21 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
      */
     abstract protected function importFromCsv(string $table, array $columns): void;
 
+    /**
+     * Check if this strategy supports the given database driver.
+     */
     abstract public function supports(DatabaseDriver $driver): bool;
 
+    /**
+     * Get the optimal chunk size for this strategy.
+     */
     public function getOptimalChunkSize(): int
     {
         return $this->chunkSize;
     }
 
+    /**
+     * Determine the optimal chunk size for this strategy.
+     */
     abstract protected function determineOptimalChunkSize(): int;
 }

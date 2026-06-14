@@ -24,6 +24,9 @@ class TurboSeeder extends Facade
         return 'turbo-seeder';
     }
 
+    /**
+     * Create a new seeder builder instance.
+     */
     public static function create(?string $table = null): TurboSeederBuilder
     {
         $builder = app(TurboSeederBuilder::class);
@@ -35,6 +38,9 @@ class TurboSeeder extends Facade
         return $builder;
     }
 
+    /**
+     * Create a builder that generates rows from a Laravel model factory.
+     */
     public static function fromFactory(Factory $factory): TurboSeederBuilder
     {
         return app(TurboSeederBuilder::class)->fromFactory($factory);

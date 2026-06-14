@@ -10,17 +10,29 @@ use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 use IzAhmad\TurboSeeder\Services\SeederOrchestrator;
 
+/**
+ * Main TurboSeeder service class.
+ *
+ * Provides the core seeding functionality and builder factory methods.
+ * This is the primary entry point for the TurboSeeder package.
+ */
 class TurboSeeder
 {
     public function __construct(
         private readonly SeederOrchestrator $orchestrator
     ) {}
 
+    /**
+     * Execute seeding with the given configuration.
+     */
     public function execute(SeederConfigurationDTO $config): SeederResultDTO
     {
         return $this->orchestrator->execute($config);
     }
 
+    /**
+     * Create a new seeder builder instance.
+     */
     public function create(?string $table = null): TurboSeederBuilder
     {
         $builder = app(TurboSeederBuilder::class);
@@ -32,6 +44,9 @@ class TurboSeeder
         return $builder;
     }
 
+    /**
+     * Create a builder that generates rows from a Laravel model factory.
+     */
     public function fromFactory(Factory $factory): TurboSeederBuilder
     {
         return app(TurboSeederBuilder::class)->fromFactory($factory);

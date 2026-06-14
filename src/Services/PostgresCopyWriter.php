@@ -15,6 +15,7 @@ namespace IzAhmad\TurboSeeder\Services;
  */
 final class PostgresCopyWriter
 {
+    /** Column delimiter for COPY text format. */
     public const DELIMITER = "\t";
 
     /**
@@ -96,6 +97,9 @@ final class PostgresCopyWriter
         return implode(self::DELIMITER, $fields)."\n";
     }
 
+    /**
+     * Encode a single value for COPY text format.
+     */
     private function encodeField(mixed $value): string
     {
         $formatted = ValueFormatter::format($value);

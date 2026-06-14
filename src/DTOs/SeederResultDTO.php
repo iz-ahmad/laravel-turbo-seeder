@@ -16,6 +16,9 @@ final readonly class SeederResultDTO
         public ?\Throwable $exception = null,
     ) {}
 
+    /**
+     * Get the records per second rate.
+     */
     public function getRecordsPerSecond(): float
     {
         if ($this->durationSeconds <= 0) {
@@ -25,12 +28,17 @@ final readonly class SeederResultDTO
         return round($this->recordsInserted / $this->durationSeconds, 2);
     }
 
+    /**
+     * Get peak memory in megabytes.
+     */
     public function getPeakMemoryInMB(): float
     {
         return round($this->peakMemoryBytes / 1024 / 1024, 2);
     }
 
     /**
+     * Convert result to array.
+     *
      * @return array<string, mixed>
      */
     public function toArray(): array

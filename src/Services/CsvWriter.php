@@ -27,6 +27,9 @@ final class CsvWriter
         private readonly array $config = []
     ) {}
 
+    /**
+     * Open the file for writing.
+     */
     public function open(): void
     {
         $this->ensureDirectory();
@@ -75,6 +78,9 @@ final class CsvWriter
         $this->rowsWritten++;
     }
 
+    /**
+     * Flush and close the file.
+     */
     public function close(): void
     {
         if ($this->handle) {
@@ -84,16 +90,25 @@ final class CsvWriter
         }
     }
 
+    /**
+     * Get the number of rows written.
+     */
     public function getRowsWritten(): int
     {
         return $this->rowsWritten;
     }
 
+    /**
+     * Get the file path.
+     */
     public function getFilePath(): string
     {
         return $this->filepath;
     }
 
+    /**
+     * Get the file size in bytes.
+     */
     public function getFileSize(): int
     {
         if (! file_exists($this->filepath)) {
@@ -103,6 +118,9 @@ final class CsvWriter
         return filesize($this->filepath) ?: 0;
     }
 
+    /**
+     * Ensure the directory exists.
+     */
     private function ensureDirectory(): void
     {
         $directory = dirname($this->filepath);
@@ -114,6 +132,9 @@ final class CsvWriter
         }
     }
 
+    /**
+     * Destructor to ensure file is closed.
+     */
     public function __destruct()
     {
         $this->close();

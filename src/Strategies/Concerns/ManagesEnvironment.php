@@ -24,6 +24,9 @@ trait ManagesEnvironment
     /** @var array<string, mixed> */
     protected array $environmentContext = [];
 
+    /**
+     * Prepare the database environment for seeding.
+     */
     public function prepareEnvironment(): void
     {
         if ($this->environmentPrepared) {
@@ -49,6 +52,8 @@ trait ManagesEnvironment
     }
 
     /**
+     * Clean up and restore database environment after seeding.
+     *
      * @param  bool  $fromException  Whether the cleanup is due to an exception.
      */
     public function cleanup(bool $fromException = false): void

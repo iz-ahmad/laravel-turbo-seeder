@@ -17,6 +17,8 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
     }
 
     /**
+     * Insert a chunk of records into the database.
+     *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
      */
@@ -34,6 +36,8 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
     }
 
     /**
+     * Upsert records using INSERT ... ON DUPLICATE KEY UPDATE.
+     *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
      * @param  array<int, string>  $upsertKeys
@@ -86,6 +90,8 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
     }
 
     /**
+     * Insert records using a single multi-row INSERT statement.
+     *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
      */

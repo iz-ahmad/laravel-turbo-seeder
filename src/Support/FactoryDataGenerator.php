@@ -29,26 +29,41 @@ final class FactoryDataGenerator
         $this->factory = $factory->count(null);
     }
 
+    /**
+     * The Eloquent model the factory builds.
+     */
     public function model(): Model
     {
         return $this->factory->newModel();
     }
 
+    /**
+     * The table the factory's model writes to.
+     */
     public function table(): string
     {
         return $this->model()->getTable();
     }
 
+    /**
+     * Whether the factory's model maintains created_at/updated_at.
+     */
     public function usesTimestamps(): bool
     {
         return $this->model()->usesTimestamps();
     }
 
+    /**
+     * The model's created_at column name.
+     */
     public function createdAtColumn(): ?string
     {
         return $this->model()->getCreatedAtColumn();
     }
 
+    /**
+     * The model's updated_at column name.
+     */
     public function updatedAtColumn(): ?string
     {
         return $this->model()->getUpdatedAtColumn();

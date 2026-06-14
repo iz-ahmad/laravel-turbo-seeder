@@ -16,6 +16,9 @@ final readonly class DatabaseConnectionDTO
         public Connection $connection,
     ) {}
 
+    /**
+     * Create instance from connection name.
+     */
     public static function fromName(string $name): self
     {
         $connection = DB::connection($name);
@@ -26,6 +29,9 @@ final readonly class DatabaseConnectionDTO
         return new self($name, $driver, $connection);
     }
 
+    /**
+     * Create instance from default connection.
+     */
     public static function default(): self
     {
         $name = config('database.default');
@@ -33,11 +39,17 @@ final readonly class DatabaseConnectionDTO
         return self::fromName($name);
     }
 
+    /**
+     * Get the underlying PDO connection.
+     */
     public function getPdo(): \PDO
     {
         return $this->connection->getPdo();
     }
 
+    /**
+     * Get database name.
+     */
     public function getDatabaseName(): string
     {
         return $this->connection->getDatabaseName();

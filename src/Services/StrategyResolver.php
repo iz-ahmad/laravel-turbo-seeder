@@ -9,6 +9,13 @@ use IzAhmad\TurboSeeder\DTOs\DatabaseConnectionDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy as SeederStrategyEnum;
 
+/**
+ * Resolves the appropriate seeding strategy based on configuration and database driver.
+ *
+ * This service maintains a registry of available strategies and resolves
+ * the correct strategy implementation for a given database connection and
+ * seeding strategy type (default or CSV).
+ */
 final class StrategyResolver
 {
     /**
@@ -32,6 +39,9 @@ final class StrategyResolver
         $this->strategies[$key] = $strategyClass;
     }
 
+    /**
+     * resolve the appropriate strategy for the given configuration.
+     */
     public function resolve(
         SeederConfigurationDTO $config,
         DatabaseConnectionDTO $dbConnection
@@ -52,6 +62,9 @@ final class StrategyResolver
         ]);
     }
 
+    /**
+     * Build the strategy key from strategy type and database driver.
+     */
     private function buildStrategyKey(
         SeederStrategyEnum $strategy,
         DatabaseConnectionDTO $dbConnection
@@ -59,6 +72,9 @@ final class StrategyResolver
         return $strategy->value.'.'.$dbConnection->driver->value;
     }
 
+    /**
+     * Check if a strategy is registered.
+     */
     public function hasStrategy(string $key): bool
     {
         return isset($this->strategies[$key]);
@@ -74,6 +90,9 @@ final class StrategyResolver
         return $this->strategies;
     }
 
+    /**
+     * Resolve the default strategy for the given database connection.
+     */
     public function resolveDefault(
         DatabaseConnectionDTO $dbConnection,
         SeederConfigurationDTO $config
