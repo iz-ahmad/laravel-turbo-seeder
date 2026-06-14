@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
+use IzAhmad\TurboSeeder\Support\FactoryDataGenerator;
 use IzAhmad\TurboSeeder\Tests\Fixtures\TestUserFactory;
 use IzAhmad\TurboSeeder\Tests\Fixtures\TestUserModel;
 
@@ -65,4 +67,22 @@ test('withoutTimestamps disables auto timestamps on the factory path', function 
 
     // created_at/updated_at are nullable-by-omission here; assert they were not set.
     expect(DB::table('test_users')->whereNull('created_at')->count())->toBe(3);
+});
+
+test('warns when factory has for() relationships without a recycle pool', function () {
+    Log::shouldReceive('warning')
+        ->once()
+        ->withArgs(fn (string $msg) => str_contains($msg, 'recycle'));
+
+    new FactoryDataGenerator(TestUserFactory::new()->for(TestUserFactory::new()));
+});
+
+test('no warning when for() relationships have a recycle pool', function () {
+    Log::shouldReceive('warning')->never();
+
+    new FactoryDataGenerator(
+        TestUserFactory::new()
+            ->for(TestUserFactory::new())
+            ->recycle(new TestUserModel()),
+    );
 });
