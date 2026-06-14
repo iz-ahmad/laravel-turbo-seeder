@@ -70,19 +70,23 @@ test('withoutTimestamps disables auto timestamps on the factory path', function 
 });
 
 test('warns when factory has for() relationships without a recycle pool', function () {
-    Log::shouldReceive('warning')
-        ->once()
-        ->withArgs(fn (string $msg) => str_contains($msg, 'recycle'));
+    Log::spy();
 
     new FactoryDataGenerator(TestUserFactory::new()->for(TestUserFactory::new()));
+
+    Log::shouldHaveReceived('warning')
+        ->once()
+        ->withArgs(fn (string $msg) => str_contains($msg, 'recycle'));
 });
 
 test('no warning when for() relationships have a recycle pool', function () {
-    Log::shouldReceive('warning')->never();
+    Log::spy();
 
     new FactoryDataGenerator(
         TestUserFactory::new()
             ->for(TestUserFactory::new())
             ->recycle(new TestUserModel()),
     );
+
+    Log::shouldNotHaveReceived('warning');
 });
