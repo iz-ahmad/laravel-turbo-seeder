@@ -604,8 +604,8 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 |---|---|
 | `count(int)` | Number of records to seed |
 | `chunkSize(int)` | Records per chunk - automatically clamped to the driver's bind-parameter limit (65,535 on MySQL/PostgreSQL; auto-detected on SQLite) |
-| `truncate()` | Empty the target table before seeding (committed before the seed; cannot combine with `dryRun()`) |
-| `commitEvery(int)` | Default strategy: commit every N chunks instead of one wrapping transaction (for very large seeds) |
+| `truncate()` | Empty the target table before seeding (committed before the seed; cannot combine with `dryRun()`). **Driver note:** on MySQL, `TRUNCATE` resets `AUTO_INCREMENT`. On PostgreSQL and SQLite a `DELETE` is used instead (FK-safe), which does **not** reset identity sequences — IDs will continue from the previous high-water mark after a truncate+reseed. |
+| `commitEvery(int)` | Default strategy only: commit every N chunks instead of one wrapping transaction (for very large seeds). Has no effect on the CSV strategy. **Warning:** combining `commitEvery()` with `truncate()` leaves no rollback path — if seeding fails mid-run, already-committed chunks remain in a truncated table. |
 | `upsert(array $uniqueBy)` | Insert-or-update on conflict; keys must match a unique/primary index (validated up front) |
 | `dryRun()` | Generate and validate without committing - uses transaction rollback |
 
