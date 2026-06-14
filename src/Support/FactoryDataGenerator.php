@@ -6,6 +6,8 @@ namespace IzAhmad\TurboSeeder\Support;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Bridges a Laravel model factory into a TurboSeeder generator closure.
@@ -24,6 +26,8 @@ final class FactoryDataGenerator
         // Normalise count to null so raw() yields a single row per call; the row
         // count is driven by the builder's count() instead of the factory's.
         $this->factory = $factory->count(null);
+
+        $this->warnIfParentRelationshipsUnrecycled($this->factory);
     }
 
     /**
@@ -76,20 +80,45 @@ final class FactoryDataGenerator
         $factory = $this->factory;
 
         return static function (int $index) use ($factory): array {
-            /** @var array<string, mixed> $attributes */
-            $attributes = $factory->raw();
+            /** @var array<string, mixed> */
+            return $factory->raw();
+        };
+    }
 
-            foreach ($attributes as $key => $value) {
-                if ($value instanceof Factory || $value instanceof Model) {
-                    throw new \RuntimeException(
-                        "TurboSeeder fromFactory(): attribute [{$key}] resolved to a related model/factory. "
-                        .'Bulk seeding cannot persist relationships row-by-row — provide a concrete value in the '
-                        .'factory definition or assign foreign keys with TurboData::fromTable().'
-                    );
-                }
+    /**
+     * Warn early when the factory has for() parent relationships but no recycle()
+     * pool. In that case raw() calls Eloquent create() for the related model on
+     * every row, defeating the purpose of bulk seeding. The fix is to pre-load the
+     * parent models and pass them via $factory->recycle(RelatedModel::all()).
+     */
+    private function warnIfParentRelationshipsUnrecycled(Factory $factory): void
+    {
+        try {
+            $ref = new \ReflectionClass($factory);
+
+            $forProp = $ref->getProperty('for');
+            $forProp->setAccessible(true);
+            $for = $forProp->getValue($factory);
+
+            if (! $for instanceof Collection || $for->isEmpty()) {
+                return;
             }
 
-            return $attributes;
-        };
+            $recycleProp = $ref->getProperty('recycle');
+            $recycleProp->setAccessible(true);
+            $recycle = $recycleProp->getValue($factory);
+
+            if ($recycle instanceof Collection && $recycle->isNotEmpty()) {
+                return;
+            }
+
+            Log::warning(
+                'TurboSeeder fromFactory(): factory has for() parent relationships but no recycle() pool. '
+                .'Each seeded row will trigger an individual Eloquent create() for the related model — '
+                .'pre-load the parents and pass them via $factory->recycle(RelatedModel::all()).',
+            );
+        } catch (\Throwable) {
+            // Reflection failed (e.g. property renamed in a future Laravel version) — skip.
+        }
     }
 }
