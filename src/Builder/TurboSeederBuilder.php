@@ -111,9 +111,11 @@ final class TurboSeederBuilder
                 $columns[] = $column['name'];
             }
         } catch (\Throwable) {
-            // Older Laravel / driver without getColumns(): fall back to the full
-            // listing (which may include the key column — override if needed).
-            $columns = $schema->getColumnListing($this->table);
+            // Older Laravel / driver without getColumns() support.
+            $columns = array_values(array_filter(
+                $schema->getColumnListing($this->table),
+                fn ($col) => $col !== 'id',
+            ));
         }
 
         if (empty($columns)) {
