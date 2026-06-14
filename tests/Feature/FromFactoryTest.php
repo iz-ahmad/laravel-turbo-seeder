@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Event;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Support\FactoryDataGenerator;
 use IzAhmad\TurboSeeder\Tests\Fixtures\TestUserFactory;
@@ -70,17 +71,25 @@ test('withoutTimestamps disables auto timestamps on the factory path', function 
 });
 
 test('warns when factory has for() relationships without a recycle pool', function () {
-    Log::spy();
+    $warnings = [];
+    Event::listen(MessageLogged::class, function (MessageLogged $e) use (&$warnings) {
+        if ($e->level === 'warning') {
+            $warnings[] = $e->message;
+        }
+    });
 
     new FactoryDataGenerator(TestUserFactory::new()->for(TestUserFactory::new()));
 
-    Log::shouldHaveReceived('warning')
-        ->once()
-        ->withArgs(fn (string $msg) => str_contains($msg, 'recycle'));
+    expect(collect($warnings)->contains(fn ($msg) => str_contains($msg, 'recycle')))->toBeTrue();
 });
 
 test('no warning when for() relationships have a recycle pool', function () {
-    Log::spy();
+    $warnings = [];
+    Event::listen(MessageLogged::class, function (MessageLogged $e) use (&$warnings) {
+        if ($e->level === 'warning') {
+            $warnings[] = $e->message;
+        }
+    });
 
     new FactoryDataGenerator(
         TestUserFactory::new()
@@ -88,5 +97,5 @@ test('no warning when for() relationships have a recycle pool', function () {
             ->recycle(new TestUserModel()),
     );
 
-    Log::shouldNotHaveReceived('warning');
+    expect($warnings)->toBeEmpty();
 });
