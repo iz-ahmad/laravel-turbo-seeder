@@ -278,11 +278,34 @@ See [CSV Strategy Setup](#csv-strategy-setup) for MySQL configuration. PostgreSQ
 
 ### Seeding Tables with Relationships
 
+#### BelongsTo / MorphTo — `recycle()` on the factory path
+
+Pre-load the parent models once; the factory picks from the pool on every row with no extra DB calls:
+
+```php
+// 1. Seed parents via TurboSeeder (or they may already exist)
+TurboSeeder::fromFactory(User::factory())->count(10_000)->run();
+
+// 2. Load parent models into a recycle pool
+$users = User::all(); // or User::select('id')->get() to keep memory low
+
+// 3. Seed children — recycle() replaces the factory's for() create() calls
+TurboSeeder::fromFactory(Post::factory()->recycle($users))
+    ->count(1_000_000)
+    ->run();
+```
+
+> If your factory uses `->for(User::factory())` without `->recycle()`, TurboSeeder will log a warning because every row would trigger an individual `User::create()` call behind the scenes.
+
+#### BelongsTo — generator path with `fromTable()`
+
+Lighter on memory than loading full Eloquent models — stores only raw IDs:
+
 ```php
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
-// Step 1: Seed parent table
+// Seed parents
 TurboSeeder::create('users')
     ->columns(['name', 'email', 'created_at'])
     ->generate(fn ($i) => [
@@ -293,22 +316,44 @@ TurboSeeder::create('users')
     ->count(50_000)
     ->run();
 
-// Step 2: fromTable() loads user IDs once, then cycles — zero extra DB queries
-$userIds     = TurboData::fromTable('users');
-$categoryIds = TurboData::fromTable('categories', 'id', 'random');
+// fromTable() loads IDs once from the DB, then cycles — zero extra queries
+$userIds = TurboData::fromTable('users');
 
 TurboSeeder::create('posts')
-    ->columns(['user_id', 'category_id', 'title', 'created_at'])
+    ->columns(['user_id', 'title', 'created_at'])
     ->generate(fn ($i) => [
-        'user_id'     => $userIds($i),
-        'category_id' => $categoryIds($i),
-        'title'       => "Post {$i}",
-        'created_at'  => TurboData::dateRange('2023-01-01', '2024-12-31'),
+        'user_id'    => $userIds($i),
+        'title'      => "Post {$i}",
+        'created_at' => TurboData::dateRange('2023-01-01', '2024-12-31'),
     ])
     ->count(1_000_000)
     ->useCsvStrategy()
     ->run();
 ```
+
+#### HasOne / HasMany / BelongsToMany / MorphMany
+
+These child relationships can't be wired inside a single bulk-seed call — the parent's auto-generated PK isn't available until after the bulk INSERT completes. Seed each table separately instead:
+
+```php
+// 1. Seed users
+TurboSeeder::fromFactory(User::factory())->count(10_000)->run();
+
+// 2. Seed posts referencing those users
+$users = User::select('id')->get();
+TurboSeeder::fromFactory(Post::factory()->recycle($users))->count(100_000)->run();
+
+// 3. Seed pivot / child table separately (e.g. post_tags)
+$postIds = TurboData::fromTable('posts');
+$tagIds  = TurboData::fromTable('tags');
+TurboSeeder::create('post_tag')
+    ->columns(['post_id', 'tag_id'])
+    ->generate(fn ($i) => ['post_id' => $postIds($i), 'tag_id' => $tagIds($i)])
+    ->count(200_000)
+    ->run();
+```
+
+This pattern is actually faster than letting Eloquent handle these relationships through `has()` — each table gets its own bulk INSERT.
 
 ### Seeding with Real-World Data Distribution
 
