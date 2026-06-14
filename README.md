@@ -13,6 +13,33 @@ Laravel Turbo Seeder is a high-performance database seeder built for production-
 
 ---
 
+## Table of Contents
+
+- [Why Turbo Seeder?](#why-turbo-seeder)
+- [Two Paths for Data Generation](#two-paths-for-data-generation---pick-what-fits)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+  - [Scaffold a seeder](#scaffold-a-seeder-recommended)
+  - [Factory path](#factory-path---full-example)
+  - [Generator path](#generator-path---full-example)
+  - [CSV Strategy](#csv-strategy-fastest)
+- [Common Use Cases](#common-use-cases)
+- [Migration from Standard Seeders](#migration-from-standard-seeders)
+- [Strategy Comparison](#strategy-comparison)
+- [CSV Strategy Setup](#csv-strategy-setup)
+- [Features At A Glance](#features-at-a-glance)
+- [API Documentation](#api-documentation)
+  - [Fluent Builder Methods](#fluent-builder-methods)
+  - [Events](#events)
+  - [TurboData Helpers](#turbodata-helpers)
+  - [Data Type Handling](#data-type-handling)
+  - [Artisan Commands](#artisan-commands)
+- [Configuration Reference](#configuration-reference)
+- [Architecture Overview](#architecture-overview)
+- [Performance Benchmarks](#performance-benchmarks)
+
+---
+
 ## Why Turbo Seeder?
 
 Default Laravel seeders don't scale. Seeding 500K–1M+ records for realistic load testing can take 30+ minutes and hundreds of MB of RAM.
@@ -604,8 +631,8 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 |---|---|
 | `count(int)` | Number of records to seed |
 | `chunkSize(int)` | Records per chunk - automatically clamped to the driver's bind-parameter limit (65,535 on MySQL/PostgreSQL; auto-detected on SQLite) |
-| `truncate()` | Empty the target table before seeding (committed before the seed; cannot combine with `dryRun()`). **Driver note:** on MySQL, `TRUNCATE` resets `AUTO_INCREMENT`. On PostgreSQL and SQLite a `DELETE` is used instead (FK-safe), which does **not** reset identity sequences — IDs will continue from the previous high-water mark after a truncate+reseed. |
-| `commitEvery(int)` | Default strategy only: commit every N chunks instead of one wrapping transaction (for very large seeds). Has no effect on the CSV strategy. **Warning:** combining `commitEvery()` with `truncate()` leaves no rollback path — if seeding fails mid-run, already-committed chunks remain in a truncated table. |
+| `truncate()` | Empty the target table before seeding (committed before the seed; cannot combine with `dryRun()`). MySQL resets `AUTO_INCREMENT`; PostgreSQL and SQLite use `DELETE` (FK-safe) which does **not** reset identity sequences — IDs continue from the previous high-water mark. |
+| `commitEvery(int)` | Default strategy only: commit every N chunks instead of one wrapping transaction (for very large seeds). No-op on the CSV strategy. **Warning:** combining with `truncate()` leaves no rollback path if seeding fails mid-run. |
 | `upsert(array $uniqueBy)` | Insert-or-update on conflict; keys must match a unique/primary index (validated up front) |
 | `dryRun()` | Generate and validate without committing - uses transaction rollback |
 
