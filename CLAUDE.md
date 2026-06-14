@@ -53,8 +53,6 @@ declare(strict_types=1);
 
 ### PHP Version Compatibility
 
-- `setAccessible()` on `ReflectionProperty` has been a no-op since PHP 8.1 and is removed in PHP 8.5. Do not call it.
-- PHP-version-gated constants (e.g. `Pdo\Mysql::ATTR_LOCAL_INFILE`, `Pdo\Pgsql::copyFromFile`) must be accessed via `constant('...')` or dynamic dispatch — never via a static `use` import that would be parsed on all PHP versions.
 - Use `PHP_VERSION_ID` guards when branching on PHP version behaviour.
 
 ---
