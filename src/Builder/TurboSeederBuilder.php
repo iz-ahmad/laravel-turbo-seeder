@@ -6,6 +6,7 @@ namespace IzAhmad\TurboSeeder\Builder;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy;
@@ -629,12 +630,26 @@ final class TurboSeederBuilder
 
         $upsertKeys = $this->options['upsert_keys'] ?? [];
         if (! empty($upsertKeys)) {
+            if ($this->strategy === SeederStrategy::CSV) {
+                throw new \InvalidArgumentException(
+                    'upsert() is not supported with the CSV strategy: LOAD DATA / COPY FROM STDIN provides no ON CONFLICT handling. '
+                    .'Use useDefaultStrategy() for upsert, or remove upsert() when using useCsvStrategy().'
+                );
+            }
+
             $invalidKeys = array_diff($upsertKeys, $this->columns);
             if (! empty($invalidKeys)) {
                 throw new \InvalidArgumentException(
                     'Upsert key column(s) ['.implode(', ', $invalidKeys).'] are not in the declared columns. Upsert keys must be a subset of the seeded columns.'
                 );
             }
+        }
+
+        if (isset($this->options['commit_every']) && $this->strategy === SeederStrategy::CSV) {
+            Log::warning(
+                'TurboSeeder: commitEvery() has no effect on the CSV strategy. '
+                .'CSV import runs outside a transaction; use useDefaultStrategy() if per-chunk commits are required.'
+            );
         }
 
         // dryRun() rolls back via a transaction. Without one there is nothing to
