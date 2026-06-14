@@ -14,6 +14,10 @@ use IzAhmad\TurboSeeder\Enums\FromTableMode;
  * Fast, Faker-free data generation helpers for use inside ->generate() closures.
  *
  * All static methods are safe to call 1M+ times without performance issues.
+ *
+ * Randomness: randomInt() uses random_int() (CSPRNG). randomFloat(), randomBool(),
+ * and weightedFrom() use mt_rand() for bulk-generation speed — not suitable for
+ * security-sensitive values.
  */
 final class TurboData
 {
@@ -60,6 +64,12 @@ final class TurboData
      */
     public static function weightedFrom(array $weights): mixed
     {
+        foreach ($weights as $value => $weight) {
+            if ($weight < 0) {
+                throw new \InvalidArgumentException("weightedFrom(): weight for '{$value}' must be non-negative.");
+            }
+        }
+
         $total = array_sum($weights);
 
         if ($total <= 0) {
