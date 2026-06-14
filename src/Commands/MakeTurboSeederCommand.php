@@ -117,7 +117,7 @@ class MakeTurboSeederCommand extends GeneratorCommand
         return match (true) {
             str_ends_with($column, '_at') => 'TurboData::nowOnce()',
             $column === 'password' => 'TurboData::hashedPassword()',
-            $column === 'email' || str_ends_with($column, '_email') => '"user{$index}@example.test"',
+            $column === 'email' || str_ends_with($column, '_email') => 'TurboData::uniqueEmail()($index)',
             str_ends_with($column, '_id') => 'TurboData::randomInt(1, 100)', // or TurboData::fromTable(...)
             default => '"'.Str::headline($column).' {$index}"',
         };
