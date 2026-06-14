@@ -82,9 +82,9 @@ class MakeTurboSeederCommand extends GeneratorCommand
                 $columns[] = (string) $column['name'];
             }
 
-            return $columns !== [] ? $columns : Schema::getColumnListing($table);
+            return $columns !== [] ? $columns : array_values(array_filter(Schema::getColumnListing($table), fn ($c) => $c !== 'id'));
         } catch (\Throwable) {
-            return Schema::getColumnListing($table);
+            return array_values(array_filter(Schema::getColumnListing($table), fn ($c) => $c !== 'id'));
         }
     }
 
