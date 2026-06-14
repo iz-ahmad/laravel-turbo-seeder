@@ -120,7 +120,7 @@ final class ExecuteSeederAction
             return;
         }
 
-        $keys = $config->getUpsertKeys();
+        $keys = array_map('strtolower', $config->getUpsertKeys());
         sort($keys);
 
         foreach ($indexes as $index) {
@@ -128,7 +128,7 @@ final class ExecuteSeederAction
                 continue;
             }
 
-            $columns = array_values(array_filter($index['columns'], 'is_string'));
+            $columns = array_map('strtolower', array_values(array_filter($index['columns'], 'is_string')));
             sort($columns);
 
             if ($columns === $keys) {
@@ -178,13 +178,6 @@ final class ExecuteSeederAction
         $connection->table($config->table)->delete();
     }
 
-    /**
-     * Validate that all declared columns exist on the target table.
-     * Skipped when shouldValidateColumns() returns false.
-     * Throws when the table itself does not exist.
-     * Logs a warning (rather than silently skipping) when the schema builder
-     * cannot introspect the driver (getColumnListing returns empty).
-     */
     private function validateColumns(SeederConfigurationDTO $config): void
     {
         if (! $config->shouldValidateColumns()) {
