@@ -23,11 +23,10 @@ final class FactoryDataGenerator
 
     public function __construct(Factory $factory)
     {
-        // Normalise count to null so raw() yields a single row per call; the row
-        // count is driven by the builder's count() instead of the factory's.
-        $this->factory = $factory->count(null);
+        $this->warnIfParentRelationshipsUnrecycled($factory);
 
-        $this->warnIfParentRelationshipsUnrecycled($this->factory);
+        // Normalise count to null so raw() yields a single row per call
+        $this->factory = $factory->count(null);
     }
 
     public function model(): Model
