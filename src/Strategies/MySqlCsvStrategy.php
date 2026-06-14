@@ -10,7 +10,6 @@ use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ClassifiesDatabaseErrors;
-use Pdo\Mysql;
 
 final class MySqlCsvStrategy extends AbstractCsvStrategy
 {
@@ -22,16 +21,15 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
     }
 
     /**
-     * The PDO "local infile" attribute, resolved in a version-safe way.
-     *
-     * PDO::MYSQL_ATTR_LOCAL_INFILE is deprecated in PHP 8.4+ in favour of
-     * Pdo\Mysql::ATTR_LOCAL_INFILE (same integer value). Fetched via constant()
-     * on older versions so static analysis never sees the deprecated symbol.
+     * The PDO "local infile" attribute, resolved via constant() on both paths so
+     * neither the deprecated PDO::MYSQL_ATTR_LOCAL_INFILE nor the PHP 8.4+
+     * Pdo\Mysql class is referenced statically — a static use/reference would
+     * cause a parse-time fatal on the wrong PHP version.
      */
     private function localInfileAttribute(): int
     {
         return PHP_VERSION_ID >= 80400
-            ? Mysql::ATTR_LOCAL_INFILE
+            ? (int) constant('Pdo\\Mysql::ATTR_LOCAL_INFILE')
             : (int) constant('PDO::MYSQL_ATTR_LOCAL_INFILE');
     }
 
@@ -110,8 +108,6 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
         $columnVarList = implode(',', $userVars);
         $setClause = implode(', ', $setClauses);
 
-        // PDO::MYSQL_ATTR_LOCAL_INFILE must be enabled on the connection; if not,
-        // the import will fail and trigger an automatic fallback to the default strategy.
         $sql = "
             LOAD DATA LOCAL INFILE '{$filepath}'
             INTO TABLE {$quotedTable}
