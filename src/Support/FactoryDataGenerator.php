@@ -80,7 +80,6 @@ final class FactoryDataGenerator
         $factory = $this->factory;
 
         return static function (int $index) use ($factory): array {
-            /** @var array<string, mixed> */
             return $factory->raw();
         };
     }
@@ -97,7 +96,6 @@ final class FactoryDataGenerator
             $ref = new \ReflectionClass($factory);
 
             $forProp = $ref->getProperty('for');
-            $forProp->setAccessible(true);
             $for = $forProp->getValue($factory);
 
             if (! $for instanceof Collection || $for->isEmpty()) {
@@ -105,7 +103,6 @@ final class FactoryDataGenerator
             }
 
             $recycleProp = $ref->getProperty('recycle');
-            $recycleProp->setAccessible(true);
             $recycle = $recycleProp->getValue($factory);
 
             if ($recycle instanceof Collection && $recycle->isNotEmpty()) {
