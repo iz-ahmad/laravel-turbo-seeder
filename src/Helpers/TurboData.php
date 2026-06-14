@@ -34,13 +34,7 @@ final class TurboData
     /** @var array<string, Carbon> Parsed sequentialDate() start points. */
     private static array $cachedSequentialStarts = [];
 
-    // -------------------------------------------------------------------------
-    // Value selection
-    // -------------------------------------------------------------------------
-
     /**
-     * Return a value by cycling through the array in round-robin order.
-     *
      * @param  array<int, mixed>  $values
      */
     public static function cycleFrom(array $values): \Closure
@@ -84,8 +78,6 @@ final class TurboData
     }
 
     /**
-     * Return a uniformly random value from the array.
-     *
      * @param  array<int, mixed>  $values
      */
     public static function randomFrom(array $values): mixed
@@ -97,17 +89,11 @@ final class TurboData
         return $values[array_rand($values)];
     }
 
-    /**
-     * Return a random integer between $min and $max (inclusive).
-     */
     public static function randomInt(int $min, int $max): int
     {
         return random_int($min, $max);
     }
 
-    /**
-     * Return a random float rounded to $decimals places.
-     */
     public static function randomFloat(int $decimals, float $min, float $max): float
     {
         $value = $min + (float) mt_rand() / mt_getrandmax() * ($max - $min);
@@ -115,10 +101,6 @@ final class TurboData
         return round($value, $decimals);
     }
 
-    /**
-     * Return true with the given probability (0.0–1.0).
-     * Default 0.5 = 50% chance of true.
-     */
     public static function randomBool(float $probability = 0.5): bool
     {
         return ((float) mt_rand() / mt_getrandmax()) < $probability;
@@ -380,10 +362,6 @@ final class TurboData
         };
     }
 
-    /**
-     * Log a one-time warning when an in-memory reference pool is large enough to
-     * threaten the memory budget, pointing users at fromTableStream().
-     */
     private static function warnIfPoolTooLarge(int $count, string $source): void
     {
         if ($count <= self::POOL_WARNING_THRESHOLD) {

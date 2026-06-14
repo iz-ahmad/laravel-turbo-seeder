@@ -61,8 +61,6 @@ class MakeTurboSeederCommand extends GeneratorCommand
     }
 
     /**
-     * Introspect the table's columns (excluding the auto-increment key).
-     *
      * @return array<int, string>
      */
     private function resolveColumns(string $table): array
@@ -97,8 +95,6 @@ class MakeTurboSeederCommand extends GeneratorCommand
     }
 
     /**
-     * Build a sensible generator body from the column names.
-     *
      * @param  array<int, string>  $columns
      */
     private function formatGeneratorBody(array $columns): string
@@ -118,7 +114,7 @@ class MakeTurboSeederCommand extends GeneratorCommand
             str_ends_with($column, '_at') => 'TurboData::nowOnce()',
             $column === 'password' => 'TurboData::hashedPassword()',
             $column === 'email' || str_ends_with($column, '_email') => '"user{$index}@example.test"',
-            str_ends_with($column, '_id') => 'TurboData::randomInt(1, 100)', // or TurboData::fromTable(...)
+            str_ends_with($column, '_id') => 'TurboData::randomInt(1, 100)',
             default => '"'.Str::headline($column).' {$index}"',
         };
     }

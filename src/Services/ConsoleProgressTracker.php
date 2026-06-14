@@ -107,9 +107,6 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
         return ($this->current / $this->total) * 100;
     }
 
-    /**
-     * Calculate the rate of records processed per second.
-     */
     private function calculateRate(): int
     {
         if (! $this->progressBar) {
@@ -162,7 +159,6 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
             $remaining = $this->calculateRemaining();
             $this->progressBar->setMessage($remaining, 'eta');
 
-            // relative memory usage
             $currentMemory = memory_get_usage(true);
             $memoryUsed = $currentMemory - $this->startMemory;
             $memoryUsedMB = round($memoryUsed / 1024 / 1024, 1);
@@ -170,17 +166,11 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
         }
     }
 
-    /**
-     * Get the console output instance if available.
-     */
     public function getOutput(): ?OutputInterface
     {
         return $this->output;
     }
 
-    /**
-     * Reset the progress tracker state to initial values.
-     */
     public function reset(): void
     {
         $this->current = 0;

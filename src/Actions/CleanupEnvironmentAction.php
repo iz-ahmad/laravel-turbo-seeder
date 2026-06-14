@@ -46,7 +46,6 @@ final class CleanupEnvironmentAction
         // PG constraints are automatically re-enabled after the transaction commits.
     }
 
-    /** @param  array<string, mixed>  $context */
     private function cleanupSqlite(Connection $connection, SeederConfigurationDTO $config, array $context): void
     {
         $synchronous = $context['synchronous'] ?? 2;

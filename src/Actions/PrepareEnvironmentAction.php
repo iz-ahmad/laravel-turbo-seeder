@@ -13,8 +13,6 @@ use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 final class PrepareEnvironmentAction
 {
     /**
-     * Prepare the db environment for seeding.
-     *
      * @return array<string, mixed>
      */
     public function __invoke(

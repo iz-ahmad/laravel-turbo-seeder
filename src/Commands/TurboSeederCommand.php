@@ -27,7 +27,6 @@ class TurboSeederCommand extends Command
         $this->info('🏁 Starting TurboSeeder...');
         $this->newLine();
 
-        // bind console progress tracker
         app()->instance(
             ProgressTrackerInterface::class,
             new ConsoleProgressTracker($this->output)
@@ -58,9 +57,6 @@ class TurboSeederCommand extends Command
         }
     }
 
-    /**
-     * Validate the arguments and return the seeder class.
-     */
     private function validateArguments(): ?object
     {
         $seederClass = $this->argument('seeder') ?? $this->option('class');
@@ -99,9 +95,6 @@ class TurboSeederCommand extends Command
         return $seeder;
     }
 
-    /**
-     * display seeding metrics in a formatted table.
-     */
     private function displayMetrics(float $duration, float $memoryMB): void
     {
         $this->newLine();

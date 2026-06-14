@@ -20,8 +20,6 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
     }
 
     /**
-     * Insert a chunk of records into the database.
-     *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
      */
@@ -93,8 +91,6 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
     }
 
     /**
-     * Insert records using multi-row INSERT statement.
-     *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
      */

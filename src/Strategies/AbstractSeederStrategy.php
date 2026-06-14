@@ -35,9 +35,6 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
         $this->chunkSize = $this->determineOptimalChunkSize();
     }
 
-    /**
-     * Seed the database with the given configuration.
-     */
     public function seed(SeederConfigurationDTO $config): int
     {
         $totalChunks = (int) ceil($config->count / $this->chunkSize);
@@ -102,8 +99,6 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
     }
 
     /**
-     * Generate a chunk of records.
-     *
      * @param  array<int, string>  $columns
      * @return array<int, array<string, mixed>>
      */
@@ -131,8 +126,6 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
     }
 
     /**
-     * Insert a chunk of records, retrying on transient lock/deadlock failures.
-     *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
      */
@@ -184,15 +177,10 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
     }
 
     /**
-     * Insert a chunk of records into the database.
-     *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
      */
     abstract protected function insertChunk(string $table, array $columns, array $records): void;
 
-    /**
-     * Determine the optimal chunk size for this strategy.
-     */
     abstract protected function determineOptimalChunkSize(): int;
 }

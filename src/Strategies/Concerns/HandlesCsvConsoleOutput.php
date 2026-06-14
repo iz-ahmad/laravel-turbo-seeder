@@ -8,14 +8,8 @@ use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\ConsoleProgressTrackerAdapter;
 use Symfony\Component\Console\Output\OutputInterface;
 
-/**
- * Trait to handle console output for CSV strategies.
- */
 trait HandlesCsvConsoleOutput
 {
-    /**
-     * Display Step 1 message.
-     */
     protected function displayStep1Message(): void
     {
         $output = $this->getConsoleOutput();
@@ -29,9 +23,6 @@ trait HandlesCsvConsoleOutput
         $output->writeln('');
     }
 
-    /**
-     * Display Step 2 message.
-     */
     protected function displayStep2Message(): void
     {
         $output = $this->getConsoleOutput();
@@ -47,9 +38,6 @@ trait HandlesCsvConsoleOutput
         $output->write('<comment> ➤ Step 2/2: Importing data from CSV. Wait a bit...<fg=cyan>⏳</></comment>');
     }
 
-    /**
-     * Display import success message.
-     */
     protected function displayImportSuccessMessage(): void
     {
         $output = $this->getConsoleOutput();
@@ -63,9 +51,6 @@ trait HandlesCsvConsoleOutput
         $output->writeln('<info>   ✓ Done! Data imported successfully from CSV</info>');
     }
 
-    /**
-     * Display fallback warning with instructions.
-     */
     protected function displayFallbackWarning(CsvImportFailedException $exception): void
     {
         $output = $this->getConsoleOutput();
@@ -95,9 +80,6 @@ trait HandlesCsvConsoleOutput
         $output->writeln('');
     }
 
-    /**
-     * Display configuration instructions in console.
-     */
     protected function displayConfigurationInstructions(OutputInterface $output): void
     {
         $driver = $this->dbConnection->driver->value;
@@ -111,9 +93,6 @@ trait HandlesCsvConsoleOutput
         }
     }
 
-    /**
-     * Display MySQL configuration instructions.
-     */
     protected function displayMySqlInstructions(OutputInterface $output): void
     {
         $output->writeln('   <fg=white>Add this to your config/database.php in the mysql connection:</>');
@@ -128,9 +107,6 @@ trait HandlesCsvConsoleOutput
         $output->writeln('   <fg=gray>   See README.md for full details</>');
     }
 
-    /**
-     * Display PostgreSQL configuration instructions.
-     */
     protected function displayPostgreSqlInstructions(OutputInterface $output): void
     {
         $tempPath = config('turbo-seeder.csv_strategy.temp_path', storage_path('app/turbo-seeder'));
@@ -143,9 +119,6 @@ trait HandlesCsvConsoleOutput
         $output->writeln('   <fg=gray>See README.md for full configuration details</>');
     }
 
-    /**
-     * Hide the loading indicator emoji.
-     */
     protected function hideLoadingIndicator(): void
     {
         $output = $this->getConsoleOutput();
@@ -158,9 +131,6 @@ trait HandlesCsvConsoleOutput
         $output->write("\033[2D ");
     }
 
-    /**
-     * Get console output if available.
-     */
     protected function getConsoleOutput(): ?OutputInterface
     {
         /** @var ConsoleProgressTrackerAdapter $adapter */

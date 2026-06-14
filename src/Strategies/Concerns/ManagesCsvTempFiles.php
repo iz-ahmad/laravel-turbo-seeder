@@ -6,14 +6,8 @@ namespace IzAhmad\TurboSeeder\Strategies\Concerns;
 
 use IzAhmad\TurboSeeder\Actions\CleanupCsvAction;
 
-/**
- * Trait to manage temporary CSV files for CSV strategies.
- */
 trait ManagesCsvTempFiles
 {
-    /**
-     * Generate temporary file path for CSV.
-     */
     protected function generateTempFilePath(string $table): string
     {
         $configuredPath = config('turbo-seeder.csv_strategy.temp_path', storage_path('app/turbo-seeder'));
@@ -38,9 +32,6 @@ trait ManagesCsvTempFiles
         return $resolvedDir.'/'.$filename;
     }
 
-    /**
-     * Clean up temporary CSV file.
-     */
     protected function cleanupTempFile(): void
     {
         if (! $this->tempFilePath || ! file_exists($this->tempFilePath)) {
@@ -51,9 +42,6 @@ trait ManagesCsvTempFiles
         $cleanupAction($this->tempFilePath);
     }
 
-    /**
-     * Get the absolute path to the temporary CSV file.
-     */
     protected function getAbsoluteFilePath(): string
     {
         if (! $this->tempFilePath) {

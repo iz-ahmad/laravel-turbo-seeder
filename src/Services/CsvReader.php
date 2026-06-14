@@ -27,9 +27,6 @@ final class CsvReader
         private readonly array $config = []
     ) {}
 
-    /**
-     * Open the file for reading.
-     */
     public function open(): void
     {
         if (! file_exists($this->filepath)) {
@@ -48,8 +45,6 @@ final class CsvReader
     }
 
     /**
-     * read rows one at a time using a generator for memory efficiency.
-     *
      * @return Generator<int, array<int, string|null>>
      */
     public function readRows(): Generator
@@ -79,8 +74,6 @@ final class CsvReader
     }
 
     /**
-     * Read rows in chunks for batch processing.
-     *
      * @return Generator<int, array<int, array<int, string|null>>>
      */
     public function readChunks(int $chunkSize): Generator
@@ -104,9 +97,6 @@ final class CsvReader
         }
     }
 
-    /**
-     * Close the file.
-     */
     public function close(): void
     {
         if ($this->handle) {

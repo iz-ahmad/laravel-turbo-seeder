@@ -6,9 +6,6 @@ namespace IzAhmad\TurboSeeder\Helpers;
 
 final class ExceptionFormatter
 {
-    /**
-     * Format exception message for user-friendly display.
-     */
     public static function format(\Throwable $exception): string
     {
         $message = $exception->getMessage();

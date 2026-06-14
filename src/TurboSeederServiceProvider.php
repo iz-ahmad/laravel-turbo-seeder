@@ -107,12 +107,10 @@ class TurboSeederServiceProvider extends PackageServiceProvider
     {
         $resolver = $this->app->make(StrategyResolver::class);
 
-        // default strategies (bulk insert way)
         $resolver->register('default.mysql', MySqlSeederStrategy::class);
         $resolver->register('default.pgsql', PostgreSqlSeederStrategy::class);
         $resolver->register('default.sqlite', SqliteSeederStrategy::class);
 
-        // csv strategies (csv file-based import way)
         $resolver->register('csv.mysql', MySqlCsvStrategy::class);
         $resolver->register('csv.pgsql', PostgreSqlCsvStrategy::class);
         $resolver->register('csv.sqlite', SqliteCsvStrategy::class);

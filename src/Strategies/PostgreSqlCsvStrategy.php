@@ -162,9 +162,6 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
         return in_array($this->sqlState($e), $fallbackStates, true);
     }
 
-    /**
-     * Get user-friendly error message for COPY command errors.
-     */
     private function getCopyCommandErrorMessage(string $originalError): string
     {
         return sprintf(

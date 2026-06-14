@@ -61,8 +61,6 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
     }
 
     /**
-     * Insert a chunk of records to the database from CSV data.
-     *
      * @param  array<int, string>  $columns
      * @param  array<int, array<string, mixed>>  $records
      */
@@ -99,9 +97,6 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
         }
     }
 
-    /**
-     * Parse CSV value back to appropriate type.
-     */
     private function parseValue(?string $value, string $nullMarker = '\\N'): mixed
     {
         if ($value === null || $value === $nullMarker) {

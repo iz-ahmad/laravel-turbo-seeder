@@ -10,14 +10,8 @@ use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\ConsoleProgressTrackerAdapter;
 use IzAhmad\TurboSeeder\Services\StrategyResolver;
 
-/**
- * Trait to handle fallback for CSV strategies.
- */
 trait HandlesCsvFallback
 {
-    /**
-     * Fall back to default strategy when CSV import fails.
-     */
     protected function fallbackToDefaultStrategy(
         SeederConfigurationDTO $config,
         CsvImportFailedException $exception
@@ -35,9 +29,6 @@ trait HandlesCsvFallback
         return $this->executeDefaultStrategy($config);
     }
 
-    /**
-     * Clean up CSV strategy environment.
-     */
     protected function cleanupCsvEnvironment(): void
     {
         if ($this->environmentPrepared) {
@@ -45,9 +36,6 @@ trait HandlesCsvFallback
         }
     }
 
-    /**
-     * Execute default strategy as fallback.
-     */
     protected function executeDefaultStrategy(SeederConfigurationDTO $config): int
     {
         $this->resetProgressTracker();
@@ -76,9 +64,6 @@ trait HandlesCsvFallback
         }
     }
 
-    /**
-     * Get fallback warning message based on database driver.
-     */
     protected function getFallbackWarningMessage(): string
     {
         return match ($this->dbConnection->driver->value) {
@@ -88,9 +73,6 @@ trait HandlesCsvFallback
         };
     }
 
-    /**
-     * Reset progress tracker to 0.
-     */
     protected function resetProgressTracker(): void
     {
         /** @var ConsoleProgressTrackerAdapter $adapter */
