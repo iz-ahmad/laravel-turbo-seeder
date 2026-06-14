@@ -1,4 +1,4 @@
-# CLAUDE.md — TurboSeeder Package Project Guidelines
+# AGENTS.md — TurboSeeder Package Project Guidelines
 
 ## Project Overview
 
