@@ -67,6 +67,10 @@ test('weightedFrom throws on zero-sum weights', function () {
     TurboData::weightedFrom(['a' => 0, 'b' => 0]);
 })->throws(InvalidArgumentException::class);
 
+test('weightedFrom throws on negative weight', function () {
+    TurboData::weightedFrom(['a' => 100, 'b' => -40]);
+})->throws(InvalidArgumentException::class, "weight for 'b' must be non-negative");
+
 // ── randomFrom() ─────────────────────────────────────────────────────────────
 
 test('randomFrom returns a value from the array', function () {
