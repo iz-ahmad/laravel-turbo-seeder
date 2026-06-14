@@ -123,6 +123,10 @@ final class ExecuteSeederAction
         $keys = array_map('strtolower', $config->getUpsertKeys());
         sort($keys);
 
+        // Strict equality: the supplied keys must exactly match one unique/primary index.
+        // MySQL's ON DUPLICATE KEY fires on any unique key, so this is intentionally
+        // more conservative than the engine requires — it prevents ambiguous upserts
+        // where multiple unique indexes exist and the user's intent is unclear.
         foreach ($indexes as $index) {
             if ($index['unique'] !== true && $index['primary'] !== true) {
                 continue;
