@@ -84,6 +84,17 @@ test('upsert keys not backed by a unique index are rejected', function () {
         ->toThrow(RuntimeException::class, 'unique or primary index');
 });
 
+test('upsert with CSV strategy throws before any data is generated', function () {
+    expect(fn () => TurboSeeder::create('test_users')
+        ->columns(['name', 'email'])
+        ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@csv.test"])
+        ->count(5)
+        ->useCsvStrategy()
+        ->upsert(['email'])
+        ->run())
+        ->toThrow(InvalidArgumentException::class, 'CSV strategy');
+});
+
 test('upsert where all seeded columns are keys does nothing on conflict', function () {
     // test_counters.slug is unique; seeding only the key column means there is
     // nothing to update, so a re-seed must DO NOTHING rather than error.
