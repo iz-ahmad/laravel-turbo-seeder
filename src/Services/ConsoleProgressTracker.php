@@ -162,7 +162,6 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
             $remaining = $this->calculateRemaining();
             $this->progressBar->setMessage($remaining, 'eta');
 
-            // relative memory usage
             $currentMemory = memory_get_usage(true);
             $memoryUsed = $currentMemory - $this->startMemory;
             $memoryUsedMB = round($memoryUsed / 1024 / 1024, 1);

@@ -35,7 +35,6 @@ final class NullProgressTracker implements ProgressTrackerInterface
 
     public function setMessage(string $message): void
     {
-        // no-op here, but have usage in seeder strategies
     }
 
     public function getPercentage(): float

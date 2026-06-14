@@ -34,10 +34,6 @@ final class TurboData
     /** @var array<string, Carbon> Parsed sequentialDate() start points. */
     private static array $cachedSequentialStarts = [];
 
-    // -------------------------------------------------------------------------
-    // Value selection
-    // -------------------------------------------------------------------------
-
     /**
      * Return a value by cycling through the array in round-robin order.
      *

@@ -27,7 +27,6 @@ class TurboSeederCommand extends Command
         $this->info('🏁 Starting TurboSeeder...');
         $this->newLine();
 
-        // bind console progress tracker
         app()->instance(
             ProgressTrackerInterface::class,
             new ConsoleProgressTracker($this->output)

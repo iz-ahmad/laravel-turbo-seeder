@@ -85,7 +85,6 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
      */
     protected function preflightImportCapability(SeederConfigurationDTO $config): void
     {
-        // No-op by default.
     }
 
     /**
