@@ -95,6 +95,31 @@ test('make:turbo-seeder --force overwrites an existing seeder file', function ()
     expect(file_get_contents($path))->toContain('class TestForceSeeder');
 });
 
+test('make:turbo-seeder does not overwrite an existing seeder without --force', function () {
+    $path = database_path('seeders/TestNoOverwriteSeeder.php');
+    file_put_contents($path, '<?php // original');
+
+    $this->artisan('make:turbo-seeder', [
+        'name' => 'TestNoOverwriteSeeder',
+        '--table' => 'test_users',
+    ]);
+
+    expect(file_get_contents($path))->toBe('<?php // original');
+});
+
+test('make:turbo-seeder generates randomInt expression for _id columns', function () {
+    $this->artisan('make:turbo-seeder', [
+        'name' => 'TestRelationSeeder',
+        '--table' => 'test_posts',
+    ])->assertSuccessful();
+
+    $contents = file_get_contents(database_path('seeders/TestRelationSeeder.php'));
+
+    expect($contents)
+        ->toContain("'user_id'")
+        ->toContain('TurboData::randomInt(1, 100)');
+});
+
 test('make:turbo-seeder falls back to placeholder columns when table does not exist', function () {
     $this->artisan('make:turbo-seeder', [
         'name' => 'TestFallbackSeeder',
