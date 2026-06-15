@@ -63,6 +63,12 @@ test('weightedFrom returns the only value when weight is 100%', function () {
     }
 });
 
+test('weightedFrom never selects a zero-weight entry even when listed first', function () {
+    for ($i = 0; $i < 100; $i++) {
+        expect(TurboData::weightedFrom(['never' => 0, 'always' => 1]))->toBe('always');
+    }
+});
+
 test('weightedFrom throws on zero-sum weights', function () {
     TurboData::weightedFrom(['a' => 0, 'b' => 0]);
 })->throws(InvalidArgumentException::class);
