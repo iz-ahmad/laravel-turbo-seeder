@@ -652,9 +652,14 @@ final class TurboSeederBuilder
             );
         }
 
-        // dryRun() rolls back via a transaction. Without one there is nothing to
-        // roll back, so rows would be permanently committed despite isDryRun being
-        // true. Refuse the combination loudly instead of silently writing data.
+        if (isset($this->options['commit_every'])
+            && ($this->options['use_transactions'] ?? false) === true) {
+            throw new \InvalidArgumentException(
+                'commitEvery() and useTransactions() cannot be combined: commitEvery() manages its own transaction boundaries. '
+                .'Remove useTransactions() to use periodic commits.'
+            );
+        }
+
         if (($this->options['dry_run'] ?? false) === true
             && ($this->options['use_transactions'] ?? true) === false) {
             throw new \InvalidArgumentException(
@@ -663,8 +668,6 @@ final class TurboSeederBuilder
             );
         }
 
-        // truncate() permanently empties the table before seeding and is not part
-        // of the dry-run rollback, so refuse the misleading combination.
         if (($this->options['truncate'] ?? false) === true
             && ($this->options['dry_run'] ?? false) === true) {
             throw new \InvalidArgumentException(
