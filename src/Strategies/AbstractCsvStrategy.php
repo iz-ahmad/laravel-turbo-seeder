@@ -83,16 +83,14 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
      * configuration prerequisites (e.g. MySQL LOCAL INFILE) override this and
      * throw a CsvImportFailedException(shouldFallback: true) when unavailable.
      */
-    protected function preflightImportCapability(SeederConfigurationDTO $config): void
-    {
-    }
+    protected function preflightImportCapability(SeederConfigurationDTO $config): void {}
 
     /**
      * Generate CSV file from data generator.
      */
     protected function generateCsvFile(SeederConfigurationDTO $config): void
     {
-        $filepath = $this->tempFilePath ?? throw new \RuntimeException('Temp file path not set');
+        $filepath = $this->tempFilePath ?? throw new \LogicException('Temp file path not set');
 
         ($this->generateCsvAction)(
             $filepath,
