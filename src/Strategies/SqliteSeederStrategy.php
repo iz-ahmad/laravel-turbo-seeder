@@ -49,11 +49,11 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
     protected function upsertUsingMultiRowStatement(string $table, array $columns, array $records, array $upsertKeys): void
     {
         $columnCount = count($columns);
-        $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
+        $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::SQLITE), $columns));
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE);
 
-        $conflictTarget = implode(', ', array_map(fn ($col) => "\"{$col}\"", $upsertKeys));
+        $conflictTarget = implode(', ', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::SQLITE), $upsertKeys));
         $updateColumns = array_diff($columns, $upsertKeys);
 
         // Every column is a key, so there is nothing to update: DO NOTHING on
@@ -62,7 +62,11 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
         $conflictAction = empty($updateColumns)
             ? 'DO NOTHING'
             : 'DO UPDATE SET '.implode(', ', array_map(
-                fn ($col) => "\"{$col}\" = EXCLUDED.\"{$col}\"",
+                function ($col) {
+                    $q = SqlIdentifier::quoteColumn($col, DatabaseDriver::SQLITE);
+
+                    return "{$q} = EXCLUDED.{$q}";
+                },
                 $updateColumns,
             ));
 
@@ -101,7 +105,7 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
     protected function insertUsingMultiRowStatement(string $table, array $columns, array $records): void
     {
         $columnCount = count($columns);
-        $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
+        $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::SQLITE), $columns));
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE);
 
