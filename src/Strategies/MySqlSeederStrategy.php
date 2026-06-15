@@ -47,7 +47,7 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
         $columnCount = count($columns);
         $recordCount = count($records);
 
-        $columnNames = implode(',', array_map(fn ($col) => "`{$col}`", $columns));
+        $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::MYSQL), $columns));
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
 
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
@@ -60,10 +60,15 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
             // a no-op (consistent with PostgreSQL/SQLite DO NOTHING) by assigning a
             // key column to itself, rather than throwing a duplicate-key error.
             $firstKey = (string) reset($upsertKeys);
-            $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders} ON DUPLICATE KEY UPDATE `{$firstKey}` = `{$firstKey}`";
+            $quotedFirstKey = SqlIdentifier::quoteColumn($firstKey, DatabaseDriver::MYSQL);
+            $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders} ON DUPLICATE KEY UPDATE {$quotedFirstKey} = {$quotedFirstKey}";
         } else {
             $updateClause = implode(', ', array_map(
-                fn ($col) => "`{$col}` = VALUES(`{$col}`)",
+                function ($col) {
+                    $q = SqlIdentifier::quoteColumn($col, DatabaseDriver::MYSQL);
+
+                    return "{$q} = VALUES({$q})";
+                },
                 $updateColumns,
             ));
 
@@ -100,7 +105,7 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
         $columnCount = count($columns);
         $recordCount = count($records);
 
-        $columnNames = implode(',', array_map(fn ($col) => "`{$col}`", $columns));
+        $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::MYSQL), $columns));
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
 
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
