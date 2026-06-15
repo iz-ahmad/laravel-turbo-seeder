@@ -83,7 +83,7 @@ final class TurboData
             if ($weight <= 0) {
                 continue;
             }
-            
+
             $cumulative += $weight;
             if ($rand <= $cumulative) {
                 return $value;
