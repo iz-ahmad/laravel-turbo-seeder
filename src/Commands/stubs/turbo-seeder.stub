@@ -12,11 +12,11 @@ class {{ class }} extends Seeder
 {
     public function run(): void
     {
-        TurboSeeder::create('{{ table }}')
+{{ preamble }}        TurboSeeder::create('{{ table }}')
             ->columns([{{ columns }}])
             ->generate(fn ($index) => [
 {{ generator }}
-            ])
+            ]){{ timestamps }}
             ->count({{ count }})
             ->run();
     }
