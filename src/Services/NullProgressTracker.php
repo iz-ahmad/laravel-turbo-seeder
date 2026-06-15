@@ -33,9 +33,7 @@ final class NullProgressTracker implements ProgressTrackerInterface
         $this->current = $this->total;
     }
 
-    public function setMessage(string $message): void
-    {
-    }
+    public function setMessage(string $message): void {}
 
     public function getPercentage(): float
     {
