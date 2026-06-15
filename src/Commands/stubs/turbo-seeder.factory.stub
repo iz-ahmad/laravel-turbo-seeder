@@ -11,7 +11,6 @@ class {{ class }} extends Seeder
 {
     public function run(): void
     {
-        // Reuses your existing model factory as the single source of truth.
         TurboSeeder::fromFactory({{ model }}::factory())
             ->count({{ count }})
             ->run();
