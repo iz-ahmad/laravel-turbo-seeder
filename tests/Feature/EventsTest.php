@@ -80,6 +80,7 @@ test('TurboSeederFailed event is dispatched when seeding fails', function () {
 
     Event::assertDispatched(TurboSeederFailed::class, function (TurboSeederFailed $event) {
         return $event->table === 'test_users'
+            && $event->connection === 'testing'
             && $event->exception instanceof Throwable;
     });
 });
