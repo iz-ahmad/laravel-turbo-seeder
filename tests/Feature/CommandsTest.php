@@ -58,3 +58,15 @@ test('benchmark command refuses to drop an existing table', function () {
 
     expect(Schema::connection('testing')->hasTable('test_users'))->toBeTrue();
 });
+
+test('benchmark command drops the benchmark table even when seeding fails', function () {
+    $table = 'benchmark_failure_'.time();
+
+    $this->artisan('turbo-seeder:benchmark', [
+        '--connection' => 'testing',
+        '--table' => $table,
+        '--records' => 0,
+    ])->assertFailed();
+
+    expect(Schema::connection('testing')->hasTable($table))->toBeFalse();
+});
