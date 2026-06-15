@@ -19,7 +19,7 @@ class MakeTurboSeederCommand extends GeneratorCommand
 
     protected function getStub(): string
     {
-        return $this->option('factory')
+        return $this->input->hasParameterOption(['--factory'], true)
             ? __DIR__.'/stubs/turbo-seeder.factory.stub'
             : __DIR__.'/stubs/turbo-seeder.stub';
     }
@@ -36,25 +36,28 @@ class MakeTurboSeederCommand extends GeneratorCommand
         return 'Database\\Seeders\\';
     }
 
-    /**
-     * @param  string  $name
-     */
     protected function buildClass($name): string
     {
         $stub = parent::buildClass($name);
 
         $table = (string) ($this->option('table') ?: 'your_table');
         $count = max(1, (int) ($this->option('count') ?: 1000));
-        $columns = $this->resolveColumns($table);
+        $allColumns = $this->resolveColumns($table);
+        $useTimestamps = $this->hasTimestampColumns($allColumns);
+        $columns = $useTimestamps
+            ? array_values(array_filter($allColumns, fn ($c) => ! in_array($c, ['created_at', 'updated_at'], true)))
+            : $allColumns;
 
         return str_replace(
-            ['{{ table }}', '{{ count }}', '{{ columns }}', '{{ generator }}', '{{ model }}'],
+            ['{{ table }}', '{{ count }}', '{{ columns }}', '{{ generator }}', '{{ preamble }}', '{{ timestamps }}', '{{ model }}'],
             [
                 $table,
                 (string) $count,
                 $this->formatColumnsArray($columns),
                 $this->formatGeneratorBody($columns),
-                $this->guessModelClass($table),
+                $this->formatPreamble($columns),
+                $useTimestamps ? "\n            ->withTimestamps()" : '',
+                $this->resolveModelClass($table),
             ],
             $stub,
         );
@@ -89,6 +92,14 @@ class MakeTurboSeederCommand extends GeneratorCommand
     }
 
     /**
+     * @param  array<int, string>  $allColumns
+     */
+    private function hasTimestampColumns(array $allColumns): bool
+    {
+        return in_array('created_at', $allColumns, true) && in_array('updated_at', $allColumns, true);
+    }
+
+    /**
      * @param  array<int, string>  $columns
      */
     private function formatColumnsArray(array $columns): string
@@ -112,19 +123,44 @@ class MakeTurboSeederCommand extends GeneratorCommand
         return implode("\n", $lines);
     }
 
+    /**
+     * Build variable declarations for closures that must live outside the generator.
+     *
+     * @param  array<int, string>  $columns
+     */
+    private function formatPreamble(array $columns): string
+    {
+        $lines = [];
+
+        foreach ($columns as $column) {
+            if ($column === 'email' || str_ends_with($column, '_email')) {
+                $var = Str::camel($column);
+                $lines[] = "        \${$var} = TurboData::uniqueEmail();";
+            }
+        }
+
+        return $lines !== [] ? implode("\n", $lines)."\n\n" : '';
+    }
+
     private function guessValueExpression(string $column): string
     {
         return match (true) {
             str_ends_with($column, '_at') => 'TurboData::nowOnce()',
             $column === 'password' => 'TurboData::hashedPassword()',
-            $column === 'email' || str_ends_with($column, '_email') => 'TurboData::uniqueEmail()($index)',
-            str_ends_with($column, '_id') => 'TurboData::randomInt(1, 100)', // or TurboData::fromTable(...)
+            $column === 'email' || str_ends_with($column, '_email') => '$'.Str::camel($column).'($index)',
+            str_ends_with($column, '_id') => 'TurboData::randomInt(1, 100)',
             default => '"'.Str::headline($column).' {$index}"',
         };
     }
 
-    private function guessModelClass(string $table): string
+    private function resolveModelClass(string $table): string
     {
+        $factory = $this->option('factory');
+
+        if (is_string($factory) && $factory !== '') {
+            return '\\App\\Models\\'.Str::studly(Str::replaceLast('Factory', '', $factory));
+        }
+
         return '\\App\\Models\\'.Str::studly(Str::singular($table));
     }
 
@@ -136,7 +172,7 @@ class MakeTurboSeederCommand extends GeneratorCommand
         return [
             ['table', null, InputOption::VALUE_OPTIONAL, 'Table to introspect for columns'],
             ['count', null, InputOption::VALUE_OPTIONAL, 'Number of records to seed', '1000'],
-            ['factory', null, InputOption::VALUE_NONE, 'Generate a fromFactory()-based stub'],
+            ['factory', null, InputOption::VALUE_OPTIONAL, 'Generate a fromFactory() stub; provide a factory class name to override the inferred model (e.g. --factory=UserFactory)'],
             ['force', null, InputOption::VALUE_NONE, 'Overwrite the seeder if it already exists'],
         ];
     }
