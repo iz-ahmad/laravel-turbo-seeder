@@ -74,7 +74,7 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
     {
         $pdo = DB::connection($this->dbConnection->name)->getPdo();
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL);
-        $fieldList = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
+        $fieldList = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL), $columns));
 
         try {
             $result = $this->copyFromFile($pdo, $quotedTable, $this->getAbsoluteFilePath(), $fieldList);
