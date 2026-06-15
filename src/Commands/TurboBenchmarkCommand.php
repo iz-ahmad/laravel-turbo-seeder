@@ -44,21 +44,23 @@ class TurboBenchmarkCommand extends Command
         $this->info('Records: '.number_format($records));
         $this->newLine();
 
+        $driver = $this->detectDriver($connection);
+
+        if (DB::connection($connection)->getSchemaBuilder()->hasTable($table)) {
+            $this->error("✗ Table [{$table}] already exists on connection [{$connection}].");
+            $this->line('  Pass a different --table name for benchmarking as the table will be dropped before testing and also afterwords.');
+
+            return self::FAILURE;
+        }
+
+        $this->info("Detected Driver: {$driver->getDisplayName()}");
+        $this->newLine();
+
+        $created = false;
+
         try {
-            $driver = $this->detectDriver($connection);
-
-            // Never drop a table we did not create. If the target name already
-            // exists, refuse rather than destroy real data.
-            if (DB::connection($connection)->getSchemaBuilder()->hasTable($table)) {
-                $this->error("✗ Table [{$table}] already exists on connection [{$connection}].");
-                $this->line('  Refusing to drop an existing table. Pass a different --table name for benchmarking.');
-
-                return self::FAILURE;
-            }
-            $this->info("Detected Driver: {$driver->getDisplayName()}");
-            $this->newLine();
-
             $this->createBenchmarkTable($table, $connection, $driver);
+            $created = true;
 
             $results = [];
 
@@ -84,6 +86,10 @@ class TurboBenchmarkCommand extends Command
 
         } catch (\Throwable $e) {
             $this->error('✗ Benchmark failed: '.$e->getMessage());
+
+            if ($created) {
+                $this->dropBenchmarkTable($table, $connection, $driver);
+            }
 
             return self::FAILURE;
         }
