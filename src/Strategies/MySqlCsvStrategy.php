@@ -102,7 +102,7 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
         foreach ($columns as $i => $col) {
             $var = "@ts_col_{$i}";
             $userVars[] = $var;
-            $setClauses[] = "`{$col}` = NULLIF({$var}, {$quotedNullMarker})";
+            $setClauses[] = SqlIdentifier::quoteColumn($col, DatabaseDriver::MYSQL)." = NULLIF({$var}, {$quotedNullMarker})";
         }
 
         $columnVarList = implode(',', $userVars);
