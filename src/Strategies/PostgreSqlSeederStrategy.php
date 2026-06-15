@@ -47,13 +47,13 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
         $columnCount = count($columns);
         $recordCount = count($records);
 
-        $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
+        $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL), $columns));
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL);
 
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));
 
-        $conflictTarget = implode(', ', array_map(fn ($col) => "\"{$col}\"", $upsertKeys));
+        $conflictTarget = implode(', ', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL), $upsertKeys));
 
         $updateColumns = array_diff($columns, $upsertKeys);
 
@@ -61,7 +61,11 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
             $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) DO NOTHING";
         } else {
             $updateClause = implode(', ', array_map(
-                fn ($col) => "\"{$col}\" = EXCLUDED.\"{$col}\"",
+                function ($col) {
+                    $q = SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL);
+
+                    return "{$q} = EXCLUDED.{$q}";
+                },
                 $updateColumns,
             ));
 
@@ -98,7 +102,7 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
         $columnCount = count($columns);
         $recordCount = count($records);
 
-        $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
+        $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL), $columns));
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL);
 
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
