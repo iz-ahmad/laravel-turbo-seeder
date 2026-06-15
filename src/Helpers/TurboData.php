@@ -80,6 +80,10 @@ final class TurboData
         $cumulative = 0.0;
 
         foreach ($weights as $value => $weight) {
+            if ($weight <= 0) {
+                continue;
+            }
+            
             $cumulative += $weight;
             if ($rand <= $cumulative) {
                 return $value;
