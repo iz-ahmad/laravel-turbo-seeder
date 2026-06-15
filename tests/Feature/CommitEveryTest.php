@@ -49,3 +49,14 @@ test('commitEvery rejects values below one', function () {
 
     expect($run)->toThrow(InvalidArgumentException::class);
 });
+
+test('commitEvery combined with useTransactions() is rejected', function () {
+    expect(fn () => TurboSeeder::create('test_users')
+        ->columns(['name', 'email'])
+        ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@c.test"])
+        ->count(10)
+        ->commitEvery(2)
+        ->useTransactions()
+        ->run()
+    )->toThrow(InvalidArgumentException::class, 'commitEvery() and useTransactions() cannot be combined');
+});
