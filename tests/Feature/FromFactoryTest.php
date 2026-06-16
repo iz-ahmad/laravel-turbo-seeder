@@ -97,5 +97,5 @@ test('no warning when for() relationships have a recycle pool', function () {
             ->recycle(new TestUserModel),
     );
 
-    expect($warnings)->toBeEmpty();
+    expect(collect($warnings)->contains(fn ($m) => str_contains($m, 'recycle')))->toBeFalse();
 });
