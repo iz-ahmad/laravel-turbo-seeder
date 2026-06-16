@@ -25,7 +25,6 @@ final class FactoryDataGenerator
     {
         $this->warnIfParentRelationshipsUnrecycled($factory);
 
-        // Normalise count to null so raw() yields a single row per call
         $this->factory = $factory->count(null);
     }
 

@@ -11,12 +11,7 @@ use IzAhmad\TurboSeeder\Helpers\TurboData;
 /**
  * Real-world TurboSeeder examples.
  *
- * This file is a copy-paste reference (it is intentionally NOT autoloaded by the
- * package). It shows both data-generation paths and the main options.
- *
- * Two ways to generate rows:
- *   1. fromFactory()  - reuse your existing model factory (convenience tier).
- *   2. generate()     - a raw closure + TurboData helpers (maximum speed).
+ * This ExampleSeeder demonstrates all features and options the package offers.
  */
 class ExampleSeeder extends Seeder
 {
