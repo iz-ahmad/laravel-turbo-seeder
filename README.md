@@ -5,29 +5,80 @@
 <!-- [![Total Downloads](https://img.shields.io/packagist/dt/iz-ahmad/laravel-turbo-seeder.svg)](https://packagist.org/packages/iz-ahmad/laravel-turbo-seeder) -->
 <!-- [![License](https://img.shields.io/packagist/l/iz-ahmad/laravel-turbo-seeder.svg)](LICENSE.md) -->
 
-**Seed millions of records in seconds. Use the factory you already have - or go raw for maximum speed.**
+**Blazing fast database seeder for Laravel - seed millions of records in seconds; not minutes.**
 
-Laravel Turbo Seeder is a high-performance database seeder built for production-scale data (1M+ records) with minimal time and memory. Both paths - Eloquent factories and raw generators - feed the same bulk-insert / native-CSV engine.
+Laravel Turbo Seeder is a high-performance database seeder package built for production-scale data generation (1M+ records) with minimal time and memory. Ideal for testing applications with production-sized datasets.
 
 ![Laravel Turbo Seeder Demo](images/banner.png)
 
 ---
 
+## Why Turbo Seeder?
+
+Default Laravel seeders don't scale well. Seeding 500K-1M+ records for realistic load testing can take ~30+ minutes and unbounded memory usage, thus slowing down development.
+
+**Turbo Seeder eliminates that bottleneck.**
+
+| | Standard Laravel | Turbo Seeder |
+|---|---|---|
+| 1M records (simple table) | ~30 min | **~15s** |
+| 1M records (complex table) | ~40-60 min | **~60s** |
+| 1M records (CSV strategy) | - | **~9-40s** |
+| Memory | unbounded | **< 200 MB** |
+
+No more coffee breaks, tab-switching, or "I'll test later"! So you can:
+
+- Test against production-scale datasets in seconds
+- Detect slow queries and indexing issues early
+- Iterate faster without waiting on long seeding cycles
+
+## How It’s So Fast
+
+1. **No Eloquent overhead** — raw SQL only; no model events, no Observers.
+2. **Bulk inserts** — multi-row `INSERT` instead of row-by-row
+3. **Native CSV imports** — `LOAD DATA LOCAL INFILE` (MySQL) / `COPY FROM STDIN` (PostgreSQL) for maximum throughput
+4. **Smart configurable chunking** — lazy generators keep memory flat; automatic GC between chunks
+5. **Minimal overhead** — FK checks and query logging disabled automatically during the seed
+6. **Streaming I/O** — CSV is piped as a stream and never fully loaded into memory
+
+---
+
+## Features At A Glance
+
+- **Lightning Fast**: 1M records in 15-60 seconds
+- **Memory Efficient**: under 200 MB peak
+- **Two Data Generation Paths**: `fromFactory()` (reuse your existing factory, ease ensured) or `generate()` (raw closure using our custom helpers, Faker-free - for maximum speed)
+- **Two Seeding Strategies**: bulk INSERT or native CSV import
+- **Multi-Database**: MySQL, PostgreSQL, SQLite
+- **TurboData Helpers**: Faker-free data generation helpers for weighted picks, date ranges, unique values, FK assignment
+- **Data Type Formatting**: automatically handles enums, JSON, dates, arrays, collections
+- **Relational Seeding**: load FK values from seeded tables in one line, zero extra queries
+- **Upsert Support**: duplicate-key conflict resolution per driver with pre-flight index validation
+- **Progress Tracking**: real-time progress bar with metrics
+- **Dry Run**: validate data generation without committing
+- **Highly Configurable**: chunk size, transactions, retries, FK/unique checks, and more
+- **Laravel 10-13 Compatible**
+
+### Ideal For
+* Performance and load testing with large datasets
+* Dev environments needing production-scale data generation
+* CI/CD pipelines requiring fast seeding
+* Query and database performance benchmarking
+
+---
+
 ## Table of Contents
 
-- [Why Turbo Seeder?](#why-turbo-seeder)
-- [Two Paths for Data Generation](#two-paths-for-data-generation---pick-what-fits)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
   - [Scaffold a seeder](#scaffold-a-seeder-recommended)
-  - [Factory path](#factory-path---full-example)
-  - [Generator path](#generator-path---full-example)
-  - [CSV Strategy](#csv-strategy-fastest)
+  - [Basic Usage](#basic-usage)
+  - [Advanced Configuration](#advanced-configuration)
+- [Strategy Comparison](#strategy-comparison)
+- [Two Paths for Data Generation](#two-paths-for-data-generation---pick-what-fits)
 - [Common Use Cases](#common-use-cases)
 - [Migration from Standard Seeders](#migration-from-standard-seeders)
-- [Strategy Comparison](#strategy-comparison)
 - [CSV Strategy Setup](#csv-strategy-setup)
-- [Features At A Glance](#features-at-a-glance)
 - [API Documentation](#api-documentation)
   - [Fluent Builder Methods](#fluent-builder-methods)
   - [Events](#events)
@@ -40,25 +91,173 @@ Laravel Turbo Seeder is a high-performance database seeder built for production-
 
 ---
 
-## Why Turbo Seeder?
+## Requirements
 
-Default Laravel seeders don't scale. Seeding 500K–1M+ records for realistic load testing can take 30+ minutes and hundreds of MB of RAM.
+- PHP 8.2+
+- Laravel 10.x, 11.x, 12.x, or 13.x
+- MySQL 5.7+, PostgreSQL 9.6+, or SQLite 3.24+
 
-**Turbo Seeder eliminates that bottleneck.**
+---
 
-What used to take **~30 minutes** for **1M records** now completes in **~15–60 seconds**.
+## Installation
 
-| | Standard Laravel | Turbo Seeder |
+```bash
+composer require iz-ahmad/laravel-turbo-seeder
+```
+
+The package auto-registers itself. Optionally publish the config:
+
+```bash
+php artisan vendor:publish --tag="turbo-seeder-config"
+```
+
+> **Note:** This package is not publicly released yet.
+> For now, use it locally by cloning the repo and installing via a path repository in `composer.json`.
+
+<details>
+<summary>Local installation steps</summary>
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/iz-ahmad/laravel-turbo-seeder.git
+```
+
+2. Add to your Laravel project's `composer.json`:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../path-to-laravel-turbo-seeder"
+        }
+    ]
+}
+```
+
+3. Require it:
+
+```bash
+composer require iz-ahmad/laravel-turbo-seeder:@dev
+```
+
+</details>
+
+---
+
+## Quick Start
+
+### Scaffold a seeder (recommended)
+
+```bash
+# generate()-based seeder (fastest)
+php artisan make:turbo-seeder UserTurboSeeder --table=users --count=1000000
+
+# fromFactory()-based seeder
+php artisan make:turbo-seeder UserTurboSeeder --table=users --factory=UserFactory
+```
+
+This introspects your table's columns and generates a ready-to-edit seeder in `database/seeders/`. 
+No extra configuration required to get started. The default strategy works out of the box with sensible, performance-optimized settings **already configured** for you. So you just have to: 
+
+Install → Scaffold/Write the seeder → run.
+
+### Basic Usage
+
+#### Default Strategy
+
+```php
+use IzAhmad\TurboSeeder\Facades\TurboSeeder;
+use IzAhmad\TurboSeeder\Helpers\TurboData;
+
+// 1. Using your existing factory
+TurboSeeder::fromFactory(User::factory())
+            ->count(50_000)
+            ->run();
+
+// 2. Using package's generator closure
+$uniqueEmail = TurboData::uniqueEmail();
+
+TurboSeeder::create('users')
+    ->columns(['name', 'email', 'password', 'created_at'])
+    ->generate(fn ($index) => [
+        'name'       => "User {$index}",
+        'email'      => $uniqueEmail($index),
+        'password'   => TurboData::hashedPassword(),
+        'created_at' => TurboData::nowOnce(),
+    ])
+    ->count(100000)
+    ->run();
+```
+
+#### CSV Strategy (fastest)
+
+It uses `LOAD DATA LOCAL INFILE` (MySQL) or `COPY FROM STDIN` (PostgreSQL) - typically 2-4× faster than bulk INSERT for large datasets.
+
+```php
+// with fromFactory()...
+TurboSeeder::fromFactory(Post::factory())
+    ->count(1_000_000)
+    ->useCsvStrategy()
+    ->run();
+
+// ...and with generate()
+TurboSeeder::create('posts')
+    ->columns(['user_id', 'title', 'content'])
+    ->generate(fn ($index) => [...])
+    ->count(1_000_000)
+    ->useCsvStrategy()
+    ->run();
+```
+
+### Advanced Configuration
+
+```php
+use IzAhmad\TurboSeeder\Facades\TurboSeeder;
+use IzAhmad\TurboSeeder\Helpers\TurboData;
+
+TurboSeeder::create('orders')
+    ->columns(['user_id', 'total', 'status', 'created_at'])
+    ->generate(fn ($index) => [
+        'user_id'    => TurboData::randomInt(1, 10000),
+        'total'      => TurboData::randomFloat(2, 10.00, 999.99),
+        'status'     => TurboData::weightedFrom(['pending' => 50, 'completed' => 40, 'cancelled' => 10]),
+        'created_at' => TurboData::dateRange('2023-01-01', '2024-12-31'),
+    ]) // Also you can use `fromFactory()` with the same options below
+    ->truncate()
+    ->withTimestamps()
+    ->count(50000)
+    ->chunkSize(3000)
+    ->withProgressTracking()
+    ->disableForeignKeyChecks()
+    ->connection('mysql')
+    ->run();
+```
+
+See [examples/ExampleSeeder.php](examples/ExampleSeeder.php) and [Common Use Cases](#common-use-cases) for more examples.
+
+See [CSV Strategy Setup](#csv-strategy-setup) for MySQL configuration. PostgreSQL works out of the box.
+
+---
+
+## Strategy Comparison
+
+| Feature | Default Strategy | CSV Strategy |
 |---|---|---|
-| 1M records (simple table) | ~30 min | **~16s** |
-| 1M records (complex table) | ~40-60 min | **~60s** |
-| 1M records (CSV strategy) | - | **~9–40s** |
-| Memory | unbounded | **< 200 MB** |
+| **Speed** | Fast (~15-60s for 1M) | Fastest (~9-40s for 1M)¹ |
+| **Memory** | Moderate (~50-160 MB) | Minimal (~0 MB additional) |
+| **Setup** | None | MySQL needs `local_infile`; PostgreSQL needs nothing |
+| **Best for** | General use, remote databases | Local MySQL/PostgreSQL databases, Maximum speed |
 
-So you can:
-- Test against production-scale datasets in seconds
-- Detect slow queries and indexing issues early
-- Keep CI pipelines fast with realistic data
+¹ **SQLite:** CSV strategy may be _slower_ than default strategy on SQLite due to file I/O overhead. CSV shines mainly on MySQL (`LOAD DATA`) and PostgreSQL (`COPY`).
+
+**Recommendation**: 
+- **MySQL/PostgreSQL**: Use CSV strategy for 1M+ records.
+- **SQLite**: Use default strategy.
+- **General use**: Start with default. Switch to CSV strategy for maximum speed.
+
+> **MySQL pre-flight check:** Before generating the CSV file, TurboSeeder verifies that `LOCAL INFILE` is actually enabled on both the client and the server. If it isn't, it falls back to the default strategy immediately.
 
 ---
 
@@ -132,189 +331,20 @@ TurboSeeder::create('users')
 
 ---
 
-## Installation
-
-```bash
-composer require iz-ahmad/laravel-turbo-seeder
-```
-
-The package auto-registers itself. Optionally publish the config:
-
-```bash
-php artisan vendor:publish --tag="turbo-seeder-config"
-```
-
-> **Note:** This package is not publicly released yet.
-> For now, use it locally by cloning the repo and installing via a path repository in `composer.json`.
-
-<details>
-<summary>Local installation steps</summary>
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/iz-ahmad/laravel-turbo-seeder.git
-```
-
-2. Add to your Laravel project's `composer.json`:
-
-```json
-{
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../path-to-laravel-turbo-seeder"
-        }
-    ]
-}
-```
-
-3. Require it:
-
-```bash
-composer require iz-ahmad/laravel-turbo-seeder:@dev
-```
-
-</details>
-
----
-
-## Quick Start
-
-### Scaffold a seeder (recommended)
-
-```bash
-# generate()-based seeder (fastest)
-php artisan make:turbo-seeder UsersTurboSeeder --table=users --count=1000000
-
-# fromFactory()-based seeder
-php artisan make:turbo-seeder UsersTurboSeeder --table=users --factory=UserFactory
-```
-
-This introspects your table's columns and generates a ready-to-edit seeder in `database/seeders/`.
-
----
-
-### Factory path - full example
-
-```php
-use Illuminate\Database\Seeder;
-use App\Models\User;
-use App\Models\Post;
-use IzAhmad\TurboSeeder\Facades\TurboSeeder;
-
-class DatabaseSeeder extends Seeder
-{
-    public function run(): void
-    {
-        // Truncate and reseed users using the existing factory
-        TurboSeeder::fromFactory(User::factory())
-            ->truncate()           // empty the table first
-            ->withTimestamps()     // auto-fill created_at/updated_at
-            ->count(50_000)
-            ->run();
-
-        // Use a factory state for a subset of records
-        TurboSeeder::fromFactory(User::factory()->admin())
-            ->count(500)
-            ->run();
-
-        // Even the CSV strategy works with fromFactory()
-        TurboSeeder::fromFactory(Post::factory())
-            ->count(1_000_000)
-            ->useCsvStrategy()
-            ->run();
-    }
-}
-```
-
----
-
-### Generator path - full example
-
-```php
-use Illuminate\Database\Seeder;
-use IzAhmad\TurboSeeder\Facades\TurboSeeder;
-use IzAhmad\TurboSeeder\Helpers\TurboData;
-
-class DatabaseSeeder extends Seeder
-{
-    public function run(): void
-    {
-        $uniqueEmail = TurboData::uniqueEmail();
-
-        // Seed users
-        TurboSeeder::create('users')
-            ->columns(['name', 'email', 'password', 'status'])
-            ->generate(fn ($i) => [
-                'name'     => "User {$i}",
-                'email'    => $uniqueEmail($i),
-                'password' => TurboData::hashedPassword(),
-                'status'   => TurboData::weightedFrom(['active' => 80, 'inactive' => 20]),
-            ])
-            ->withTimestamps()
-            ->count(50_000)
-            ->run();
-
-        // Seed posts referencing the users above
-        $userIds = TurboData::fromTable('users'); // loaded once, cycled forever
-
-        TurboSeeder::create('posts')
-            ->columns(['user_id', 'title', 'content', 'status'])
-            ->generate(fn ($i) => [
-                'user_id' => $userIds($i),
-                'title'   => "Post {$i}",
-                'content' => "Content for post {$i}",
-                'status'  => TurboData::randomFrom(['draft', 'published']),
-            ])
-            ->withTimestamps()
-            ->count(1_000_000)
-            ->useCsvStrategy()   // fastest - native LOAD DATA / COPY
-            ->run();
-    }
-}
-```
-
----
-
-### CSV Strategy (fastest)
-
-Both paths support the CSV strategy. It uses `LOAD DATA LOCAL INFILE` (MySQL) or `COPY FROM STDIN` (PostgreSQL) - typically 2–4× faster than bulk INSERT for large datasets.
-
-```php
-// Works with fromFactory()...
-TurboSeeder::fromFactory(Post::factory())
-    ->count(1_000_000)
-    ->useCsvStrategy()
-    ->run();
-
-// ...and with generate()
-TurboSeeder::create('posts')
-    ->columns(['user_id', 'title', 'content'])
-    ->generate(fn ($i) => [...])
-    ->count(1_000_000)
-    ->useCsvStrategy()
-    ->run();
-```
-
-See [CSV Strategy Setup](#csv-strategy-setup) for MySQL configuration. PostgreSQL works out of the box.
-
----
-
 ## Common Use Cases
 
 ### Seeding Tables with Relationships
 
-#### BelongsTo / MorphTo - `recycle()` on the factory path
+#### BelongsTo / MorphTo - using factory path
 
-Pre-load the parent models once; the factory picks from the pool on every row with no extra DB calls:
+Pre-load the parent models once using the `recycle()`; the factory picks from the pool on every row with no extra DB calls:
 
 ```php
-// 1. Seed parents via TurboSeeder (or they may already exist)
+// 1. Seed parents first
 TurboSeeder::fromFactory(User::factory())->count(10_000)->run();
 
 // 2. Load parent models into a recycle pool
-$users = User::all(); // or User::select('id')->get() to keep memory low
+$users = User::all(); // or User::select('id')->get()
 
 // 3. Seed children - recycle() replaces the factory's for() create() calls
 TurboSeeder::fromFactory(Post::factory()->recycle($users))
@@ -322,17 +352,14 @@ TurboSeeder::fromFactory(Post::factory()->recycle($users))
     ->run();
 ```
 
-> If your factory uses `->for(User::factory())` without `->recycle()`, TurboSeeder will log a warning because every row would trigger an individual `User::create()` call behind the scenes.
+> If your factory uses `->for(User::factory())` without `->recycle()`, TurboSeeder will log a warning because every row would trigger an individual `User::create()` query behind the scenes.
 
-#### BelongsTo - generator path with `fromTable()`
+#### BelongsTo - using generator path
 
 Lighter on memory than loading full Eloquent models - stores only raw IDs:
 
 ```php
-use IzAhmad\TurboSeeder\Facades\TurboSeeder;
-use IzAhmad\TurboSeeder\Helpers\TurboData;
-
-// Seed parents
+// Seed parents first
 TurboSeeder::create('users')
     ->columns(['name', 'email', 'created_at'])
     ->generate(fn ($i) => [
@@ -360,19 +387,25 @@ TurboSeeder::create('posts')
 
 #### HasOne / HasMany / BelongsToMany / MorphMany
 
-These child relationships can't be wired inside a single bulk-seed call - the parent's auto-generated PK isn't available until after the bulk INSERT completes. Seed each table separately instead:
+These child relationships can't be wired inside a single bulk-seed call - the parent's auto-generated PK isn't available until after the bulk INSERT completes. So seed each table separately instead:
 
 ```php
 // 1. Seed users
-TurboSeeder::fromFactory(User::factory())->count(10_000)->run();
+TurboSeeder::fromFactory(User::factory())
+    ->count(10_000)
+    ->run();
 
 // 2. Seed posts referencing those users
 $users = User::select('id')->get();
-TurboSeeder::fromFactory(Post::factory()->recycle($users))->count(100_000)->run();
+
+TurboSeeder::fromFactory(Post::factory()->recycle($users))
+    ->count(100_000)
+    ->run();
 
 // 3. Seed pivot / child table separately (e.g. post_tags)
 $postIds = TurboData::fromTable('posts');
 $tagIds  = TurboData::fromTable('tags');
+
 TurboSeeder::create('post_tag')
     ->columns(['post_id', 'tag_id'])
     ->generate(fn ($i) => ['post_id' => $postIds($i), 'tag_id' => $tagIds($i)])
@@ -382,7 +415,9 @@ TurboSeeder::create('post_tag')
 
 This pattern is actually faster than letting Eloquent handle these relationships through `has()` - each table gets its own bulk INSERT.
 
-### Seeding with Real-World Data Distribution
+### Performance Testing Scenarios
+
+Test your application with real-world data volumes:
 
 ```php
 TurboSeeder::create('orders')
@@ -396,13 +431,26 @@ TurboSeeder::create('orders')
             'cancelled' => 10,
         ]),
         'created_at' => TurboData::dateRange('2023-01-01', '2024-12-31'),
-    ])
+    ]) // Or you may use your existing factory with `fromFactory()` here
     ->count(500_000)
     ->withProgressTracking()
     ->run();
 ```
 
+### CI/CD Integration
+
+Use in your CI/CD pipeline for fast test data setup:
+
+```bash
+# In your CI/CD script
+php artisan migrate:fresh --seed
+php artisan turbo-seeder:run PerformanceTestSeeder
+php artisan test
+```
+
 ### Time-Series Data
+
+When seeding time-series data, use `TurboData::sequentialDate()` for perfectly sequential timestamps with zero overhead:
 
 ```php
 TurboSeeder::create('analytics_events')
@@ -426,11 +474,13 @@ $result = TurboSeeder::create('users')
     ->dryRun()
     ->run();
 
-// $result->isDryRun === true, no rows were committed
+// $result->isDryRun === true, no rows were committed actually
 echo "Would have inserted: {$result->recordsInserted} rows";
 ```
 
 ### Upsert (insert or update on conflict)
+
+If a row with matching unique-key columns already exists, using upsert() it updates the row's non-key columns to new values instead of erroring.
 
 ```php
 TurboSeeder::create('products')
@@ -463,7 +513,7 @@ class UserSeeder extends Seeder
 }
 ```
 
-### After - keep the factory, get the speed
+### After
 
 ```php
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
@@ -472,23 +522,12 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        // get the speed, keeping the factory as it is
         TurboSeeder::fromFactory(User::factory())
             ->count(10_000)
-            ->run();
-    }
-}
-```
+            ->run(); // and that's it!
 
-### After - raw generator for maximum throughput
-
-```php
-use IzAhmad\TurboSeeder\Facades\TurboSeeder;
-use IzAhmad\TurboSeeder\Helpers\TurboData;
-
-class UserSeeder extends Seeder
-{
-    public function run(): void
-    {
+        // Or, for maximum speed, go with the generator path with raw closure
         $uniqueEmail = TurboData::uniqueEmail();
 
         TurboSeeder::create('users')
@@ -504,27 +543,6 @@ class UserSeeder extends Seeder
     }
 }
 ```
-
----
-
-## Strategy Comparison
-
-| | Default Strategy | CSV Strategy |
-|---|---|---|
-| **Speed** | Fast (~15–60s for 1M) | Fastest (~9–40s for 1M)¹ |
-| **Memory** | ~50–160 MB | ~0 MB additional |
-| **Setup** | None | MySQL needs `local_infile`; PostgreSQL needs nothing |
-| **Works with** | `generate()` + `fromFactory()` | `generate()` + `fromFactory()` |
-| **Best for** | General use, remote databases | Maximum throughput on MySQL/PostgreSQL |
-
-¹ **SQLite:** CSV may be slower than default on SQLite due to file I/O overhead. For SQLite, stick to the default strategy.
-
-**Quick guide:**
-- **MySQL/PostgreSQL + 1M+ rows** → CSV strategy
-- **SQLite** → default strategy
-- **Any size, convenience first** → default strategy to start, switch later if needed
-
-> **MySQL pre-flight check:** Before generating the CSV file, TurboSeeder verifies that `LOCAL INFILE` is actually enabled on both the client and the server. If it isn't, it falls back to the default strategy immediately - no wasted time writing a file that couldn't be imported.
 
 ---
 
@@ -573,26 +591,6 @@ The default strategy is still very fast and needs no configuration.
 
 ---
 
-## Features At A Glance
-
-- **Lightning Fast**: 1M records in 15–60 seconds
-- **Memory Efficient**: under 200 MB peak
-- **Two Data Paths**: `fromFactory()` (reuse your existing factory) or `generate()` (raw closure, Faker-free)
-- **Two Strategies**: bulk INSERT or native CSV import (`LOAD DATA` / `COPY`)
-- **Multi-Database**: MySQL, PostgreSQL, SQLite
-- **Scaffolder**: `php artisan make:turbo-seeder` generates a ready-to-edit seeder
-- **TurboData Helpers**: Faker-free helpers for weighted picks, date ranges, unique values, FK assignment
-- **Automatic Type Formatting**: enums, JSON, dates, arrays, collections - handled automatically
-- **Relational Seeding**: load FK values from seeded tables in one line, zero extra queries
-- **Events**: `TurboSeederStarting`, `TurboSeederCompleted`, `TurboSeederFailed`
-- **Upsert Support**: conflict resolution per driver with pre-flight index validation
-- **Progress Tracking**: real-time progress bar with metrics
-- **Dry Run**: validate data generation without committing
-- **Highly Configurable**: chunk size, transactions, retries, FK/unique checks, and more
-- **Laravel 10–13 compatible**
-
----
-
 ## API Documentation
 
 ### Entry Points
@@ -632,7 +630,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 | `count(int)` | Number of records to seed |
 | `chunkSize(int)` | Records per chunk - automatically clamped to the driver's bind-parameter limit (65,535 on MySQL/PostgreSQL; auto-detected on SQLite) |
 | `truncate()` | Empty the target table before seeding (committed before the seed; cannot combine with `dryRun()`). MySQL resets `AUTO_INCREMENT`; PostgreSQL and SQLite use `DELETE` (FK-safe) which does **not** reset identity sequences — IDs continue from the previous high-water mark. |
-| `commitEvery(int)` | Default strategy only: commit every N chunks instead of one wrapping transaction (for very large seeds). No-op on the CSV strategy. **Warning:** combining with `truncate()` leaves no rollback path if seeding fails mid-run. |
+| `commitEvery(int)` | Default strategy only: commit every N chunks instead of one wrapping transaction (for very large seeds). No-op on the CSV strategy. Cannot be combined with `useTransactions()` (throws). **Warning:** combining with `truncate()` leaves no rollback path if seeding fails mid-run. |
 | `upsert(array $uniqueBy)` | Insert-or-update on conflict; keys must match a unique/primary index (validated up front) |
 | `dryRun()` | Generate and validate without committing - uses transaction rollback |
 
@@ -651,7 +649,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 | `disableForeignKeyChecks()` / `enableForeignKeyChecks()` | Toggle FK checks |
 | `disableUniqueChecks()` / `enableUniqueChecks()` | MySQL only, opt-in. Speeds up bulk loads but can admit duplicates into unique secondary indexes - only use when data is known unique. Independent of `disableForeignKeyChecks()`. |
 | `disableQueryLog()` / `enableQueryLog()` | Toggle Laravel query log |
-| `useTransactions()` / `withoutTransactions()` | Toggle the wrapping transaction. CSV defaults to no wrapping transaction; default strategy wraps unless `commitEvery()` is used. |
+| `useTransactions()` / `withoutTransactions()` | Toggle the wrapping transaction. CSV defaults to no wrapping transaction; default strategy wraps unless `commitEvery()` is used. `useTransactions()` (explicit enable) cannot be combined with `commitEvery()` (throws). |
 
 #### Other
 
@@ -659,7 +657,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 |---|---|
 | `connection(string)` | Database connection name |
 | `withProgressTracking()` / `withoutProgressTracking()` | Toggle progress bar |
-| `retryAttempts(int)` | Retry on transient deadlock/lock-timeout (1–10; default: 3) |
+| `retryAttempts(int)` | Retry on transient deadlock/lock-timeout (1-10; default: 3) |
 | `withoutColumnValidation()` | Skip the pre-seed column existence check |
 | `when(condition, callback)` / `unless(condition, callback)` | Conditional chaining |
 
@@ -922,9 +920,9 @@ php artisan vendor:publish --tag="turbo-seeder-config"
 Chunk size controls how many records are held in memory at once. The builder's `chunkSize()` method overrides the config and is automatically clamped to the driver's bind-parameter limit (65,535 on MySQL/PostgreSQL; auto-detected on SQLite).
 
 **Rule of thumb:**
-- Simple tables (3–5 columns): 1000–5000
-- Medium tables (6–10 columns): ~1000
-- Complex tables (15+ columns / large JSON): 200–1000
+- Simple tables (3-5 columns): 1000-5000
+- Medium tables (6-10 columns): ~1000
+- Complex tables (15+ columns / large JSON): 200-1000
 
 ### Performance
 
@@ -1007,14 +1005,14 @@ Measured on a modern local machine with MySQL and default chunk sizes.
 | Table | Records | Time | Peak memory |
 |---|---|---|---|
 | Simple (~5 cols) | 1M | ~16s | ~50 MB |
-| Complex (~15–20 cols) | 1M | ~60s | ~160 MB |
+| Complex (~15-20 cols) | 1M | ~60s | ~160 MB |
 
 ### CSV Strategy
 
 | Table | Records | Time | Additional memory |
 |---|---|---|---|
 | Simple (~5 cols) | 1M | ~9s | ~0 MB |
-| Complex (~15–20 cols) | 1M | ~40s | ~0 MB |
+| Complex (~15-20 cols) | 1M | ~40s | ~0 MB |
 
 ### fromFactory() throughput
 
