@@ -190,3 +190,17 @@ git status               # no untracked files you meant to stage
 ```
 
 ---
+
+## Destructive Operations
+
+**Always ask for explicit confirmation before executing any destructive action**, including:
+- Deleting files or directories
+- Pushing
+- Force-pushing
+- Resetting commits
+- Overwriting changes
+- Any operation that cannot be undone
+
+Do not assume a question like "should I delete X?" implies permission. Wait for explicit "yes" or approval before proceeding. When in doubt, ask first.
+
+---
