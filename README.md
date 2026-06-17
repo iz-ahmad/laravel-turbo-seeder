@@ -34,12 +34,12 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you can:
 
 ## How It's So Fast
 
-1. **No Eloquent overhead** — raw SQL only; no model events, no Observers.
-2. **Bulk inserts** — multi-row `INSERT` instead of row-by-row
-3. **Native CSV imports** — `LOAD DATA LOCAL INFILE` (MySQL) / `COPY FROM STDIN` (PostgreSQL) for maximum throughput
-4. **Smart configurable chunking** — lazy generators keep memory flat; automatic GC between chunks
-5. **Minimal overhead** — FK checks and query logging disabled automatically during the seed
-6. **Streaming I/O** — CSV is piped as a stream and never fully loaded into memory
+1. **No Eloquent overhead** - raw SQL only; no model events, no Observers.
+2. **Bulk inserts** - multi-row `INSERT` instead of row-by-row
+3. **Native CSV imports** - `LOAD DATA LOCAL INFILE` (MySQL) / `COPY FROM STDIN` (PostgreSQL) for maximum throughput
+4. **Smart configurable chunking** - lazy generators keep memory flat; automatic GC between chunks
+5. **Minimal overhead** - FK checks and query logging disabled automatically during the seed
+6. **Streaming I/O** - CSV is piped as a stream and never fully loaded into memory
 
 ---
 
@@ -104,39 +104,11 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you can:
 
 ## Installation
 
-> **Heads up:** This package isn't on Packagist yet. Until the first public release, install it locally via a path repository (steps below). Once published, a single `composer require iz-ahmad/laravel-turbo-seeder` will be all you need.
-
-<details open>
-<summary><strong>Local installation (path repository)</strong></summary>
-
-1. Clone the repository:
-
 ```bash
-git clone https://github.com/iz-ahmad/laravel-turbo-seeder.git
+composer require iz-ahmad/laravel-turbo-seeder
 ```
 
-2. Add to your Laravel project's `composer.json`:
-
-```json
-{
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../path-to-laravel-turbo-seeder"
-        }
-    ]
-}
-```
-
-3. Require it:
-
-```bash
-composer require iz-ahmad/laravel-turbo-seeder:@dev
-```
-
-</details>
-
-The package auto-registers itself — no manual provider wiring. Optionally publish the config:
+The package auto-registers itself. Optionally publish the config:
 
 ```bash
 php artisan vendor:publish --tag="turbo-seeder-config"
@@ -146,7 +118,7 @@ php artisan vendor:publish --tag="turbo-seeder-config"
 
 ## Quick Start
 
-### Scaffold a seeder (recommended)
+### Scaffold a seeder
 
 ```bash
 # generate()-based seeder
@@ -191,7 +163,7 @@ TurboSeeder::create('users')
 
 #### Max speed with the CSV strategy
 
-Add one method — `useCsvStrategy()`. It uses `LOAD DATA LOCAL INFILE` (MySQL) or `COPY FROM STDIN` (PostgreSQL), typically 2-4× faster than bulk INSERT for large datasets.
+Add one method - `useCsvStrategy()`. It uses `LOAD DATA LOCAL INFILE` (MySQL) or `COPY FROM STDIN` (PostgreSQL), typically 2-4× faster than bulk INSERT for large datasets.
 
 ```php
 // with fromFactory()...
@@ -243,8 +215,8 @@ Know more about the two **data generation paths** and **seeding strategies** in 
 
 Seeding with TurboSeeder comes down to **two independent choices**:
 
-1. **How you generate data for each row** — Two paths: `fromFactory()` or `generate()` methods
-2. **How those rows are written to the database** — Two strategies: the default bulk-`INSERT`, or the CSV strategy
+1. **How you generate data for each row** - Two paths: `fromFactory()` or `generate()` methods
+2. **How those rows are written to the database** - Two strategies: the default bulk-`INSERT`, or the CSV strategy
 
 These two are orthogonal: **any data path can be combined with any strategy**. Both paths run through the same high-performance engine, so pick whichever seems most convenient for your use case.
 
@@ -310,7 +282,7 @@ TurboSeeder::create('users')
 | **Faker** | Yes (one call per row) | No - Faker-free |
 | **Throughput for 1M rows** | Fast (minutes - Faker-bound) | Fastest (~15–60s) |
 | **Factory states** | ✅ | - |
-| **Best for** | ≤ 100k rows, or when the factory already exists and data realism matters | Huge datasets, maximum speed |
+| **Best for** | ≤ 500k rows, or when the factory already exists and data realism matters | Huge datasets, maximum speed |
 
 > **Skipped on both paths:** model events, observers, and accessors/mutators. Anything those compute (slugs, hashes, derived columns) must live in the factory definition or the generator closure.
 
@@ -318,7 +290,7 @@ TurboSeeder::create('users')
 
 ### Two Seeding Strategies
 
-This is choice #2 — determines *how* the generated rows are written to the database. The default strategy works everywhere with zero additional configuration; while CSV requires a bit of setup but delivers maximum speed.
+This is choice #2 - determines *how* the generated rows are written to the database. The default strategy works everywhere with zero additional configuration; while CSV requires a bit of setup but delivers maximum speed.
 
 | Feature | Default Strategy | CSV Strategy |
 |---|---|---|
@@ -329,23 +301,17 @@ This is choice #2 — determines *how* the generated rows are written to the dat
 
 ¹ **SQLite:** CSV strategy may be _slower_ than default strategy on SQLite due to file I/O overhead. CSV shines mainly on MySQL (`LOAD DATA`) and PostgreSQL (`COPY`).
 
-**Recommendation**: 
-- **MySQL/PostgreSQL**: Use CSV strategy for 1M+ records.
-- **SQLite**: Use default strategy.
-- **General use**: Start with default. Switch to CSV strategy for maximum speed.
+**Switching strategy** needs just a single method call - `useCsvStrategy()` / `useDefaultStrategy()`. Both seeding strategy can be combined with either data generation path.
 
-**Switching strategy** needs just a single method call — `useCsvStrategy()` / `useDefaultStrategy()`.
-
-See [CSV Strategy Setup](#csv-strategy-setup) for the one-time MySQL configuration for the CSV strategy.
-
-Note that either seeding strategy can be used with either data generation path.
+> See [CSV Strategy Setup](#csv-strategy-setup) for the one-time MySQL configuration for the CSV strategy.
 
 ### Quick Recommendation
 
 - Wanna use existing factory? → use `fromFactory()`
 - Need 500k+ rows and maximum speed? → use `generate()`
 - MySQL/PostgreSQL + 1M+ rows? → try `useCsvStrategy()`
-- Not sure? → just start with defaults, you can always switch strategies or paths later.
+- using SQLite? → use default strategy.
+- Not sure / General use? → just start with defaults, you can always switch strategies or paths later.
 
 ---
 
@@ -660,7 +626,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 |---|---|
 | `count(int)` | Number of records to seed |
 | `chunkSize(int)` | Records per chunk - automatically clamped to the driver's bind-parameter limit (65,535 on MySQL/PostgreSQL; auto-detected on SQLite) |
-| `truncate()` | Empty the target table before seeding (committed before the seed; cannot combine with `dryRun()`). MySQL resets `AUTO_INCREMENT`; PostgreSQL and SQLite use `DELETE` (FK-safe) which does **not** reset identity sequences — IDs continue from the previous high-water mark. |
+| `truncate()` | Empty the target table before seeding (committed before the seed; cannot combine with `dryRun()`). MySQL resets `AUTO_INCREMENT`; PostgreSQL and SQLite use `DELETE` (FK-safe) which does **not** reset identity sequences - IDs continue from the previous high-water mark. |
 | `commitEvery(int)` | Default strategy only: commit every N chunks instead of one wrapping transaction (for very large seeds). No-op on the CSV strategy. Cannot be combined with `useTransactions()` (throws). **Warning:** combining with `truncate()` leaves no rollback path if seeding fails mid-run. |
 | `upsert(array $uniqueBy)` | Insert-or-update on conflict; keys must match a unique/primary index (validated up front) |
 | `dryRun()` | Generate and validate without committing - uses transaction rollback |
@@ -696,7 +662,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 
 ### What `run()` Returns
 
-Every `run()` returns an immutable `SeederResultDTO` (and throws a `RuntimeException` — wrapping the original exception — if the seed fails):
+Every `run()` returns an immutable `SeederResultDTO` (and throws a `RuntimeException` - wrapping the original exception - if the seed fails):
 
 ```php
 $result = TurboSeeder::create('users')
@@ -722,7 +688,7 @@ $result->toArray();              // everything above as an array
 | `peakMemoryBytes` | Peak memory used during the run |
 | `isDryRun` | `true` when the run was a dry run |
 | `errorMessage` | Failure message, or `null` |
-| `exception` | The original `Throwable` on failure, or `null` — so you never lose the stack trace |
+| `exception` | The original `Throwable` on failure, or `null` - so you never lose the stack trace |
 | `getRecordsPerSecond()` | Throughput as records/second |
 | `getPeakMemoryInMB()` | Peak memory in MB |
 | `toArray()` | The full result as an associative array |
