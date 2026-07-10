@@ -21,8 +21,6 @@ test('reset clears every cached value including date caches', function () {
         ->and(TurboData::sequentialDate('2020-01-01', 'day', 1))->toBeInstanceOf(Carbon::class);
 });
 
-// ── cycleFrom() ───────────────────────────────────────────────────────────────
-
 test('cycleFrom returns a closure', function () {
     expect(TurboData::cycleFrom(['a', 'b']))->toBeInstanceOf(Closure::class);
 });
@@ -46,8 +44,6 @@ test('cycleFrom works with single value', function () {
 test('cycleFrom throws on empty array', function () {
     TurboData::cycleFrom([]);
 })->throws(InvalidArgumentException::class);
-
-// ── weightedFrom() ────────────────────────────────────────────────────────────
 
 test('weightedFrom returns a value from the weights array', function () {
     $result = TurboData::weightedFrom(['active' => 70, 'inactive' => 30]);
@@ -77,8 +73,6 @@ test('weightedFrom throws on negative weight', function () {
     TurboData::weightedFrom(['a' => 100, 'b' => -40]);
 })->throws(InvalidArgumentException::class, "weight for 'b' must be non-negative");
 
-// ── randomFrom() ─────────────────────────────────────────────────────────────
-
 test('randomFrom returns a value from the array', function () {
     $values = ['alpha', 'beta', 'gamma'];
     $result = TurboData::randomFrom($values);
@@ -89,8 +83,6 @@ test('randomFrom returns a value from the array', function () {
 test('randomFrom throws on empty array', function () {
     TurboData::randomFrom([]);
 })->throws(InvalidArgumentException::class);
-
-// ── randomInt() ───────────────────────────────────────────────────────────────
 
 test('randomInt returns int within range', function () {
     $result = TurboData::randomInt(5, 10);
@@ -103,8 +95,6 @@ test('randomInt returns int within range', function () {
 test('randomInt with equal min and max returns that value', function () {
     expect(TurboData::randomInt(7, 7))->toBe(7);
 });
-
-// ── randomFloat() ─────────────────────────────────────────────────────────────
 
 test('randomFloat returns float within range', function () {
     $result = TurboData::randomFloat(2, 1.00, 9.99);
@@ -128,8 +118,6 @@ test('randomFloat with 0 decimals returns whole number', function () {
     }
 });
 
-// ── randomBool() ──────────────────────────────────────────────────────────────
-
 test('randomBool returns a bool', function () {
     expect(TurboData::randomBool())->toBeBool();
 });
@@ -145,8 +133,6 @@ test('randomBool with probability 0.0 always returns false', function () {
         expect(TurboData::randomBool(0.0))->toBeFalse();
     }
 });
-
-// ── nullable() ────────────────────────────────────────────────────────────────
 
 test('nullable with probability 0 never returns null', function () {
     for ($i = 0; $i < 50; $i++) {
@@ -192,8 +178,6 @@ test('nullable does not evaluate callable when null is returned', function () {
     expect($called)->toBe(0);
 });
 
-// ── dateRange() ───────────────────────────────────────────────────────────────
-
 test('dateRange returns a Carbon instance', function () {
     $result = TurboData::dateRange('2023-01-01', '2023-12-31');
 
@@ -221,8 +205,6 @@ test('dateRange accepts same from and to date', function () {
 test('dateRange throws when from is after to', function () {
     TurboData::dateRange('2024-12-31', '2024-01-01');
 })->throws(InvalidArgumentException::class);
-
-// ── sequentialDate() ──────────────────────────────────────────────────────────
 
 test('sequentialDate returns a Carbon instance', function () {
     expect(TurboData::sequentialDate('2024-01-01', 'day', 0))->toBeInstanceOf(Carbon::class);
@@ -253,8 +235,6 @@ test('sequentialDate returns independent copies so calls do not mutate each othe
     expect($d2->toDateString())->toBe('2024-01-03');
 });
 
-// ── nowOnce() ────────────────────────────────────────────────────────────────
-
 test('nowOnce returns a string', function () {
     expect(TurboData::nowOnce())->toBeString();
 });
@@ -271,12 +251,9 @@ test('resetNowOnce allows new value to be generated', function () {
     TurboData::resetNowOnce();
     $second = TurboData::nowOnce();
 
-    // Both should be valid datetime strings
     expect($first)->toMatch('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/');
     expect($second)->toMatch('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/');
 });
-
-// ── fromQuery() ────────────────────────────────────────────────────────────────
 
 test('fromQuery returns a closure', function () {
     $pool = TurboData::fromQuery(fn () => [1, 2, 3]);
@@ -303,8 +280,6 @@ test('fromQuery throws when loader returns empty array', function () {
     $pool = TurboData::fromQuery(fn () => []);
     $pool(0);
 })->throws(RuntimeException::class);
-
-// ── uniqueEmail() / uniqueUsername() / uniqueSlug() ──────────────────────────
 
 test('uniqueEmail returns closure producing valid emails', function () {
     $gen = TurboData::uniqueEmail();
@@ -363,8 +338,6 @@ test('uniqueUuid with prefix prepends it', function () {
 
     expect($gen())->toStartWith('ref_');
 });
-
-// ── hashedPassword() ──────────────────────────────────────────────────────────
 
 test('hashedPassword returns a string', function () {
     expect(TurboData::hashedPassword())->toBeString();
