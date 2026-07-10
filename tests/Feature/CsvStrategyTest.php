@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 test('can seed using csv strategy', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -23,7 +23,7 @@ test('can seed using csv strategy', function () {
 });
 
 test('csv strategy handles large datasets', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -39,7 +39,7 @@ test('csv strategy handles large datasets', function () {
 });
 
 test('csv strategy imports null values as real NULLs', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -58,7 +58,7 @@ test('csv strategy imports null values as real NULLs', function () {
 test('csv strategy fails loudly on null-marker collision', function () {
     $marker = config('turbo-seeder.csv_strategy.null_marker', '\\N');
 
-    $run = fn () => TurboSeeder::create('test_users')
+    $run = fn () => TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => $marker, // legitimately equals the null marker
@@ -81,7 +81,7 @@ test('csv strategy fails loudly on null-marker collision', function () {
 test('can switch between default and csv strategies', function () {
     test()->truncateTable('test_users');
 
-    $defaultResult = TurboSeeder::create('test_users')
+    $defaultResult = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(50)
@@ -90,7 +90,7 @@ test('can switch between default and csv strategies', function () {
 
     test()->truncateTable('test_users');
 
-    $csvResult = TurboSeeder::create('test_users')
+    $csvResult = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(50)
