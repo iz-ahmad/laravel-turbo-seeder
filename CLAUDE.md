@@ -129,6 +129,7 @@ Default to writing **no inline comments**. Well-named identifiers, small functio
   })->skip(fn () => DB::getDriverName() !== 'mysql', 'MySQL-specific');
   ```
 - Mock only at system boundaries (external services, the logger). Don't mock internal classes.
+- Don't add any section divider comments without my asking.
 
 ---
 
