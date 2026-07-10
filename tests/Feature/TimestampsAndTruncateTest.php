@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 test('withTimestamps fills created_at and updated_at on the generate() path', function () {
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@ts.test"])
         ->withTimestamps()
@@ -20,7 +20,7 @@ test('withTimestamps fills created_at and updated_at on the generate() path', fu
 test('withTimestamps does not override timestamps the generator already sets', function () {
     $fixed = '2020-01-01 00:00:00';
 
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'created_at'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -42,7 +42,7 @@ test('truncate empties the table before seeding', function () {
 
     expect(DB::table('test_users')->count())->toBe(1);
 
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@truncate.test"])
         ->truncate()
@@ -54,7 +54,7 @@ test('truncate empties the table before seeding', function () {
 });
 
 test('truncate cannot be combined with dryRun', function () {
-    $run = fn () => TurboSeeder::create('test_users')
+    $run = fn () => TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@td.test"])
         ->truncate()
