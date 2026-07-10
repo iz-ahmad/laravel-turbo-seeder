@@ -13,7 +13,6 @@ use IzAhmad\TurboSeeder\Services\SeederOrchestrator;
 /**
  * Main TurboSeeder service class.
  *
- * Provides the core seeding functionality and builder factory methods.
  * This is the primary entry point for the TurboSeeder package.
  */
 class TurboSeeder
@@ -31,17 +30,11 @@ class TurboSeeder
     }
 
     /**
-     * Create a new seeder builder instance.
+     * Create a new seeder builder instance for the given table.
      */
-    public function create(?string $table = null): TurboSeederBuilder
+    public function forTable(string $table): TurboSeederBuilder
     {
-        $builder = app(TurboSeederBuilder::class);
-
-        if ($table !== null) {
-            $builder->table($table);
-        }
-
-        return $builder;
+        return app(TurboSeederBuilder::class)->table($table);
     }
 
     /**
