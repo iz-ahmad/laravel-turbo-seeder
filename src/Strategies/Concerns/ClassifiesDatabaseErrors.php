@@ -12,26 +12,44 @@ trait ClassifiesDatabaseErrors
 {
     /**
      * Extract the five-character SQLSTATE from a PDO exception, if present.
+     *
+     * Walks the exception chain: strategies re-wrap the driver error in a plain
+     * RuntimeException, and Laravel wraps PDO failures in a QueryException whose
+     * own errorInfo is empty — the real SQLSTATE lives on a nested PDOException.
      */
     protected function sqlState(\Throwable $e): ?string
     {
-        if ($e instanceof \PDOException && is_array($e->errorInfo ?? null)) {
-            return $e->errorInfo[0] ?? null;
+        foreach ($this->throwableChain($e) as $throwable) {
+            if (! $throwable instanceof \PDOException) {
+                continue;
+            }
+
+            if (is_array($throwable->errorInfo ?? null) && isset($throwable->errorInfo[0])) {
+                return $throwable->errorInfo[0];
+            }
+
+            $code = $throwable->getCode();
+
+            // PDOException codes are SQLSTATE strings; a 0 code carries no SQLSTATE.
+            if ($code !== 0 && $code !== '00000') {
+                return (string) $code;
+            }
         }
 
-        $code = $e->getCode();
-
-        // PDOException codes are SQLSTATE strings; a 0 code carries no SQLSTATE.
-        return ($code === 0 || $code === '00000') ? null : (string) $code;
+        return null;
     }
 
     /**
      * Extract the driver-specific error number (e.g. MySQL errno) if present.
+     *
+     * Walks the exception chain for the same reason as sqlState().
      */
     protected function driverErrno(\Throwable $e): ?int
     {
-        if ($e instanceof \PDOException && is_array($e->errorInfo ?? null) && isset($e->errorInfo[1])) {
-            return (int) $e->errorInfo[1];
+        foreach ($this->throwableChain($e) as $throwable) {
+            if ($throwable instanceof \PDOException && is_array($throwable->errorInfo ?? null) && isset($throwable->errorInfo[1])) {
+                return (int) $throwable->errorInfo[1];
+            }
         }
 
         return null;
@@ -49,5 +67,21 @@ trait ClassifiesDatabaseErrors
 
         // MySQL: 1205 lock wait timeout, 1213 deadlock found.
         return in_array($this->driverErrno($e), [1205, 1213], true);
+    }
+
+    /**
+     * Yield the throwable and each of its previous exceptions in order.
+     *
+     * @return iterable<\Throwable>
+     */
+    private function throwableChain(\Throwable $e): iterable
+    {
+        $current = $e;
+
+        while ($current !== null) {
+            yield $current;
+
+            $current = $current->getPrevious();
+        }
     }
 }
