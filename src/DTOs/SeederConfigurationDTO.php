@@ -11,6 +11,7 @@ final readonly class SeederConfigurationDTO
     /**
      * @param  array<int, string>  $columns
      * @param  array<string, mixed>  $options
+     * @param  array<int, string>  $pendingWarnings
      */
     public function __construct(
         public string $table,
@@ -20,6 +21,7 @@ final readonly class SeederConfigurationDTO
         public string $connection,
         public SeederStrategy $strategy = SeederStrategy::DEFAULT,
         public array $options = [],
+        public array $pendingWarnings = [],
     ) {
         $this->validate();
     }
@@ -147,15 +149,7 @@ final readonly class SeederConfigurationDTO
 
     /**
      * Check if a single wrapping transaction should be used during seeding.
-     *
-     * Precedence:
-     *  1. Dry-run always needs a transaction to roll back.
-     *  2. An explicit useTransactions()/withoutTransactions() wins.
-     *  3. commitEvery() replaces the single wrap with periodic commits.
-     *  4. The CSV strategy skips the wrap by default — LOAD DATA / COPY are
-     *     atomic per statement, and wrapping millions of rows in one
-     *     transaction strains the redo log / WAL and stalls replicas.
-     *  5. Otherwise fall back to config (performance.use_transactions).
+     * Precedence: dry-run (always on) → explicit option → commitEvery() (off) → CSV strategy (off) → config.
      */
     public function shouldUseTransactions(): bool
     {
