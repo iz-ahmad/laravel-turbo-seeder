@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 use IzAhmad\TurboSeeder\Tests\Fixtures\TurboSeederRunCommandTestSeeder;
 
@@ -67,9 +68,13 @@ test('turbo-seeder:run outputs info row with table, strategy and count', functio
 });
 
 test('turbo-seeder:run shows correct records processed count in metrics', function () {
-    $this->artisan('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class])
-        ->expectsOutputToContain('Total Records | 10')
-        ->assertSuccessful();
+    $exitCode = Artisan::call('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class]);
+
+    expect($exitCode)->toBe(\Symfony\Component\Console\Command\Command::SUCCESS);
+
+    $output = preg_replace('/\s+/', ' ', Artisan::output());
+
+    expect($output)->toContain('Total Records | 10');
 });
 
 test('turbo-seeder:run does not output starting turbo seeder text', function () {
