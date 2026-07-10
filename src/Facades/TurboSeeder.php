@@ -12,7 +12,7 @@ use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 
 /**
  * @method static SeederResultDTO execute(SeederConfigurationDTO $config)
- * @method static TurboSeederBuilder create(?string $table = null)
+ * @method static TurboSeederBuilder forTable(string $table)
  * @method static TurboSeederBuilder fromFactory(Factory $factory)
  *
  * @see \IzAhmad\TurboSeeder\TurboSeeder
@@ -25,17 +25,11 @@ class TurboSeeder extends Facade
     }
 
     /**
-     * Create a new seeder builder instance.
+     * Create a new seeder builder instance for the given table.
      */
-    public static function create(?string $table = null): TurboSeederBuilder
+    public static function forTable(string $table): TurboSeederBuilder
     {
-        $builder = app(TurboSeederBuilder::class);
-
-        if ($table !== null) {
-            $builder->table($table);
-        }
-
-        return $builder;
+        return app(TurboSeederBuilder::class)->table($table);
     }
 
     /**
