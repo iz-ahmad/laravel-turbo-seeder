@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Actions;
 
+use Illuminate\Database\Schema\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,7 @@ use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 use IzAhmad\TurboSeeder\Events\TurboSeederCompleted;
 use IzAhmad\TurboSeeder\Events\TurboSeederFailed;
 use IzAhmad\TurboSeeder\Events\TurboSeederStarting;
+use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 final class ExecuteSeederAction
 {
@@ -44,17 +46,27 @@ final class ExecuteSeederAction
                 $config->connection,
             ));
 
+            $this->progressTracker->writeHeader($config->count, $config->strategy, $config->table);
+
+            foreach ($config->pendingWarnings as $warning) {
+                Log::warning($warning);
+                $this->progressTracker->warn($warning);
+            }
+
             $strategy->prepareEnvironment();
 
             if ($config->hasProgressTracking()) {
-                $this->progressTracker->start($config->count, $config->strategy);
+                $this->progressTracker->start($config->count, $config->strategy, $config->table);
             }
 
-            $recordsInserted = $strategy->seed($config);
-
-            if ($config->hasProgressTracking()) {
-                $this->progressTracker->finish();
+            TurboData::markGeneratorActive(true);
+            try {
+                $recordsInserted = $strategy->seed($config);
+            } finally {
+                TurboData::markGeneratorActive(false);
             }
+
+            $this->progressTracker->finish($recordsInserted);
 
             $strategy->cleanup();
 
@@ -100,11 +112,7 @@ final class ExecuteSeederAction
 
     /**
      * Fail fast when upsert keys are not backed by a unique/primary index.
-     *
-     * ON CONFLICT (PostgreSQL/SQLite) and ON DUPLICATE KEY (MySQL) require the
-     * conflict target to match a real unique constraint, otherwise the statement
-     * errors mid-run. Skipped when column validation is disabled or when the
-     * driver's schema builder cannot introspect indexes (older Laravel).
+     * ON CONFLICT / ON DUPLICATE KEY require the conflict target to match a real unique constraint.
      */
     private function validateUpsertKeys(SeederConfigurationDTO $config): void
     {
@@ -115,18 +123,13 @@ final class ExecuteSeederAction
         try {
             $indexes = DB::connection($config->connection)->getSchemaBuilder()->getIndexes($config->table);
         } catch (\Throwable) {
-            // Index introspection is unavailable on this driver/Laravel version;
-            // skip the pre-flight check rather than block seeding.
+            // Index introspection is unavailable probably on this driver/Laravel version
             return;
         }
 
         $keys = array_map('strtolower', $config->getUpsertKeys());
         sort($keys);
 
-        // Strict equality: the supplied keys must exactly match one unique/primary index.
-        // MySQL's ON DUPLICATE KEY fires on any unique key, so this is intentionally
-        // more conservative than the engine requires — it prevents ambiguous upserts
-        // where multiple unique indexes exist and the user's intent is unclear.
         foreach ($indexes as $index) {
             if ($index['unique'] !== true && $index['primary'] !== true) {
                 continue;
@@ -151,13 +154,8 @@ final class ExecuteSeederAction
     /**
      * Empty the target table before seeding when truncate() was requested.
      *
-     * Runs before the seeding transaction so it is a real, committed wipe and
-     * never cascades to other tables. On MySQL, TRUNCATE resets AUTO_INCREMENT
-     * with foreign key checks disabled around it. On PostgreSQL and SQLite a
-     * DELETE is used instead: PostgreSQL refuses to TRUNCATE a table that is
-     * referenced by a foreign key (even by an empty child), and DELETE needs no
-     * superuser. If the target still has referencing rows, empty those child
-     * tables first.
+     * On MySQL, TRUNCATE resets AUTO_INCREMENT with foreign key checks disabled.
+     * On PostgreSQL/SQLite, DELETE is used — PostgreSQL refuses to TRUNCATE a referenced table.
      */
     private function truncateIfRequested(SeederConfigurationDTO $config): void
     {
@@ -217,5 +215,52 @@ final class ExecuteSeederAction
                 implode(', ', $tableColumns),
             ));
         }
+
+        $this->validateNotNullCoverage($config, $schemaBuilder);
+    }
+
+    private function validateNotNullCoverage(SeederConfigurationDTO $config, Builder $schemaBuilder): void
+    {
+        try {
+            $schemaColumns = $schemaBuilder->getColumns($config->table);
+        } catch (\Throwable) {
+            // Driver/Laravel version doesn't support getColumns()
+            return;
+        }
+
+        $uncovered = [];
+
+        foreach ($schemaColumns as $col) {
+            if ($col['auto_increment'] === true) {
+                continue;
+            }
+
+            if (($col['generation'] ?? null) !== null) {
+                continue;
+            }
+
+            if ($col['nullable'] === true) {
+                continue;
+            }
+
+            if ($col['default'] !== null) {
+                continue;
+            }
+
+            if (! in_array($col['name'], $config->columns, true)) {
+                $uncovered[] = $col['name'];
+            }
+        }
+
+        if (empty($uncovered)) {
+            return;
+        }
+
+        throw new \InvalidArgumentException(sprintf(
+            'NOT NULL column(s) [%s] on table [%s] are missing from the seeded columns. '
+            .'Add them to columns() or use withoutColumnValidation() to skip this check.',
+            implode(', ', $uncovered),
+            $config->table,
+        ));
     }
 }
