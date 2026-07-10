@@ -22,7 +22,7 @@ test('make:turbo-seeder generates a generate()-based seeder with introspected co
 
     expect($contents)
         ->toContain('class TestGeneratedSeeder')
-        ->and($contents)->toContain("TurboSeeder::create('test_users')")
+        ->and($contents)->toContain("TurboSeeder::forTable('test_users')")
         ->and($contents)->toContain("'email'")
         ->and($contents)->toContain('$email = TurboData::uniqueEmail()')
         ->and($contents)->toContain('$email($index)')
@@ -78,7 +78,7 @@ test('make:turbo-seeder omits withTimestamps for tables without timestamp column
     $contents = file_get_contents(database_path('seeders/TestNoTimestampSeeder.php'));
 
     expect($contents)
-        ->toContain("TurboSeeder::create('test_counters')")
+        ->toContain("TurboSeeder::forTable('test_counters')")
         ->and($contents)->not->toContain('->withTimestamps()');
 });
 
@@ -129,7 +129,7 @@ test('make:turbo-seeder falls back to placeholder columns when table does not ex
     $contents = file_get_contents(database_path('seeders/TestFallbackSeeder.php'));
 
     expect($contents)
-        ->toContain("TurboSeeder::create('nonexistent_table')")
+        ->toContain("TurboSeeder::forTable('nonexistent_table')")
         ->and($contents)->toContain("'name'")
         ->and($contents)->toContain('->withTimestamps()');
 });
