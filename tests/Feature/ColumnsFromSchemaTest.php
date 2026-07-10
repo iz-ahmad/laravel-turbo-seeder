@@ -7,7 +7,7 @@ use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 test('columnsFromSchema derives columns excluding the auto-increment key', function () {
-    $builder = TurboSeeder::create('test_users')->columnsFromSchema();
+    $builder = TurboSeeder::forTable('test_users')->columnsFromSchema();
 
     // test_users: id (auto-inc, excluded), name, email, age, created_at, updated_at
     expect($builder->getColumns())->not->toContain('id')
@@ -17,7 +17,7 @@ test('columnsFromSchema derives columns excluding the auto-increment key', funct
 });
 
 test('columnsFromSchema seeds successfully when the generator supplies values', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columnsFromSchema()
         ->generate(fn ($i) => [
             'name' => "User {$i}",
