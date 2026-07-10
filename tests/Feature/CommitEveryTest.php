@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Event;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 test('commitEvery seeds all rows correctly', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@commit.test"])
         ->chunkSize(10)
@@ -29,7 +29,7 @@ test('commitEvery on CSV strategy logs a warning and still seeds', function () {
         }
     });
 
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@csv.test"])
         ->count(5)
@@ -42,7 +42,7 @@ test('commitEvery on CSV strategy logs a warning and still seeds', function () {
 });
 
 test('commitEvery rejects values below one', function () {
-    $run = fn () => TurboSeeder::create('test_users')
+    $run = fn () => TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@c.test"])
         ->commitEvery(0);
@@ -51,7 +51,7 @@ test('commitEvery rejects values below one', function () {
 });
 
 test('commitEvery combined with useTransactions() is rejected', function () {
-    expect(fn () => TurboSeeder::create('test_users')
+    expect(fn () => TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@c.test"])
         ->count(10)
