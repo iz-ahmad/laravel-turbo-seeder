@@ -7,8 +7,6 @@ use IzAhmad\TurboSeeder\Enums\FromTableMode;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
-// ── argument validation (eager, before any DB call) ──────────────────────────
-
 test('fromTable throws on empty table name', function () {
     TurboData::fromTable('');
 })->throws(InvalidArgumentException::class, '$table must not be empty');
@@ -24,8 +22,6 @@ test('fromTable throws on invalid mode', function () {
 test('fromTable returns a closure', function () {
     expect(TurboData::fromTable('test_users'))->toBeInstanceOf(Closure::class);
 });
-
-// ── pool loading ──────────────────────────────────────────────────────────────
 
 test('fromTable loads pool lazily on first call', function () {
     DB::table('test_users')->insert([
@@ -69,8 +65,6 @@ test('fromTable throws when table column returns no rows', function () {
     $fn(0);
 })->throws(RuntimeException::class, 'returned no rows');
 
-// ── cycle mode ────────────────────────────────────────────────────────────────
-
 test('fromTable cycles values deterministically by index', function () {
     DB::table('test_users')->insert([
         ['name' => 'X', 'email' => 'x@t.test'],
@@ -98,13 +92,10 @@ test('fromTable cycle is the default mode', function () {
     $cycle = TurboData::fromTable('test_users');
     $explicit = TurboData::fromTable('test_users', 'id', 'cycle');
 
-    // both should produce identical deterministic sequence
     for ($i = 0; $i < 6; $i++) {
         expect($cycle($i))->toBe($explicit($i));
     }
 });
-
-// ── random mode ───────────────────────────────────────────────────────────────
 
 test('fromTable random mode returns values from the pool', function () {
     DB::table('test_users')->insert([
@@ -121,8 +112,6 @@ test('fromTable random mode returns values from the pool', function () {
     }
 });
 
-// ── custom column ─────────────────────────────────────────────────────────────
-
 test('fromTable respects custom column parameter', function () {
     DB::table('test_users')->insert([
         ['name' => 'Alice', 'email' => 'alice@t.test'],
@@ -135,10 +124,8 @@ test('fromTable respects custom column parameter', function () {
     expect($fn(1))->toBeIn(['alice@t.test', 'bob@t.test']);
 });
 
-// ── integration: use inside a seeder generator ────────────────────────────────
-
 test('fromTable works inside a seeder generator for FK assignment', function () {
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@fk.test"])
         ->count(5)
@@ -146,7 +133,7 @@ test('fromTable works inside a seeder generator for FK assignment', function () 
 
     $userIds = TurboData::fromTable('test_users');
 
-    TurboSeeder::create('test_posts')
+    TurboSeeder::forTable('test_posts')
         ->columns(['user_id', 'title', 'content'])
         ->generate(fn ($i) => [
             'user_id' => $userIds($i),
@@ -165,8 +152,6 @@ test('fromTable works inside a seeder generator for FK assignment', function () 
         expect($uid)->toBeIn($seededUserIds);
     }
 });
-
-// ── fromTableStream (memory-bounded) ─────────────────────────────────────────
 
 test('fromTableStream throws on empty table name', function () {
     TurboData::fromTableStream('');
@@ -208,7 +193,7 @@ test('fromTableStream assigns valid foreign keys when seeding', function () {
 
     $userIds = TurboData::fromTableStream('test_users', 'id', 5);
 
-    TurboSeeder::create('test_posts')
+    TurboSeeder::forTable('test_posts')
         ->columns(['user_id', 'title', 'content'])
         ->generate(fn ($i) => [
             'user_id' => $userIds($i),
@@ -223,8 +208,6 @@ test('fromTableStream assigns valid foreign keys when seeding', function () {
     expect(DB::table('test_posts')->count())->toBe(40)
         ->and(DB::table('test_posts')->pluck('user_id')->all())->each->toBeIn($seededUserIds);
 });
-
-// ── mode enum (M11) ──────────────────────────────────────────────────────────
 
 test('fromTable accepts the FromTableMode enum', function () {
     DB::table('test_users')->insert([
