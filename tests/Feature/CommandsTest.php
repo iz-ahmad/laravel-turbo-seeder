@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Schema;
+use IzAhmad\TurboSeeder\Tests\Fixtures\TurboSeederRunCommandTestSeeder;
 
 test('can run turbo seeder test connection command', function () {
     $this->artisan('turbo-seeder:test-connection')
@@ -57,6 +58,31 @@ test('benchmark command refuses to drop an existing table', function () {
         ->assertFailed();
 
     expect(Schema::connection('testing')->hasTable('test_users'))->toBeTrue();
+});
+
+test('turbo-seeder:run outputs info row with table, strategy and count', function () {
+    $this->artisan('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class])
+        ->expectsOutputToContain('table test_users   strategy default   count 10')
+        ->assertSuccessful();
+});
+
+test('turbo-seeder:run shows correct records processed count in metrics', function () {
+    $this->artisan('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class])
+        ->expectsOutputToContain('Total Records | 10')
+        ->assertSuccessful();
+});
+
+test('turbo-seeder:run does not output starting turbo seeder text', function () {
+    $this->artisan('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class])
+        ->doesntExpectOutputToContain('Starting TurboSeeder')
+        ->assertSuccessful();
+});
+
+test('turbo-seeder:run does not output using strategy text', function () {
+    $this->artisan('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class])
+        ->doesntExpectOutputToContain('Using Default strategy')
+        ->doesntExpectOutputToContain('Using CSV strategy')
+        ->assertSuccessful();
 });
 
 test('benchmark command drops the benchmark table even when seeding fails', function () {
