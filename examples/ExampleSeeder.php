@@ -9,34 +9,33 @@ use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 /**
- * Real-world TurboSeeder examples.
- *
- * This ExampleSeeder demonstrates all features and options the package offers.
+ * Real-world TurboSeeder examples covering all major features.
  */
 class ExampleSeeder extends Seeder
 {
     public function run(): void
     {
-        // ── 1) Factory path: reuse an existing factory ───────────────────────
-        //
-        // Reuses the factory definition, states and Faker as the single source
-        // of truth. Timestamps are filled automatically when the model uses them.
-        // Model events/observers/accessors are skipped for speed.
+        // ── 1) Factory path ───────────────────────────────────────────────────
+        // Reuse an existing factory — table, columns, and timestamps are auto-inferred.
         //
         // TurboSeeder::fromFactory(\App\Models\User::factory()->unverified())
         //     ->count(100_000)
         //     ->run();
+        //
+        // With recycle() — pre-load parents so for() doesn't create one per row:
+        // $users = \App\Models\User::all();
+        // TurboSeeder::fromFactory(\App\Models\Post::factory()->recycle($users))
+        //     ->count(1_000_000)
+        //     ->run();
 
         // ── 2) Speed path: raw generator + TurboData ─────────────────────────
-        //
         // No Faker, no Eloquent — the fastest way to seed millions of rows.
-        // uniqueEmail()/uniqueUsername() return closures you call with $index.
-        // hashedPassword()/nowOnce() are computed once and reused.
+        // Closure-factory helpers must be created outside generate() and called inside.
 
         $uniqueEmail = TurboData::uniqueEmail();
         $uniqueUsername = TurboData::uniqueUsername('usr');
 
-        TurboSeeder::create('users')
+        TurboSeeder::forTable('users')
             ->columns(['name', 'username', 'email', 'password', 'created_at', 'updated_at'])
             ->generate(fn ($index) => [
                 'name' => "User {$index}",
@@ -47,33 +46,30 @@ class ExampleSeeder extends Seeder
                 'updated_at' => TurboData::nowOnce(),
             ])
             ->count(50_000)
-            ->truncate()              // wipe the table first (committed, not part of a dry run)
+            ->truncate()
             ->run();
 
-        // ── 3) Let TurboSeeder fill timestamps for you ───────────────────────
-        //
-        // withTimestamps() injects created_at/updated_at once per run, so you do
-        // not have to add them to the generator yourself.
+        // ── 3) Auto timestamps + nullable columns ─────────────────────────────
 
-        TurboSeeder::create('categories')
-            ->columns(['name', 'slug'])
+        TurboSeeder::forTable('categories')
+            ->columns(['name', 'slug', 'description'])
             ->generate(fn ($index) => [
                 'name' => "Category {$index}",
                 'slug' => "category-{$index}",
+                'description' => TurboData::nullable(0.3, fn () => "Description {$index}"),
             ])
             ->withTimestamps()
             ->count(500)
             ->run();
 
-        // ── 4) CSV strategy + foreign keys via fromTable() ───────────────────
-        //
-        // useCsvStrategy() uses LOAD DATA (MySQL) or client-side COPY (PostgreSQL).
-        // fromTable() loads reference IDs once and cycles/randomly picks them.
+        // ── 4) CSV strategy + foreign keys via fromTable() ────────────────────
+        // useCsvStrategy() uses LOAD DATA (MySQL) or COPY FROM STDIN (PostgreSQL).
+        // fromTable() loads reference IDs once; all subsequent calls are O(1).
 
-        $userIds = TurboData::fromTable('users');                 // cycle (default)
+        $userIds = TurboData::fromTable('users');                           // cycle (default)
         $categoryIds = TurboData::fromTable('categories', 'id', 'random');
 
-        TurboSeeder::create('posts')
+        TurboSeeder::forTable('posts')
             ->columns(['user_id', 'category_id', 'title', 'status', 'created_at'])
             ->generate(fn ($index) => [
                 'user_id' => $userIds($index),
@@ -86,29 +82,27 @@ class ExampleSeeder extends Seeder
             ->useCsvStrategy()
             ->run();
 
-        // ── 5) Huge reference tables: fromTableStream() ──────────────────────
-        //
-        // Memory-bounded alternative to fromTable() — IDs are streamed a page at
-        // a time instead of being materialised in memory.
+        // ── 5) Huge reference tables: fromTableStream() ───────────────────────
+        // Memory-bounded alternative to fromTable() — streams one page at a time.
 
         $bigPoolUserIds = TurboData::fromTableStream('users', 'id', pageSize: 10_000);
+        $eventName = TurboData::cycleFrom(['page_view', 'click', 'signup']);
 
-        TurboSeeder::create('events')
+        TurboSeeder::forTable('events')
             ->columns(['user_id', 'name', 'occurred_at'])
             ->generate(fn ($index) => [
                 'user_id' => $bigPoolUserIds($index),
-                'name' => TurboData::cycleFrom(['page_view', 'click', 'signup'])($index),
+                'name' => $eventName($index),
                 'occurred_at' => TurboData::sequentialDate('2024-01-01', 'hour', $index),
             ])
             ->count(8_760)
             ->run();
 
-        // ── 6) Very large default-strategy seeds: commitEvery() ──────────────
-        //
-        // Commit every N chunks instead of wrapping the whole run in one
-        // transaction (keeps the redo log / WAL small on huge seeds).
+        // ── 6) Very large seeds: commitEvery() + progress tracking ────────────
+        // Commit every N chunks — keeps the redo log / WAL small, at the cost of
+        // all-or-nothing atomicity. Use truncate() + re-run on failure.
 
-        TurboSeeder::create('logs')
+        TurboSeeder::forTable('logs')
             ->columns(['message', 'level', 'created_at'])
             ->generate(fn ($index) => [
                 'message' => "Log entry {$index}",
@@ -118,33 +112,35 @@ class ExampleSeeder extends Seeder
             ->count(2_000_000)
             ->chunkSize(5_000)
             ->commitEvery(20)
+            ->withProgressTracking()
             ->run();
 
-        // ── 7) Upsert (keys must be backed by a unique index) ────────────────
+        // ── 7) Upsert (conflict key must be backed by a unique index) ─────────
 
-        TurboSeeder::create('settings')
+        TurboSeeder::forTable('settings')
             ->columns(['key', 'value'])
             ->generate(fn ($index) => [
                 'key' => "setting_{$index}",
                 'value' => "value_{$index}",
             ])
-            ->upsert(['key'])      // 'key' must have a unique constraint
+            ->upsert(['key'])
             ->count(1_000)
             ->run();
 
-        // ── 8) Dry run: validate generation without writing rows ─────────────
+        // ── 8) Dry run: validate generation without writing rows ──────────────
 
-        $result = TurboSeeder::create('orders')
-            ->columns(['user_id', 'total', 'created_at'])
+        $result = TurboSeeder::forTable('orders')
+            ->columns(['user_id', 'total', 'note', 'created_at'])
             ->generate(fn ($index) => [
                 'user_id' => TurboData::randomInt(1, 50_000),
                 'total' => TurboData::randomFloat(2, 10, 999.99),
+                'note' => TurboData::nullable(0.7, fn () => "Order note {$index}"),
                 'created_at' => TurboData::nowOnce(),
             ])
             ->count(10_000)
             ->dryRun()
             ->run();
 
-        // $result->isDryRun === true; no rows were committed.
+        // $result->isDryRun === true; $result->recordsInserted shows the would-be count.
     }
 }
