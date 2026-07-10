@@ -27,6 +27,9 @@ final class TurboData
      */
     public const POOL_WARNING_THRESHOLD = 500_000;
 
+    /** Unix timestamp for 2038-01-19 03:14:07 UTC — MySQL TIMESTAMP upper bound. */
+    public const MYSQL_TIMESTAMP_MAX = 2_147_483_647;
+
     private static ?string $cachedNow = null;
 
     /** @var array<string, string> */
@@ -38,6 +41,14 @@ final class TurboData
     /** @var array<string, Carbon> Parsed sequentialDate() start points. */
     private static array $cachedSequentialStarts = [];
 
+    /** @var array<string, bool> */
+    private static array $timestampWarned = [];
+
+    private static bool $insideGenerator = false;
+
+    /** @var array<string, true> */
+    private static array $generatorWarnedMethods = [];
+
     /**
      * Return a value by cycling through the array in round-robin order.
      *
@@ -45,6 +56,8 @@ final class TurboData
      */
     public static function cycleFrom(array $values): \Closure
     {
+        self::warnIfInsideGenerator('cycleFrom');
+
         $count = count($values);
 
         if ($count === 0) {
@@ -57,7 +70,6 @@ final class TurboData
     /**
      * Return a random value with weighted probability.
      * Weights are relative - they don't need to sum to 100.
-     *
      * Example: ['active' => 70, 'inactive' => 20, 'banned' => 10]
      *
      * @param  array<string|int, int|float>  $weights  [value => weight]
@@ -163,6 +175,15 @@ final class TurboData
 
         if (! isset(self::$cachedDateBounds[$to])) {
             self::$cachedDateBounds[$to] = Carbon::parse($to)->timestamp;
+
+            if (self::$cachedDateBounds[$to] > self::MYSQL_TIMESTAMP_MAX) {
+                Log::warning(sprintf(
+                    'TurboData::dateRange() — upper bound [%s] exceeds the MySQL TIMESTAMP ceiling (2038-01-19 03:14:07 UTC). '
+                    .'Dates past that limit may be rejected by MySQL TIMESTAMP columns. '
+                    .'Use a DATETIME column or cap $to to 2038-01-19.',
+                    $to,
+                ));
+            }
         }
 
         if (self::$cachedDateBounds[$from] > self::$cachedDateBounds[$to]) {
@@ -188,7 +209,19 @@ final class TurboData
             self::$cachedSequentialStarts[$start] = Carbon::parse($start);
         }
 
-        return self::$cachedSequentialStarts[$start]->copy()->modify("+{$index} {$step}");
+        $date = self::$cachedSequentialStarts[$start]->copy()->modify("+{$index} {$step}");
+
+        if (! isset(self::$timestampWarned['sequentialDate:'.$start]) && $date->timestamp > self::MYSQL_TIMESTAMP_MAX) {
+            self::$timestampWarned['sequentialDate:'.$start] = true;
+            Log::warning(sprintf(
+                'TurboData::sequentialDate() — generated date [%s] exceeds the MySQL TIMESTAMP ceiling (2038-01-19 03:14:07 UTC). '
+                .'Rows with dates past that limit may be rejected by MySQL TIMESTAMP columns. '
+                .'Use a DATETIME column, reduce row count, or switch to a smaller step.',
+                $date->toDateTimeString(),
+            ));
+        }
+
+        return $date;
     }
 
     /**
@@ -245,6 +278,27 @@ final class TurboData
         self::$cachedHashes = [];
         self::$cachedDateBounds = [];
         self::$cachedSequentialStarts = [];
+        self::$timestampWarned = [];
+        self::$insideGenerator = false;
+        self::$generatorWarnedMethods = [];
+    }
+
+    /**
+     * Mark the generator loop as active or inactive.
+     * Passing true also resets the per-run warned-methods list so each new run warns once.
+     */
+    public static function markGeneratorActive(bool $active): void
+    {
+        self::$insideGenerator = $active;
+
+        if ($active) {
+            self::$generatorWarnedMethods = [];
+        }
+    }
+
+    public static function isInsideGenerator(): bool
+    {
+        return self::$insideGenerator;
     }
 
     /**
@@ -257,6 +311,8 @@ final class TurboData
      */
     public static function fromTable(string $table, string $column = 'id', FromTableMode|string $mode = FromTableMode::CYCLE, ?string $connection = null): \Closure
     {
+        self::warnIfInsideGenerator('fromTable');
+
         if ($table === '') {
             throw new \InvalidArgumentException('fromTable() $table must not be empty.');
         }
@@ -302,6 +358,8 @@ final class TurboData
      */
     public static function fromQuery(callable $loader): \Closure
     {
+        self::warnIfInsideGenerator('fromQuery');
+
         $pool = null;
         $count = 0;
 
@@ -337,6 +395,8 @@ final class TurboData
      */
     public static function fromTableStream(string $table, string $column = 'id', int $pageSize = 10000, ?string $connection = null): \Closure
     {
+        self::warnIfInsideGenerator('fromTableStream');
+
         if ($table === '') {
             throw new \InvalidArgumentException('fromTableStream() $table must not be empty.');
         }
@@ -353,6 +413,8 @@ final class TurboData
         $buffer = [];
         $position = 0;
         $lastValue = null;
+        $lastIndex = null;
+        $lastDispensed = null;
 
         $loadPage = static function (mixed $after) use ($table, $column, $pageSize, $connection): array {
             $query = DB::connection($connection)->table($table)
@@ -366,12 +428,15 @@ final class TurboData
             return array_values($query->pluck($column)->toArray());
         };
 
-        return static function (int $index) use ($table, $column, $loadPage, &$buffer, &$position, &$lastValue): mixed {
+        return static function (int $index) use ($table, $column, $loadPage, &$buffer, &$position, &$lastValue, &$lastIndex, &$lastDispensed): mixed {
+            if ($lastIndex === $index) {
+                return $lastDispensed;
+            }
+
             if ($position >= count($buffer)) {
                 $buffer = $loadPage($lastValue);
 
                 if (empty($buffer)) {
-                    // Reached the end: wrap back to the first page.
                     $lastValue = null;
                     $buffer = $loadPage(null);
 
@@ -386,8 +451,41 @@ final class TurboData
                 $position = 0;
             }
 
-            return $buffer[$position++];
+            $lastIndex = $index;
+
+            return $lastDispensed = $buffer[$position++];
         };
+    }
+
+    /**
+     * Each call inside the loop creates a fresh value (new token, new DB query),
+     * silently breaking uniqueness or reference-pool guarantees.
+     */
+    private static function warnIfInsideGenerator(string $method): void
+    {
+        if (! self::$insideGenerator || isset(self::$generatorWarnedMethods[$method])) {
+            return;
+        }
+
+        self::$generatorWarnedMethods[$method] = true;
+
+        if (in_array($method, ['uniqueEmail', 'uniqueUsername', 'uniqueSlug'], true)) {
+            $broken = 'uniqueness';
+        } elseif ($method === 'cycleFrom') {
+            $broken = 'round-robin ordering (cycle counter resets to position 0 on every row)';
+        } else {
+            $broken = 'consistent reference-pool loading';
+        }
+
+        Log::warning(sprintf(
+            'TurboData::%s() was called inside the generate() closure. '
+            .'This creates a new value on every row, breaking %s across rows. '
+            .'Call TurboData::%s() outside the closure, assign to a variable, then invoke it inside: $fn = TurboData::%s(); ... $fn($index)',
+            $method,
+            $broken,
+            $method,
+            $method,
+        ));
     }
 
     /**
@@ -414,6 +512,8 @@ final class TurboData
      */
     public static function uniqueEmail(string $domain = 'turbo.test'): \Closure
     {
+        self::warnIfInsideGenerator('uniqueEmail');
+
         $token = bin2hex(random_bytes(4));
 
         return static fn (int $index) => "u_{$token}_{$index}@{$domain}";
@@ -425,6 +525,8 @@ final class TurboData
      */
     public static function uniqueUsername(string $prefix = 'usr'): \Closure
     {
+        self::warnIfInsideGenerator('uniqueUsername');
+
         $token = bin2hex(random_bytes(4));
 
         return static fn (int $index) => "{$prefix}_{$token}_{$index}";
@@ -436,6 +538,8 @@ final class TurboData
      */
     public static function uniqueSlug(string $base): \Closure
     {
+        self::warnIfInsideGenerator('uniqueSlug');
+
         $token = bin2hex(random_bytes(4));
         $slug = Str::slug($base);
 
