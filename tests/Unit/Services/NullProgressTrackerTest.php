@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 use IzAhmad\TurboSeeder\Services\NullProgressTracker;
 
 test('can start progress tracking', function () {
@@ -45,6 +46,20 @@ test('calculates percentage correctly', function () {
 test('returns zero percentage when total is zero', function () {
     $tracker = new NullProgressTracker;
     $tracker->start(0);
+
+    expect($tracker->getPercentage())->toBe(0.0);
+});
+
+test('writeHeader() is a no-op and does not throw', function () {
+    $tracker = new NullProgressTracker;
+    $tracker->writeHeader(1000, SeederStrategy::DEFAULT, 'users');
+
+    expect($tracker->getPercentage())->toBe(0.0);
+});
+
+test('warn() is a no-op and does not throw', function () {
+    $tracker = new NullProgressTracker;
+    $tracker->warn('some warning message');
 
     expect($tracker->getPercentage())->toBe(0.0);
 });
