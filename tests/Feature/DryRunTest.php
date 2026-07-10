@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 test('dry-run does not commit any rows', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@dryrun.test"])
         ->count(20)
@@ -22,7 +22,7 @@ test('dry-run does not commit any rows', function () {
 test('dry-run combined with withoutTransactions throws and writes nothing', function () {
     // Without a transaction there is nothing to roll back, so rows would be
     // permanently committed. The builder must refuse this combination loudly.
-    $run = fn () => TurboSeeder::create('test_users')
+    $run = fn () => TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@dryrun-notx.test"])
         ->count(5)
@@ -35,7 +35,7 @@ test('dry-run combined with withoutTransactions throws and writes nothing', func
 });
 
 test('dryRun false behaves as normal seeding', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@nodryrun.test"])
         ->count(10)
