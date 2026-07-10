@@ -8,14 +8,8 @@ use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\ConsoleProgressTrackerAdapter;
 use Symfony\Component\Console\Output\OutputInterface;
 
-/**
- * Trait to handle console output for CSV strategies.
- */
 trait HandlesCsvConsoleOutput
 {
-    /**
-     * Display Step 1 message.
-     */
     protected function displayStep1Message(): void
     {
         $output = $this->getConsoleOutput();
@@ -29,9 +23,6 @@ trait HandlesCsvConsoleOutput
         $output->writeln('');
     }
 
-    /**
-     * Display Step 2 message.
-     */
     protected function displayStep2Message(): void
     {
         $output = $this->getConsoleOutput();
@@ -47,9 +38,6 @@ trait HandlesCsvConsoleOutput
         $output->write('<comment> ➤ Step 2/2: Importing data from CSV. Wait a bit...<fg=cyan>⏳</></comment>');
     }
 
-    /**
-     * Display import success message.
-     */
     protected function displayImportSuccessMessage(): void
     {
         $output = $this->getConsoleOutput();
@@ -60,12 +48,9 @@ trait HandlesCsvConsoleOutput
 
         $output->writeln('');
         $output->writeln('');
-        $output->writeln('<info>   ✓ Done! Data imported successfully from CSV</info>');
+        $output->writeln('<info>   ✓ Done! Data imported successfully from CSV file</info>');
     }
 
-    /**
-     * Display fallback warning with instructions.
-     */
     protected function displayFallbackWarning(CsvImportFailedException $exception): void
     {
         $output = $this->getConsoleOutput();
@@ -76,28 +61,21 @@ trait HandlesCsvConsoleOutput
 
         $warningMessage = $this->getFallbackWarningMessage();
 
-        $output->writeln('');
-        $output->writeln('<fg=yellow>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</>');
-        $output->writeln('<fg=yellow>⚠  CSV IMPORT FAILED - AUTOMATIC FALLBACK</>');
-        $output->writeln('<fg=yellow>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</>');
-
-        $output->writeln('');
         $output->writeln('<comment>'.$warningMessage.'</comment>');
 
         $output->writeln('');
-        $output->writeln('<info>💡 To enable CSV strategy for better performance:</info>');
+        $output->writeln('<info>💡 To enable CSV strategy:</info>');
 
         $this->displayConfigurationInstructions($output);
 
         $output->writeln('');
-        $output->writeln('<fg=cyan>→ Switching to default strategy (bulk insert)...</fg=cyan>');
-        $output->writeln('<fg=cyan>→ Seeding will continue from the beginning...</fg=cyan>');
+        $output->writeln('   <fg=gray>Run `php artisan turbo-seeder:test-connection` to verify server-side status.</>');
+        $output->writeln('');
+        $output->writeln('<fg=cyan>→ Falling back to default strategy (bulk insert)...</fg=cyan>');
+        $output->writeln('<fg=cyan>→ Seeding will continue from the beginning.</fg=cyan>');
         $output->writeln('');
     }
 
-    /**
-     * Display configuration instructions in console.
-     */
     protected function displayConfigurationInstructions(OutputInterface $output): void
     {
         $driver = $this->dbConnection->driver->value;
@@ -107,30 +85,20 @@ trait HandlesCsvConsoleOutput
         } elseif ($driver === 'pgsql') {
             $this->displayPostgreSqlInstructions($output);
         } else {
-            $output->writeln('   <fg=gray>See README.md for configuration instructions</>');
+            $output->writeln('   <fg=gray>See the "CSV Strategy Setup" in README.md for configuration instructions</>');
         }
     }
 
-    /**
-     * Display MySQL configuration instructions.
-     */
     protected function displayMySqlInstructions(OutputInterface $output): void
     {
-        $output->writeln('   <fg=white>Add this to your config/database.php in the mysql connection:</>');
-
         $output->writeln('');
-        $output->writeln('   <fg=green>\'options\' => [</>');
-        $output->writeln('   <fg=green>    PDO::MYSQL_ATTR_LOCAL_INFILE => true,</>');
-        $output->writeln('   <fg=green>],</>');
-
+        $output->writeln('   <fg=white>1. Add `PDO::MYSQL_ATTR_LOCAL_INFILE` to mysql connection options in `config/database.php`.</>');
+        $output->writeln('   <fg=white>2. Enable `local_infile` at server-side.</>');
         $output->writeln('');
-        $output->writeln('   <fg=gray>⚠  Security Note: Only enable in trusted environments</>');
-        $output->writeln('   <fg=gray>   See README.md for full details</>');
+        $output->writeln('   <fg=gray>‼ Security Note: Only enable in trusted environments</>');
+        $output->writeln('   <fg=white>  See the "CSV Strategy Setup" in README.md for detailed configuration instructions.</>');
     }
 
-    /**
-     * Display PostgreSQL configuration instructions.
-     */
     protected function displayPostgreSqlInstructions(OutputInterface $output): void
     {
         $tempPath = config('turbo-seeder.csv_strategy.temp_path', storage_path('app/turbo-seeder'));
@@ -139,13 +107,10 @@ trait HandlesCsvConsoleOutput
         $output->writeln('   <fg=white>the database user has COPY privileges.</>');
 
         $output->writeln('');
-        $output->writeln('   <fg=gray>CSV files are stored in: '.$tempPath.'/</>');
-        $output->writeln('   <fg=gray>See README.md for full configuration details</>');
+        $output->writeln("   <fg=gray>CSV files are stored in: {$tempPath}</>");
+        $output->writeln('   <fg=gray>See the "CSV Strategy Setup" in README.md for full configuration details</>');
     }
 
-    /**
-     * Hide the loading indicator emoji.
-     */
     protected function hideLoadingIndicator(): void
     {
         $output = $this->getConsoleOutput();
@@ -158,9 +123,6 @@ trait HandlesCsvConsoleOutput
         $output->write("\033[2D ");
     }
 
-    /**
-     * Get console output if available.
-     */
     protected function getConsoleOutput(): ?OutputInterface
     {
         /** @var ConsoleProgressTrackerAdapter $adapter */
