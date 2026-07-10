@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 test('handles invalid table name gracefully', function () {
-    expect(fn () => TurboSeeder::create('nonexistent_table')
+    expect(fn () => TurboSeeder::forTable('nonexistent_table')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(10)
@@ -16,7 +16,7 @@ test('handles invalid table name gracefully', function () {
 
 test('the original exception is preserved as previous', function () {
     try {
-        TurboSeeder::create('nonexistent_table')
+        TurboSeeder::forTable('nonexistent_table')
             ->columns(['name'])
             ->generate(fn ($i) => ['name' => "User {$i}"])
             ->count(1)
@@ -29,7 +29,7 @@ test('the original exception is preserved as previous', function () {
 });
 
 test('handles generator returning wrong columns', function () {
-    expect(fn () => TurboSeeder::create('test_users')
+    expect(fn () => TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}"])
         ->count(10)
@@ -38,7 +38,7 @@ test('handles generator returning wrong columns', function () {
 });
 
 test('handles empty generator result', function () {
-    expect(fn () => TurboSeeder::create('test_users')
+    expect(fn () => TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [])
         ->count(10)
@@ -47,7 +47,7 @@ test('handles empty generator result', function () {
 });
 
 test('handles null values in generator', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -62,7 +62,7 @@ test('handles null values in generator', function () {
 });
 
 test('handles very large count values', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(10000)
