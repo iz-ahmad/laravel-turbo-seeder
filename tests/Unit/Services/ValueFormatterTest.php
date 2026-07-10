@@ -6,8 +6,6 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use IzAhmad\TurboSeeder\Services\ValueFormatter;
 
-// ── format() ─────────────────────────────────────────────────────────────────
-
 test('format returns null as null', function () {
     expect(ValueFormatter::format(null))->toBeNull();
 });
@@ -79,8 +77,6 @@ test('format throws on invalid JSON input', function () {
     ValueFormatter::format($circular);
 })->throws(JsonException::class);
 
-// ── formatForCsv() ────────────────────────────────────────────────────────────
-
 test('formatForCsv returns null marker for null', function () {
     expect(ValueFormatter::formatForCsv(null))->toBe('\\N');
 });
@@ -124,8 +120,6 @@ test('formatForCsv converts float to string', function () {
     expect(ValueFormatter::formatForCsv(3.14))->toBe('3.14');
 });
 
-// ── extend() ─────────────────────────────────────────────────────────────────
-
 test('can register custom type formatter', function () {
     ValueFormatter::extend(CustomTypeFixture::class, fn ($v) => 'custom:'.$v->value);
 
@@ -133,8 +127,6 @@ test('can register custom type formatter', function () {
 
     expect($result)->toBe('custom:test-value');
 });
-
-// ── Round-trip encoding ───────────────────────────────────────────────────────
 
 test('JSON round-trip preserves array structure', function () {
     $original = ['key' => 'value', 'nested' => ['count' => 5]];
@@ -169,8 +161,6 @@ test('formatForCsv preserves type as string for all inputs', function () {
     expect(is_string(ValueFormatter::formatForCsv(null)))->toBeTrue();
 });
 
-// ── stdClass handling ────────────────────────────────────────────────────────
-
 test('format converts stdClass to JSON string', function () {
     $obj = (object) ['name' => 'John', 'age' => 30];
     $formatted = ValueFormatter::format($obj);
@@ -187,8 +177,6 @@ test('formatForCsv converts stdClass to JSON string', function () {
 
     expect($decoded['key'])->toBe('value');
 });
-
-// ── Fixtures ──────────────────────────────────────────────────────────────────
 
 enum StatusFixture: string
 {
