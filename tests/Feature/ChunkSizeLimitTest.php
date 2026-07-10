@@ -12,7 +12,7 @@ function chunkLimitDriver(): string
 
 test('a huge chunk size is clamped and still seeds on mysql', function () {
     // 20000 rows x 4 columns = 80000 > 65535 placeholders without clamping.
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -28,7 +28,7 @@ test('a huge chunk size is clamped and still seeds on mysql', function () {
 })->skip(fn () => chunkLimitDriver() !== 'mysql', 'MySQL-specific test');
 
 test('a huge chunk size is clamped and still seeds on postgresql', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
