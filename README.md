@@ -149,7 +149,7 @@ TurboSeeder::fromFactory(User::factory())
 // 2. Using package's generator closure for data gen with more speed
 $uniqueEmail = TurboData::uniqueEmail();
 
-TurboSeeder::create('users')
+TurboSeeder::forTable('users')
     ->columns(['name', 'email', 'password', 'created_at'])
     ->generate(fn ($index) => [
         'name'       => "User {$index}",
@@ -173,7 +173,7 @@ TurboSeeder::fromFactory(Post::factory())
     ->run();
 
 // ...and with generate()
-TurboSeeder::create('posts')
+TurboSeeder::forTable('posts')
     ->columns(['user_id', 'title', 'content'])
     ->generate(fn ($index) => [...])
     ->count(1_000_000)
@@ -187,7 +187,7 @@ TurboSeeder::create('posts')
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
-TurboSeeder::create('orders')
+TurboSeeder::forTable('orders')
     ->columns(['user_id', 'total', 'status', 'created_at'])
     ->generate(fn ($index) => [
         'user_id'    => TurboData::randomInt(1, 10000),
@@ -224,7 +224,7 @@ These two are orthogonal: **any data path can be combined with any strategy**. B
 
 #### Path A - `fromFactory()` · reuse your existing factory
 
-No new data definitions. Your existing factory is the single source of truth.
+No new data definitions needed. Your existing factory is the single source of truth.
 
 ```php
 use App\Models\User;
@@ -246,6 +246,10 @@ TurboSeeder::fromFactory(User::factory()->unverified()->suspended())
 
 Table name and columns are auto-inferred from the model. `created_at`/`updated_at` are filled automatically when the model uses timestamps.
 
+> **Watch out for `fake()->unique()` at large counts.** Faker's `unique()` modifier keeps every value it has generated in memory for the life of the request. So, on a factory field like `fake()->unique()->safeEmail()`, memory grows the whole run, exhausting the `memory_limit`. This is independent of TurboSeeder's own chunking/GC - it's Faker's internal state, and TurboSeeder can't reclaim it.
+>
+> **Way around it:** for large runs (500k+), switch to the `generate()` path where you can use `TurboData` helpers (like `uniqueEmail()`), which is index-based (O(1) memory, no growing set) and thus keeps memory usage in-limit.
+
 ---
 
 #### Path B - `generate()` · raw closure for maximum speed
@@ -258,7 +262,7 @@ use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 $uniqueEmail = TurboData::uniqueEmail();
 
-TurboSeeder::create('users')
+TurboSeeder::forTable('users')
     ->columns(['name', 'email', 'password', 'role'])
     ->generate(fn ($i) => [
         'name'     => "User {$i}",
@@ -282,7 +286,7 @@ TurboSeeder::create('users')
 | **Faker** | Yes (one call per row) | No - Faker-free |
 | **Throughput for 1M rows** | Fast (minutes - Faker-bound) | Fastest (~15–60s) |
 | **Factory states** | ✅ | - |
-| **Best for** | ≤ 500k rows, or when the factory already exists and data realism matters | Huge datasets, maximum speed |
+| **Best for** | <= 500k rows, or when data realism matters | Huge (>= 500k rows) dataset, maximum speed |
 
 > **Skipped on both paths:** model events, observers, and accessors/mutators. Anything those compute (slugs, hashes, derived columns) must live in the factory definition or the generator closure.
 
@@ -348,7 +352,7 @@ class UserSeeder extends Seeder
         // Or, go with the generator path with raw closure for max speed
         $uniqueEmail = TurboData::uniqueEmail();
 
-        TurboSeeder::create('users')
+        TurboSeeder::forTable('users')
             ->columns(['name', 'email', 'password'])
             ->generate(fn ($i) => [
                 'name'     => "User {$i}",
@@ -390,7 +394,7 @@ TurboSeeder::fromFactory(Post::factory()->recycle($users))
     ->run();
 ```
 
-> If your factory uses `->for(User::factory())` without `->recycle()`, TurboSeeder will log a warning because every row would trigger an individual `User::create()` query behind the scenes.
+> If your factory uses `->for(User::factory())` without `->recycle()`, TurboSeeder will emit a warning in the console output and log it - because every row would trigger an individual `User::create()` query behind the scenes.
 
 #### BelongsTo - using generator path
 
@@ -398,7 +402,7 @@ Lighter on memory than loading full Eloquent models - stores only raw IDs:
 
 ```php
 // Seed parents first
-TurboSeeder::create('users')
+TurboSeeder::forTable('users')
     ->columns(['name', 'email', 'created_at'])
     ->generate(fn ($i) => [
         'name'       => "User {$i}",
@@ -411,7 +415,7 @@ TurboSeeder::create('users')
 // fromTable() loads IDs once from the DB, then cycles - zero extra queries
 $userIds = TurboData::fromTable('users');
 
-TurboSeeder::create('posts')
+TurboSeeder::forTable('posts')
     ->columns(['user_id', 'title', 'created_at'])
     ->generate(fn ($i) => [
         'user_id'    => $userIds($i),
@@ -444,7 +448,7 @@ TurboSeeder::fromFactory(Post::factory()->recycle($users))
 $postIds = TurboData::fromTable('posts');
 $tagIds  = TurboData::fromTable('tags');
 
-TurboSeeder::create('post_tag')
+TurboSeeder::forTable('post_tag')
     ->columns(['post_id', 'tag_id'])
     ->generate(fn ($i) => ['post_id' => $postIds($i), 'tag_id' => $tagIds($i)])
     ->count(200_000)
@@ -458,7 +462,7 @@ This pattern is actually faster than letting Eloquent handle these relationships
 Test your application with real-world data volumes:
 
 ```php
-TurboSeeder::create('orders')
+TurboSeeder::forTable('orders')
     ->columns(['user_id', 'total', 'status', 'created_at'])
     ->generate(fn ($i) => [
         'user_id'    => TurboData::randomInt(1, 50_000),
@@ -491,10 +495,12 @@ php artisan test
 When seeding time-series data, use `TurboData::sequentialDate()` for perfectly sequential timestamps with zero overhead:
 
 ```php
-TurboSeeder::create('analytics_events')
+$eventType = TurboData::cycleFrom(['page_view', 'click', 'signup']);
+
+TurboSeeder::forTable('analytics_events')
     ->columns(['event_type', 'value', 'recorded_at'])
     ->generate(fn ($i) => [
-        'event_type'  => TurboData::cycleFrom(['page_view', 'click', 'signup'])($i),
+        'event_type'  => $eventType($i),
         'value'       => TurboData::randomInt(1, 100),
         'recorded_at' => TurboData::sequentialDate('2024-01-01', 'hour', $i),
     ])
@@ -505,7 +511,7 @@ TurboSeeder::create('analytics_events')
 ### Dry Run (preview without writing)
 
 ```php
-$result = TurboSeeder::create('users')
+$result = TurboSeeder::forTable('users')
     ->columns(['name', 'email'])
     ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@test.com"])
     ->count(10_000)
@@ -521,7 +527,7 @@ echo "Would have inserted: {$result->recordsInserted} rows";
 If a row with matching unique-key columns already exists, using upsert() it updates the row's non-key columns to new values instead of erroring.
 
 ```php
-TurboSeeder::create('products')
+TurboSeeder::forTable('products')
     ->columns(['sku', 'name', 'price'])
     ->generate(fn ($i) => [
         'sku'   => "SKU-{$i}",
@@ -545,7 +551,7 @@ TurboSeeder::create('products')
 
 ### MySQL
 
-For using the CSV strategy with MySQL, add `PDO::MYSQL_ATTR_LOCAL_INFILE` to your connection options in `config/database.php`:
+For using the CSV strategy with MySQL, first you have to add `PDO::MYSQL_ATTR_LOCAL_INFILE` to the connection options in `config/database.php`:
 
 ```php
 'mysql' => [
@@ -557,15 +563,39 @@ For using the CSV strategy with MySQL, add `PDO::MYSQL_ATTR_LOCAL_INFILE` to you
 ],
 ```
 
-MySQL also requires `local_infile` enabled server-side (off by default in MySQL 8.0+):
+MySQL also requires `local_infile` enabled **server-side** (off by default in MySQL 8.0+).
+
+Verify server-side status using:
+
+```bash
+php artisan turbo-seeder:test-connection
+```
+
+If it reports `local_infile` is disabled, enable it based on your setup:
+
+**Local MySQL setup**:
 
 ```sql
 SET GLOBAL local_infile = 1;
 ```
 
-Or permanently in `my.cnf` under `[mysqld]`: `local_infile = 1`.
+Or add to `my.cnf` / `my.ini` under `[mysqld]` for permanent setup, then restart MySQL:
 
-> **MySQL pre-flight check:** Before generating the CSV file, TurboSeeder verifies that `LOCAL INFILE` is actually enabled on both the client and the server. If it isn't, it falls back to the **default strategy** immediately.
+```ini
+[mysqld]
+local_infile = 1
+```
+
+**Docker**: add `--local-infile=1` to your MySQL container command:
+
+```yaml
+# docker-compose.yml
+mysql:
+  image: mysql:8
+  command: --local-infile=1
+```
+
+> **MySQL pre-flight check:** Before generating the CSV file, TurboSeeder verifies that `LOCAL INFILE` is enabled on both the client and the server. If it isn't, it falls back to the **default strategy** immediately.
 
 > **Security note:** Only enable `LOCAL INFILE` in trusted environments (dev/staging). Avoid enabling it in production unless strictly necessary.
 
@@ -594,7 +624,7 @@ The default strategy is still very fast and needs no configuration.
 
 ```php
 // Generator path - explicitly name table and columns
-TurboSeeder::create('users')
+TurboSeeder::forTable('users')
     ->columns(['name', 'email'])
     ->generate(fn ($i) => [...])
     ->count(100_000)
@@ -618,7 +648,9 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 | `withTimestamps()` | Auto-fill `created_at` / `updated_at` |
 | `withoutTimestamps()` | Disable timestamp auto-fill |
 
-> **`columnsFromSchema()` note:** Pulls every non-PK column from the schema builder. Opt-in (not default) because it skips NOT NULL columns the generator doesn't produce, which can cause insert failures on strict schemas.
+> **`columnsFromSchema()` note:** Pulls every non-PK column from the schema builder. Opt-in (not default) - ensure your generator produces values for every NOT NULL column without a default.
+
+> **NOT NULL coverage check:** Before every seed runs, TurboSeeder verifies that all `NOT NULL` columns without a DB default are covered by the seeded columns. If any are missing, an `InvalidArgumentException` is thrown before a single row is written. Use `withoutColumnValidation()` to skip this check when you know a column will be filled by a trigger or DB default not visible to the schema builder.
 
 #### Seeding Behaviour
 
@@ -627,7 +659,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 | `count(int)` | Number of records to seed |
 | `chunkSize(int)` | Records per chunk - automatically clamped to the driver's bind-parameter limit (65,535 on MySQL/PostgreSQL; auto-detected on SQLite) |
 | `truncate()` | Empty the target table before seeding (committed before the seed; cannot combine with `dryRun()`). MySQL resets `AUTO_INCREMENT`; PostgreSQL and SQLite use `DELETE` (FK-safe) which does **not** reset identity sequences - IDs continue from the previous high-water mark. |
-| `commitEvery(int)` | Default strategy only: commit every N chunks instead of one wrapping transaction (for very large seeds). No-op on the CSV strategy. Cannot be combined with `useTransactions()` (throws). **Warning:** combining with `truncate()` leaves no rollback path if seeding fails mid-run. |
+| `commitEvery(int)` | Default strategy only: commit every N chunks instead of one wrapping transaction (for very large seeds). No-op on the CSV strategy. Cannot be combined with `useTransactions()` (throws). **Warning:** If seeding fails mid-run (generator exception, DB constraint violation, etc.) leaves already-committed chunks permanently in the table - there is no rollback path. So truncate the table and re-run if a clean retry is needed. |
 | `upsert(array $uniqueBy)` | Insert-or-update on conflict; keys must match a unique/primary index (validated up front) |
 | `dryRun()` | Generate and validate without committing - uses transaction rollback |
 
@@ -655,7 +687,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 | `connection(string)` | Database connection name |
 | `withProgressTracking()` / `withoutProgressTracking()` | Toggle progress bar |
 | `retryAttempts(int)` | Retry on transient deadlock/lock-timeout (1-10; default: 3) |
-| `withoutColumnValidation()` | Skip the pre-seed column existence check |
+| `withoutColumnValidation()` | Skip pre-seed column validation (existence check and NOT NULL coverage check) |
 | `when(condition, callback)` / `unless(condition, callback)` | Conditional chaining |
 
 ---
@@ -665,7 +697,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 Every `run()` returns an immutable `SeederResultDTO` (and throws a `RuntimeException` - wrapping the original exception - if the seed fails):
 
 ```php
-$result = TurboSeeder::create('users')
+$result = TurboSeeder::forTable('users')
     ->columns(['name', 'email'])
     ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@test.com"])
     ->count(100_000)
@@ -739,9 +771,12 @@ class TurboSeederListener
 
 | Convention | Which helpers | How to call |
 |---|---|---|
-| **Returns a closure** - call it with `$index` | `cycleFrom`, `uniqueEmail`, `uniqueUsername`, `uniqueSlug`, `uniqueUuid`, `fromTable`, `fromQuery`, `fromTableStream` | Create **outside** the generator, call inside: `$fn = TurboData::uniqueEmail(); ... 'email' => $fn($i)` |
-| **Returns a value** - call per row | `weightedFrom`, `randomFrom`, `randomInt`, `randomFloat`, `randomBool`, `nullable`, `dateRange`, `sequentialDate` | Call directly inside the generator: `'status' => TurboData::weightedFrom([...])` |
+| **Returns a closure** - call it with `$index` | `cycleFrom`, `uniqueEmail`, `uniqueUsername`, `uniqueSlug`, `uniqueUuid`, `fromTable`, `fromQuery`, `fromTableStream` | Create **outside** the generator, call inside: See [examples/ExampleSeeder.php](examples/ExampleSeeder.php) |
+| **Returns a value** - call per row | `weightedFrom`, `randomFrom`, `randomInt`, `randomFloat`, `randomBool`, `nullable`, `dateRange`, `sequentialDate` | Call directly inside the generator: See [examples/ExampleSeeder.php](examples/ExampleSeeder.php) |
 | **Computed once, cached** | `nowOnce`, `hashedPassword` | Call inside the generator; the value is computed once and reused every row |
+
+> **Runtime guards:** Calling a closure-factory helper (`uniqueEmail`, `fromTable`, etc.) *inside* `generate()` instead of outside emits a log warning - the helper resets its state on every row, silently breaking uniqueness or reference-pool consistency. 
+> And returning a raw `\Closure` value from the generator (forgetting to invoke it: `'email' => TurboData::uniqueEmail()` instead of `'email' => $fn($i)`) throws an `InvalidArgumentException` immediately with a fix message.
 
 ```php
 use IzAhmad\TurboSeeder\Helpers\TurboData;
@@ -804,7 +839,7 @@ $categoryIds = TurboData::fromTable('categories', 'id', 'random');      // rando
 $tagIds      = TurboData::fromTable('tags', 'id', FromTableMode::RANDOM); // or the enum
 $codes       = TurboData::fromTable('regions', 'code', 'cycle', 'reports'); // custom connection
 
-TurboSeeder::create('posts')
+TurboSeeder::forTable('posts')
     ->columns(['user_id', 'category_id', 'title'])
     ->generate(fn ($i) => [
         'user_id'     => $userIds($i),
@@ -863,7 +898,7 @@ TurboSeeder automatically formats all values returned from your generator. You n
 | `object` / `stdClass` | JSON string |
 
 ```php
-TurboSeeder::create('products')
+TurboSeeder::forTable('products')
     ->columns(['status', 'metadata', 'published_at'])
     ->generate(fn ($i) => [
         'status'       => ProductStatus::Active,    // BackedEnum → raw value
@@ -922,7 +957,7 @@ Creates and drops its own temporary table. Refuses to run if the target table al
 #### Utilities
 
 ```bash
-php artisan turbo-seeder:test-connection    # verify the DB connection
+php artisan turbo-seeder:test-connection    # verify the DB connection and check which strategies are supported
 php artisan turbo-seeder:clear-cache        # remove temporary CSV files
 php artisan turbo-seeder:clear-cache --all  # including subdirectories
 ```
