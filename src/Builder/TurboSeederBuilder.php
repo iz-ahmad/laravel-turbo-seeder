@@ -16,9 +16,7 @@ use IzAhmad\TurboSeeder\Support\FactoryDataGenerator;
 /**
  * Fluent builder for configuring and executing TurboSeeder operations.
  *
- * Provides a chainable interface for setting up seeding operations with
- * various configuration options. Supports method chaining for intuitive
- * and readable configuration.
+ * Provides a chainable interface for setting up seeding operations with various configuration options.
  */
 final class TurboSeederBuilder
 {
@@ -32,6 +30,11 @@ final class TurboSeederBuilder
     private ?\Closure $generator = null;
 
     private ?FactoryDataGenerator $factoryGenerator = null;
+
+    /**
+     * @var array<int, string>
+     */
+    private array $pendingWarnings = [];
 
     private ?bool $withTimestamps = null;
 
@@ -96,7 +99,7 @@ final class TurboSeederBuilder
     public function columnsFromSchema(): self
     {
         if ($this->table === null || $this->table === '') {
-            throw new \InvalidArgumentException('Call create()/table() before columnsFromSchema().');
+            throw new \InvalidArgumentException('Call forTable()/table() before columnsFromSchema() to set the table that needs seeding.');
         }
 
         $schema = DB::connection($this->connection ?? config('database.default'))->getSchemaBuilder();
@@ -141,10 +144,8 @@ final class TurboSeederBuilder
     /**
      * Generate rows from an existing Laravel model factory.
      *
-     * Reuses the factory's definition, states and Faker as the single source of
-     * truth for the row shape, then bulk-inserts the raw attributes. Model
-     * events, observers and accessors are skipped for speed; timestamps are
-     * filled automatically when the model uses them.
+     * Reuses the factory's definition, states and Faker as the single source of truth for the row shape.
+     * Model events, observers and accessors are skipped; timestamps are filled automatically.
      */
     public function fromFactory(Factory $factory): self
     {
@@ -152,6 +153,11 @@ final class TurboSeederBuilder
 
         if ($this->table === null) {
             $this->table($this->factoryGenerator->table());
+        }
+
+        $warning = $this->factoryGenerator->getRecycleWarning();
+        if ($warning !== null) {
+            $this->pendingWarnings[] = $warning;
         }
 
         $this->generator = $this->factoryGenerator->toGenerator();
@@ -353,6 +359,9 @@ final class TurboSeederBuilder
      * Commit every N chunks (default strategy only) instead of wrapping the
      * whole run in one transaction. Keeps the redo log / WAL small on very
      * large seeds at the cost of all-or-nothing atomicity.
+     *
+     * Any error mid-run leaves already-committed chunks permanently in the table —
+     * there is no rollback path.
      */
     public function commitEvery(int $chunks): self
     {
@@ -406,11 +415,7 @@ final class TurboSeederBuilder
     /**
      * Enable dry-run mode: data is generated and validated but not committed.
      * The result will report how many records would have been inserted.
-     *
-     * Dry-run discards inserts by rolling back a transaction, so it always
-     * runs inside one. Combining dryRun() with withoutTransactions() is a
-     * hard error (run() throws InvalidArgumentException) to prevent rows
-     * being silently committed.
+     * Cannot be combined with withoutTransactions() — dry run relies on a rollback to discard rows.
      */
     public function dryRun(bool $enabled = true): self
     {
@@ -515,7 +520,6 @@ final class TurboSeederBuilder
 
     /**
      * Validate state and build the configuration DTO.
-     * Shared by run() and toConfiguration() to avoid duplicate logic.
      */
     private function buildConfiguration(): SeederConfigurationDTO
     {
@@ -529,14 +533,13 @@ final class TurboSeederBuilder
             count: $this->count,
             connection: $this->connection ?? config('database.default'),
             strategy: $this->strategy,
-            options: $this->options
+            options: $this->options,
+            pendingWarnings: $this->pendingWarnings,
         );
     }
 
     /**
-     * Whether timestamps should be auto-filled for this run.
-     * Explicit withTimestamps()/withoutTimestamps() wins; otherwise the factory
-     * path defaults to on when the model uses timestamps.
+     * Explicit withTimestamps()/withoutTimestamps() wins; otherwise the factory path defaults to on.
      */
     private function shouldApplyTimestamps(): bool
     {
@@ -603,15 +606,17 @@ final class TurboSeederBuilder
         }
 
         if (empty($this->columns)) {
-            $firstRecord = ($this->generator)(0);
+            $probeRecord = ($this->generator)(0);
 
-            if (! is_array($firstRecord) || empty($firstRecord)) {
+            if (! is_array($probeRecord) || empty($probeRecord)) {
                 throw new \InvalidArgumentException(
                     'Columns could not be inferred from the generator. Use columns() method or ensure generate() returns a non-empty associative array.'
                 );
             }
 
-            $inferredColumns = array_keys($firstRecord);
+            $this->assertNoClosureValues($probeRecord);
+
+            $inferredColumns = array_keys($probeRecord);
 
             foreach ($inferredColumns as $column) {
                 if (! preg_match('/^[a-zA-Z0-9_]+$/', (string) $column)) {
@@ -622,6 +627,15 @@ final class TurboSeederBuilder
             }
 
             $this->columns = $inferredColumns;
+        } elseif ($this->factoryGenerator === null) {
+            // A raw Closure left in a column only happens with user-written generate()
+            // closures; a factory's raw() never yields a Closure, so the factory path
+            // is not probed here.
+            $probeRecord = ($this->generator)(0);
+
+            if (is_array($probeRecord) && ! empty($probeRecord)) {
+                $this->assertNoClosureValues($probeRecord);
+            }
         }
 
         if ($this->count < 1) {
@@ -674,6 +688,26 @@ final class TurboSeederBuilder
                 'truncate() cannot be combined with dryRun(): truncation is committed immediately and would not be rolled back.'
             );
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     */
+    private function assertNoClosureValues(array $record): void
+    {
+        $closureColumns = array_keys(array_filter($record, fn ($v) => $v instanceof \Closure));
+
+        if (empty($closureColumns)) {
+            return;
+        }
+
+        throw new \InvalidArgumentException(sprintf(
+            'Generator returned a raw Closure for column(s) [%s]. '
+            .'Check if you forgot to call the helper. '
+            .'Assign it outside the closure (e.g. $fn = TurboData::uniqueEmail()) '
+            .'then invoke it inside (e.g. \'email\' => $fn($i)).',
+            implode(', ', $closureColumns),
+        ));
     }
 
     /**
