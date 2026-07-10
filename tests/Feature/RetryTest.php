@@ -5,7 +5,7 @@ declare(strict_types=1);
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 test('retryAttempts sets the option on the builder', function () {
-    $builder = TurboSeeder::create('test_users')
+    $builder = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@retry.test"])
         ->count(1)
@@ -16,7 +16,7 @@ test('retryAttempts sets the option on the builder', function () {
 });
 
 test('retryAttempts cannot exceed 10', function () {
-    expect(fn () => TurboSeeder::create('test_users')
+    expect(fn () => TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@r.test"])
         ->count(1)
@@ -25,7 +25,7 @@ test('retryAttempts cannot exceed 10', function () {
 });
 
 test('retryAttempts must be at least 1', function () {
-    expect(fn () => TurboSeeder::create('test_users')
+    expect(fn () => TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@r.test"])
         ->count(1)
@@ -34,7 +34,7 @@ test('retryAttempts must be at least 1', function () {
 });
 
 test('seeding succeeds with explicit retryAttempts configured', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@r2.test"])
         ->count(10)
