@@ -100,7 +100,7 @@ class TurboBenchmarkCommand extends Command
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
 
-        $seederBuilder = TurboSeeder::create($table)
+        $seederBuilder = TurboSeeder::forTable($table)
             ->columns(['name', 'email', 'value', 'created_at'])
             ->generate(fn ($i) => [
                 'name' => "User {$i}",
