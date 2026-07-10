@@ -17,7 +17,7 @@ function nullHandlingDriver(): string
 }
 
 test('mysql csv import stores null markers as real NULLs', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -34,7 +34,7 @@ test('mysql csv import stores null markers as real NULLs', function () {
 })->skip(fn () => nullHandlingDriver() !== 'mysql', 'MySQL-specific test');
 
 test('postgresql csv import stores null markers as real NULLs', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
