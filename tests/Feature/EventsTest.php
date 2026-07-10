@@ -11,7 +11,7 @@ use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 test('TurboSeederCompleted event is dispatched after successful seeding', function () {
     Event::fake([TurboSeederCompleted::class]);
 
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@event.test"])
         ->count(5)
@@ -27,7 +27,7 @@ test('TurboSeederCompleted event is dispatched after successful seeding', functi
 test('TurboSeederCompleted event is dispatched on dry-run with isDryRun flag', function () {
     Event::fake([TurboSeederCompleted::class]);
 
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@dryevent.test"])
         ->count(3)
@@ -42,7 +42,7 @@ test('TurboSeederCompleted event is dispatched on dry-run with isDryRun flag', f
 test('TurboSeederCompleted event is not dispatched when seeding fails', function () {
     Event::fake([TurboSeederCompleted::class]);
 
-    expect(fn () => TurboSeeder::create('test_users')
+    expect(fn () => TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'nonexistent_column'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@fail.test", 'nonexistent_column' => 'x'])
         ->count(5)
@@ -55,7 +55,7 @@ test('TurboSeederCompleted event is not dispatched when seeding fails', function
 test('TurboSeederStarting event is dispatched before seeding', function () {
     Event::fake([TurboSeederStarting::class]);
 
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@start.test"])
         ->count(7)
@@ -71,7 +71,7 @@ test('TurboSeederStarting event is dispatched before seeding', function () {
 test('TurboSeederFailed event is dispatched when seeding fails', function () {
     Event::fake([TurboSeederFailed::class]);
 
-    expect(fn () => TurboSeeder::create('test_users')
+    expect(fn () => TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'nonexistent_column'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@failevent.test", 'nonexistent_column' => 'x'])
         ->count(5)
