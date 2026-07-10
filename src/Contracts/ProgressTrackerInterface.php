@@ -9,27 +9,19 @@ use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 interface ProgressTrackerInterface
 {
     /**
-     * Start tracking progress for the given total.
+     * Write the seeder info header — called unconditionally, independent of progress tracking.
      */
-    public function start(int $total, SeederStrategy $strategy = SeederStrategy::DEFAULT): void;
+    public function writeHeader(int $total, SeederStrategy $strategy, string $table): void;
 
-    /**
-     * Advance the progress by the given step.
-     */
+    public function start(int $total, SeederStrategy $strategy = SeederStrategy::DEFAULT, string $table = ''): void;
+
     public function advance(int $step = 1): void;
 
-    /**
-     * Mark the progress as finished.
-     */
-    public function finish(): void;
+    public function finish(int $recordsInserted = 0): void;
 
-    /**
-     * Set a custom message for the progress tracker.
-     */
     public function setMessage(string $message): void;
 
-    /**
-     * Get the current progress percentage.
-     */
     public function getPercentage(): float;
+
+    public function warn(string $message): void;
 }
