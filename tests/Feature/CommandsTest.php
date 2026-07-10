@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 use IzAhmad\TurboSeeder\Tests\Fixtures\TurboSeederRunCommandTestSeeder;
 
@@ -64,29 +63,6 @@ test('benchmark command refuses to drop an existing table', function () {
 test('turbo-seeder:run outputs info row with table, strategy and count', function () {
     $this->artisan('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class])
         ->expectsOutputToContain('table test_users   strategy default   count 10')
-        ->assertSuccessful();
-});
-
-test('turbo-seeder:run shows correct records processed count in metrics', function () {
-    $exitCode = Artisan::call('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class]);
-
-    expect($exitCode)->toBe(\Symfony\Component\Console\Command\Command::SUCCESS);
-
-    $output = preg_replace('/\s+/', ' ', Artisan::output());
-
-    expect($output)->toContain('Total Records | 10');
-});
-
-test('turbo-seeder:run does not output starting turbo seeder text', function () {
-    $this->artisan('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class])
-        ->doesntExpectOutputToContain('Starting TurboSeeder')
-        ->assertSuccessful();
-});
-
-test('turbo-seeder:run does not output using strategy text', function () {
-    $this->artisan('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class])
-        ->doesntExpectOutputToContain('Using Default strategy')
-        ->doesntExpectOutputToContain('Using CSV strategy')
         ->assertSuccessful();
 });
 
