@@ -92,7 +92,7 @@ trait HandlesCsvConsoleOutput
     protected function displayMySqlInstructions(OutputInterface $output): void
     {
         $output->writeln('');
-        $output->writeln('   <fg=white>1. Add `PDO::MYSQL_ATTR_LOCAL_INFILE` to mysql connection options in `config/database.php`.</>');
+        $output->writeln('   <fg=white>1. Add `PDO::MYSQL_ATTR_LOCAL_INFILE` or `Pdo\Mysql::ATTR_LOCAL_INFILE` to mysql connection options in `config/database.php`.</>');
         $output->writeln('   <fg=white>2. Enable `local_infile` at server-side.</>');
         $output->writeln('');
         $output->writeln('   <fg=gray>‼ Security Note: Only enable in trusted environments</>');
