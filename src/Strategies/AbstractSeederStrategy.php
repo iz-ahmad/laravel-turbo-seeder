@@ -146,7 +146,14 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
 
                 return;
             } catch (\Throwable $e) {
-                if (! $this->isTransientLockError($e) || $attempt >= $maxAttempts - 1) {
+                // A deadlock aborts the entire open transaction, so retrying a single
+                // chunk inside one would silently drop rows already written in this
+                // transaction while still counting them. Retry only when each insert
+                // autocommits (no wrapping/commitEvery transaction), where a failed
+                // statement leaves nothing behind.
+                $insideTransaction = DB::connection($this->dbConnection->name)->transactionLevel() > 0;
+
+                if ($insideTransaction || ! $this->isTransientLockError($e) || $attempt >= $maxAttempts - 1) {
                     throw $e;
                 }
 
