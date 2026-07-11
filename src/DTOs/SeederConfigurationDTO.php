@@ -64,8 +64,8 @@ final readonly class SeederConfigurationDTO
      */
     public function hasProgressTracking(): bool
     {
-        return $this->options['progress_tracking']
-            ?? config('turbo-seeder.progress.enabled', true);
+        return (bool) ($this->options['progress_tracking']
+            ?? config('turbo-seeder.progress.enabled', true));
     }
 
     /**
@@ -76,8 +76,8 @@ final readonly class SeederConfigurationDTO
      */
     public function shouldDisableForeignKeyChecks(): bool
     {
-        return $this->options['disable_foreign_keys']
-            ?? config('turbo-seeder.performance.disable_foreign_keys', true);
+        return (bool) ($this->options['disable_foreign_keys']
+            ?? config('turbo-seeder.performance.disable_foreign_keys', true));
     }
 
     /**
@@ -89,8 +89,8 @@ final readonly class SeederConfigurationDTO
      */
     public function shouldDisableUniqueChecks(): bool
     {
-        return $this->options['disable_unique_checks']
-            ?? config('turbo-seeder.performance.disable_unique_checks', false);
+        return (bool) ($this->options['disable_unique_checks']
+            ?? config('turbo-seeder.performance.disable_unique_checks', false));
     }
 
     /**
@@ -101,8 +101,8 @@ final readonly class SeederConfigurationDTO
      */
     public function shouldDisableQueryLog(): bool
     {
-        return $this->options['disable_query_log']
-            ?? config('turbo-seeder.performance.disable_query_log', true);
+        return (bool) ($this->options['disable_query_log']
+            ?? config('turbo-seeder.performance.disable_query_log', true));
     }
 
     /**
@@ -110,7 +110,7 @@ final readonly class SeederConfigurationDTO
      */
     public function isDryRun(): bool
     {
-        return $this->options['dry_run'] ?? false;
+        return (bool) ($this->options['dry_run'] ?? false);
     }
 
     /**
@@ -144,7 +144,7 @@ final readonly class SeederConfigurationDTO
      */
     public function shouldValidateColumns(): bool
     {
-        return $this->options['validate_columns'] ?? true;
+        return (bool) ($this->options['validate_columns'] ?? true);
     }
 
     /**
