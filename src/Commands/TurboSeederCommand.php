@@ -10,7 +10,7 @@ use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Helpers\ExceptionFormatter;
 use IzAhmad\TurboSeeder\Services\ConsoleProgressTracker;
 
-class TurboSeederCommand extends Command
+final class TurboSeederCommand extends Command
 {
     public $signature = 'turbo-seeder:run
                         {seeder? : The seeder class name (optional)}
