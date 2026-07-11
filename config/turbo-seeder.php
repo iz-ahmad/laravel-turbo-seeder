@@ -99,9 +99,10 @@ return [
         | Null Marker
         |--------------------------------------------------------------------------
         |
-        | The string used to represent NULL values in CSV files. MySQL and PostgreSQL
-        | native CSV import use \N by default. only change this for SQLite CSV strategy
-        | if your data may contain the literal string \N.
+        | The string used to represent NULL values in CSV files for the MySQL and
+        | SQLite CSV strategies. PostgreSQL's COPY ... FROM STDIN ignores this setting
+        | and always uses an internal null sentinel. Only change this if your data may
+        | contain the literal string \N.
         |
         */
         'null_marker' => '\\N',
