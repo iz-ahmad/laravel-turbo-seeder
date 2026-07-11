@@ -103,8 +103,8 @@ trait HandlesCsvConsoleOutput
     {
         $tempPath = config('turbo-seeder.csv_strategy.temp_path', storage_path('app/turbo-seeder'));
 
-        $output->writeln('   <fg=white>Ensure PostgreSQL server has read access to CSV files and</>');
-        $output->writeln('   <fg=white>the database user has COPY privileges.</>');
+        $output->writeln('   <fg=white>The CSV is streamed client-side via COPY ... FROM STDIN — no server</>');
+        $output->writeln('   <fg=white>file access or superuser needed, just INSERT privilege on the table.</>');
 
         $output->writeln('');
         $output->writeln("   <fg=gray>CSV files are stored in: {$tempPath}</>");

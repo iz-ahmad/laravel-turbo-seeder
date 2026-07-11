@@ -131,8 +131,8 @@ class TurboTestConnectionCommand extends Command
     {
         $tempPath = config('turbo-seeder.csv_strategy.temp_path', storage_path('app/turbo-seeder'));
 
-        $this->line('  ✓ PostgreSQL COPY command available');
-        $this->line("  ℹ CSV files will be stored in: {$tempPath}");
-        $this->line('  ℹ Ensure PostgreSQL has read access to this path: the DB server must have access to the CSV file and the database');
+        $this->line('  ✓ PostgreSQL COPY command available (client-side COPY ... FROM STDIN)');
+        $this->line("  ℹ CSV files are written locally and streamed over the connection: {$tempPath}");
+        $this->line('  ℹ No superuser or server file access needed — only INSERT privilege on the target table.');
     }
 }
