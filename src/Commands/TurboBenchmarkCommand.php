@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
-class TurboBenchmarkCommand extends Command
+final class TurboBenchmarkCommand extends Command
 {
     use ConfirmableTrait;
 
