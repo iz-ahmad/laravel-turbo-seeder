@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Input\InputOption;
 
-class MakeTurboSeederCommand extends GeneratorCommand
+final class MakeTurboSeederCommand extends GeneratorCommand
 {
     protected $name = 'make:turbo-seeder';
 
@@ -87,6 +87,8 @@ class MakeTurboSeederCommand extends GeneratorCommand
 
             return $columns !== [] ? $columns : array_values(array_filter(Schema::getColumnListing($table), fn ($c) => $c !== 'id'));
         } catch (\Throwable) {
+            // any introspection failure (unsupported driver
+            // quirk, doctrine/dbal absence, etc.) falls back to the column listing rather than aborting
             return array_values(array_filter(Schema::getColumnListing($table), fn ($c) => $c !== 'id'));
         }
     }
