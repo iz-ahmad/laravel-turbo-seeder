@@ -551,7 +551,7 @@ TurboSeeder::forTable('products')
 
 ### MySQL
 
-For using the CSV strategy with MySQL, first you have to add `PDO::MYSQL_ATTR_LOCAL_INFILE` to the connection options in `config/database.php`:
+For using the CSV strategy with MySQL, first you have to add `PDO::MYSQL_ATTR_LOCAL_INFILE` or `Pdo\Mysql::ATTR_LOCAL_INFILE` (for PHP 8.5+) to the connection options in `config/database.php`:
 
 ```php
 'mysql' => [
@@ -611,10 +611,10 @@ Supported, but the default strategy is usually faster for SQLite. Use it unless 
 
 If you see a warning about CSV falling back to default:
 
-1. **MySQL** - Verify `PDO::MYSQL_ATTR_LOCAL_INFILE => true` is in `config/database.php` and `local_infile = 1` is enabled server-side
+1. **MySQL** - Check the [CSV Strategy Setup](#csv-strategy-setup) guideline.
 2. **All** - Check the Laravel log for a detailed error message
 
-The default strategy is still very fast and needs no configuration.
+Note that the default strategy is still very fast and needs no configuration.
 
 ---
 
