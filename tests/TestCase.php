@@ -6,6 +6,7 @@ namespace IzAhmad\TurboSeeder\Tests;
 
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
+use IzAhmad\TurboSeeder\Services\MySqlPdoAttributes;
 use IzAhmad\TurboSeeder\TurboSeederServiceProvider;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
@@ -13,9 +14,6 @@ class TestCase extends OrchestraTestCase
 {
     protected function setUp(): void
     {
-        // Call setUpTheTestEnvironment() directly instead of parent::setUp() to avoid
-        // the static::$latestResponse = null line added in some testbench patch versions,
-        // which causes a fatal error in PHP 8.3 when the property is undeclared.
         $this->setUpTheTestEnvironment();
 
         $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
@@ -24,7 +22,6 @@ class TestCase extends OrchestraTestCase
         DB::table('test_posts')->delete();
         DB::table('test_users')->delete();
 
-        // Clear TurboData's cached values so state never leaks between tests.
         TurboData::reset();
     }
 
@@ -75,8 +72,6 @@ class TestCase extends OrchestraTestCase
     /**
      * Build the testing connection config from env, defaulting to in-memory SQLite.
      *
-     * The MySQL and PostgreSQL CI jobs set DB_CONNECTION so the native CSV import
-     * paths (LOAD DATA / COPY) are actually exercised, not just SQLite.
      *
      * @return array<string, mixed>
      */
@@ -94,7 +89,7 @@ class TestCase extends OrchestraTestCase
                 'password' => env('DB_PASSWORD', ''),
                 'prefix' => '',
                 'options' => extension_loaded('pdo_mysql')
-                    ? [\PDO::MYSQL_ATTR_LOCAL_INFILE => true]
+                    ? [MySqlPdoAttributes::localInfileAttribute() => true]
                     : [],
             ],
             'pgsql' => [
