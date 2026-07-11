@@ -21,10 +21,10 @@ Default Laravel seeders don't scale well. Seeding 500K-1M+ records for realistic
 
 | | Standard Laravel | Turbo Seeder |
 |---|---|---|
-| 1M records (simple table) | ~30 min | **~15s** |
-| 1M records (complex table) | ~40-60 min | **~60s** |
-| 1M records (CSV strategy) | - | **~9-40s** |
-| Memory | unbounded | **< 200 MB** |
+| 1M records (simple table) | ~30 min | **~20s** |
+| 1M records (complex table) | ~40-50 min | **~60s** |
+| 1M records (CSV strategy) | - | **~15-50s** |
+| Memory | unbounded | **< ~50-200 MB** |
 
 No more coffee breaks, tab-switching, or "I'll test later"! So you can:
 
@@ -284,11 +284,12 @@ TurboSeeder::forTable('users')
 | **You write** | Nothing new - reuse the factory | A small closure returning an array |
 | **Data source** | Your factory `definition()` | `TurboData` helpers or your own logic |
 | **Faker** | Yes (one call per row) | No - Faker-free |
-| **Throughput for 1M rows** | Fast (minutes - Faker-bound) | Fastest (~15–60s) |
+| **Throughput for 1M rows** | Fast (~60-120s - Faker-bound) | Fastest (~15–60s) |
 | **Factory states** | ✅ | - |
 | **Best for** | <= 500k rows, or when data realism matters | Huge (>= 500k rows) dataset, maximum speed |
 
 > **Skipped on both paths:** model events, observers, and accessors/mutators. Anything those compute (slugs, hashes, derived columns) must live in the factory definition or the generator closure.
+> See [Performance Benchmarks](#performance-benchmarks) for detailed benchmark.
 
 ---
 
@@ -1077,21 +1078,27 @@ Measured on a MacBook M1, MySQL 8, PHP 8.5 and default chunk sizes.
 
 | Table | Records | Time | Peak memory |
 |---|---|---|---|
-| Simple (~5 cols) | 1M | ~16s | ~50 MB |
+| Simple (~5 cols) | 1M | ~20s | <50 MB |
 | Complex (~15-20 cols) | 1M | ~60s | ~160 MB |
 
 ### CSV Strategy
 
 | Table | Records | Time | Additional memory |
 |---|---|---|---|
-| Simple (~5 cols) | 1M | ~9s | ~0 MB |
+| Simple (~5 cols) | 1M | ~15s | ~0 MB |
 | Complex (~15-20 cols) | 1M | ~40s | ~0 MB |
 
-### fromFactory() throughput
+### fromFactory() Path
 
-> The factory path calls Faker's `definition()` once per row, so throughput is CPU-bound on Faker rather than on the database. Expect it to be *slower* than the raw `generate()` numbers above - but **still far faster** than typical seeding with `Model::factory()->create()` because it *skips* Eloquent, model events, and per-row inserts.
+> The factory path for data generation calls Faker's `definition()` once per row, so throughput is CPU-bound on Faker rather than on the database. Expect it to be *slower* than the raw `generate()` path (numbers shown above) - but **still far faster** than typical seeding with `Model::factory()->create()` - since it *skips* Eloquent, model events, and per-row inserts. For factory path -
 
-Use `fromFactory()` for convenience at moderate volumes (up to ~100k rows). Switch to `generate()` when you need maximum speed.
+| Table | Records | Time | Additional memory |
+|---|---|---|---|
+| Simple (~5 cols) | 1M | ~60-70s | ~0 MB |
+
+> See [Two Data Generation Paths](#two-data-generation-paths) for more info.
+
+Use `fromFactory()` for convenience at moderate volumes (up to ~500k rows). If needed more records than 500k, you can switch to `generate()` when you need maximum speed.
 
 > Reproduce results on your own machine: `php artisan turbo-seeder:benchmark`
 
