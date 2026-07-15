@@ -23,8 +23,8 @@ Default Laravel seeders don't scale well. Seeding 500K-1M+ records for realistic
 |---|---|---|
 | 1M records (simple table) | ~30 min | **~20s** |
 | 1M records (complex table) | ~40-50 min | **~60s** |
-| 1M records (CSV strategy) | - | **~15-50s** |
-| Memory | unbounded | **< ~50-200 MB** |
+| 1M records (CSV strategy) | - | **~10-45s** |
+| Peak Memory | unbounded | **< 50-200 MB** |
 
 No more coffee breaks, tab-switching, or "I'll test later"! So you can:
 
@@ -284,7 +284,7 @@ TurboSeeder::forTable('users')
 | **You write** | Nothing new - reuse the factory | A small closure returning an array |
 | **Data source** | Your factory `definition()` | `TurboData` helpers or your own logic |
 | **Faker** | Yes (one call per row) | No - Faker-free |
-| **Throughput for 1M rows** | Fast (~60-120s - Faker-bound) | Fastest (~15–60s) |
+| **Throughput for 1M rows** | Fast (~60-120s - Faker-bound) | Fastest (~10–60s) |
 | **Factory states** | ✅ | - |
 | **Best for** | <= 500k rows, or when data realism matters | Huge (>= 500k rows) dataset, maximum speed |
 
@@ -299,8 +299,8 @@ This is choice #2 - determines *how* the generated rows are written to the datab
 
 | Feature | Default Strategy | CSV Strategy |
 |---|---|---|
-| **Speed** | Fast (~15-60s for 1M) | Fastest (~9-40s for 1M)¹ |
-| **Memory** | Moderate (~50-160 MB) | Minimal (~0 MB additional) |
+| **Speed** | Fast (~20-60s for 1M) | Fastest (~10-45s for 1M)¹ |
+| **Memory** | Moderate (~50-200 MB) | Minimal (~0 MB additional) |
 | **Setup** | None | MySQL needs `local_infile`; PostgreSQL needs nothing |
 | **Best for** | General use, remote databases | Local MySQL/PostgreSQL databases, Maximum speed |
 
@@ -1079,14 +1079,14 @@ Measured on a MacBook M1, MySQL 8, PHP 8.5 and default chunk sizes.
 | Table | Records | Time | Peak memory |
 |---|---|---|---|
 | Simple (~5 cols) | 1M | ~20s | <50 MB |
-| Complex (~15-20 cols) | 1M | ~60s | ~160 MB |
+| Complex (~15-20 cols) | 1M | ~60s | < 200 MB |
 
 ### CSV Strategy
 
 | Table | Records | Time | Additional memory |
 |---|---|---|---|
-| Simple (~5 cols) | 1M | ~15s | ~0 MB |
-| Complex (~15-20 cols) | 1M | ~40s | ~0 MB |
+| Simple (~5 cols) | 1M | ~10-15s | ~0 MB |
+| Complex (~15-20 cols) | 1M | ~45s | ~0 MB |
 
 ### fromFactory() Path
 
