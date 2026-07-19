@@ -161,6 +161,15 @@ TurboSeeder::forTable('users')
     ->run();
 ```
 
+`forTable()`/`table()` also accepts an Eloquent Model class or instance instead of a table/string name - the table (and connection, unless overridden by `connection()`) are resolved from the model:
+
+```php
+// These are equivalent when User's table is 'users':
+TurboSeeder::forTable('users')->...
+TurboSeeder::forTable(User::class)->...
+TurboSeeder::forTable(new User)->...
+```
+
 #### Max speed with the CSV strategy
 
 Add one method - `useCsvStrategy()`. It uses `LOAD DATA LOCAL INFILE` (MySQL) or `COPY FROM STDIN` (PostgreSQL), typically 2-4× faster than bulk INSERT for large datasets.
@@ -643,11 +652,14 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 
 | Method | Description |
 |---|---|
+| `table(string\|Model\|class-string<Model>)` | Table name, an Eloquent Model class, or a Model instance - also settable via `forTable()` (see note below) |
 | `columns(array)` | Columns to seed |
 | `columnsFromSchema()` | Derive columns from the table schema (opt-in; see note below) |
 | `generate(Closure)` | Row generator closure - receives `$index`, returns an array |
 | `withTimestamps()` | Auto-fill `created_at` / `updated_at` |
 | `withoutTimestamps()` | Disable timestamp auto-fill |
+
+> **`table()`/`forTable()` with a Model note:** Resolves the table name via the model's `getTable()`. The model's connection (`getConnectionName()`) is also applied unless `connection()` is called explicitly (wins regardless of call order). Passing an existing class that is not an Eloquent model throws an `InvalidArgumentException`.
 
 > **`columnsFromSchema()` note:** Pulls every non-PK column from the schema builder. Opt-in (not default) - ensure your generator produces values for every NOT NULL column without a default.
 
