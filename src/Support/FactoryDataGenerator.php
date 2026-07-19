@@ -114,7 +114,7 @@ final class FactoryDataGenerator
                 .'Each seeded row will trigger an individual Eloquent create() for the related model — '
                 .'pre-load the parents and pass them via $factory->recycle(RelatedModel::all()).';
         } catch (\Throwable) {
-            // Reflection failed (e.g. property renamed in a future Laravel version) — skip.
+            // reflection failed (e.g. property renamed in a future Laravel version)
             return null;
         }
     }
