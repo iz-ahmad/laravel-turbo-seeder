@@ -5,13 +5,9 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Services;
 
 /**
- * Writes rows in PostgreSQL COPY *text* format (the format PDO's
- * pgsqlCopyFromFile consumes), streamed to a temp file.
- *
- * Text format escapes special characters with a backslash, so embedded
- * delimiters, quotes and newlines need no field enclosure, and a literal
- * "\N" in the data is written as "\\N" — distinct from the NULL sentinel
- * "\N". This means there is no null-marker collision on the PostgreSQL path.
+ * Writes rows in PostgreSQL COPY *text* format, streamed to a temp file.
+ * Text format escapes special characters with a backslash and a literal
+ * "\N" in the data is written as "\\N".
  */
 final class PostgresCopyWriter
 {
@@ -21,10 +17,8 @@ final class PostgresCopyWriter
     /**
      * NULL sentinel for COPY text format.
      *
-     * Deliberately backslash-free: PDO's pgsqlCopyFromFile embeds this value
-     * into a PostgreSQL E'...' string literal, where a backslash would be
-     * mangled (e.g. E'\N' collapses to "N"). A plain ASCII token survives the
-     * E-string intact and is matched verbatim by COPY before any de-escaping.
+     * Backslash-free: PDO's pgsqlCopyFromFile embeds this value
+     * into a PostgreSQL E'...' string literal.
      */
     public const NULL_MARKER = '@@TURBO_NULL@@';
 
@@ -110,8 +104,6 @@ final class PostgresCopyWriter
 
         $formatted = (string) $formatted;
 
-        // A non-null value identical to the null sentinel would be imported as
-        // NULL (COPY matches the null string verbatim). Fail loudly instead.
         if ($formatted === self::NULL_MARKER) {
             throw new \RuntimeException(
                 'PostgreSQL COPY null-marker collision: a value equals the null sentinel ['.self::NULL_MARKER.']. '
@@ -119,8 +111,6 @@ final class PostgresCopyWriter
             );
         }
 
-        // Escape backslash first, then the structural characters. strtr applies
-        // replacements simultaneously, so escaped output is not re-scanned.
         return strtr($formatted, [
             '\\' => '\\\\',
             "\t" => '\\t',
