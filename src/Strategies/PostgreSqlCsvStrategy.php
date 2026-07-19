@@ -25,8 +25,7 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
     /**
      * Generate the import file in PostgreSQL COPY *text* format.
      *
-     * The shared RFC-4180 CSV writer is bypassed here because PDO's
-     * pgsqlCopyFromFile consumes COPY text format, not CSV.
+     * PDO's pgsqlCopyFromFile consumes COPY text format.
      */
     protected function generateCsvFile(SeederConfigurationDTO $config): void
     {
@@ -66,7 +65,7 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
      * pgsqlCopyFromFile streams the file from the PHP host over the existing
      * connection, so it works on managed/containerised PostgreSQL where the
      * server cannot read the application's filesystem and the user is not a
-     * superuser — unlike the previous server-side COPY FROM '<path>'.
+     * superuser.
      *
      * @param  array<int, string>  $columns
      */
@@ -115,8 +114,7 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
      * PDO::pgsqlCopyFromFile() is deprecated on the base PDO class in PHP 8.4+
      * (superseded by Pdo\Pgsql::copyFromFile()). Laravel provides a base PDO
      * instance, so the modern method is used when it actually is a Pdo\Pgsql and
-     * the still-functional base method is called dynamically otherwise — which
-     * also keeps static analysis from seeing the deprecated symbol.
+     * the still-functional base method is called dynamically otherwise.
      */
     private function copyFromFile(\PDO $pdo, string $table, string $path, string $fieldList): bool
     {
