@@ -7,9 +7,7 @@ namespace IzAhmad\TurboSeeder\Services;
 final class MySqlPdoAttributes
 {
     /**
-     * The PDO "local infile" attribute, resolved via constant() on both paths so
-     * neither the deprecated PDO::MYSQL_ATTR_LOCAL_INFILE (PHP 8.5+) nor the
-     * PHP 8.4+ Pdo\Mysql class is referenced statically.
+     * The PDO "local infile" attribute, resolved via constant() on both paths.
      */
     public static function localInfileAttribute(): int
     {
