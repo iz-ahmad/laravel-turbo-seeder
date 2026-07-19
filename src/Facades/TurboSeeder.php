@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Facades;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Facade;
 use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
@@ -12,7 +13,7 @@ use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 
 /**
  * @method static SeederResultDTO execute(SeederConfigurationDTO $config)
- * @method static TurboSeederBuilder forTable(string $table)
+ * @method static TurboSeederBuilder forTable(class-string<Model>|Model|string $table)
  * @method static TurboSeederBuilder fromFactory(Factory $factory)
  *
  * @see \IzAhmad\TurboSeeder\TurboSeeder
@@ -25,9 +26,12 @@ class TurboSeeder extends Facade
     }
 
     /**
-     * Create a new seeder builder instance for the given table.
+     * Create a new seeder builder instance for the given table - a literal table
+     * name, an Eloquent Model class-string, or a Model instance.
+     *
+     * @param  class-string<Model>|Model|string  $table
      */
-    public static function forTable(string $table): TurboSeederBuilder
+    public static function forTable(string|Model $table): TurboSeederBuilder
     {
         return app(TurboSeederBuilder::class)->table($table);
     }
