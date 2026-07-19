@@ -5,6 +5,9 @@ declare(strict_types=1);
 use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
+use IzAhmad\TurboSeeder\Helpers\TurboData;
+use IzAhmad\TurboSeeder\Tests\Fixtures\TestUserModel;
+use IzAhmad\TurboSeeder\Tests\Fixtures\TestUserOnSecondaryConnectionModel;
 
 test('builder validates that table name is set', function () {
     app(TurboSeederBuilder::class)->run();
@@ -143,3 +146,63 @@ test('generator-inferred column names are validated', function () {
         ->count(1)
         ->run();
 })->throws(InvalidArgumentException::class, 'Invalid column name [invalid-col] inferred from generator');
+
+test('table() resolves the table name from a Model class-string', function () {
+    $builder = TurboSeeder::forTable(TestUserModel::class)
+        ->generate(fn ($i) => ['name' => "User {$i}"])
+        ->count(1);
+
+    expect($builder->getTable())->toBe('test_users');
+});
+
+test('table() resolves the table name from a Model instance', function () {
+    $builder = TurboSeeder::forTable(new TestUserModel)
+        ->generate(fn ($i) => ['name' => "User {$i}"])
+        ->count(1);
+
+    expect($builder->getTable())->toBe('test_users');
+});
+
+test('forTable() with a Model class seeds successfully', function () {
+    $result = TurboSeeder::forTable(TestUserModel::class)
+        ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@model.test"])
+        ->count(5)
+        ->run();
+
+    expect($result->success)->toBeTrue()
+        ->and($result->recordsInserted)->toBe(5);
+});
+
+test('table() with a Model class auto-applies the model\'s connection', function () {
+    $config = TurboSeeder::forTable(TestUserOnSecondaryConnectionModel::class)
+        ->generate(fn ($i) => ['name' => "User {$i}"])
+        ->count(1)
+        ->toConfiguration();
+
+    expect($config->connection)->toBe('testing_secondary');
+});
+
+test('explicit connection() called after table(Model) overrides the model\'s connection', function () {
+    $config = TurboSeeder::forTable(TestUserOnSecondaryConnectionModel::class)
+        ->connection('testing')
+        ->generate(fn ($i) => ['name' => "User {$i}"])
+        ->count(1)
+        ->toConfiguration();
+
+    expect($config->connection)->toBe('testing');
+});
+
+test('explicit connection() called before table(Model) still overrides the model\'s connection', function () {
+    $builder = TurboSeeder::forTable('test_users')
+        ->connection('testing')
+        ->generate(fn ($i) => ['name' => "User {$i}"])
+        ->count(1);
+
+    $config = $builder->table(TestUserOnSecondaryConnectionModel::class)->toConfiguration();
+
+    expect($config->connection)->toBe('testing');
+});
+
+test('table() rejects a class that is not an Eloquent model', function () {
+    TurboSeeder::forTable(TurboData::class);
+})->throws(InvalidArgumentException::class, 'is not an Eloquent model');
