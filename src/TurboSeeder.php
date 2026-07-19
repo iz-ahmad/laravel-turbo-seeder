@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
@@ -30,9 +31,12 @@ class TurboSeeder
     }
 
     /**
-     * Create a new seeder builder instance for the given table.
+     * Create a new seeder builder instance for the given table - a literal table
+     * name, an Eloquent Model class-string, or a Model instance.
+     *
+     * @param  class-string<Model>|Model|string  $table
      */
-    public function forTable(string $table): TurboSeederBuilder
+    public function forTable(string|Model $table): TurboSeederBuilder
     {
         return app(TurboSeederBuilder::class)->table($table);
     }
