@@ -6,6 +6,7 @@ use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
+use IzAhmad\TurboSeeder\Tests\Fixtures\AbstractTestModel;
 use IzAhmad\TurboSeeder\Tests\Fixtures\TestUserModel;
 use IzAhmad\TurboSeeder\Tests\Fixtures\TestUserOnSecondaryConnectionModel;
 
@@ -206,3 +207,7 @@ test('explicit connection() called before table(Model) still overrides the model
 test('table() rejects a class that is not an Eloquent model', function () {
     TurboSeeder::forTable(TurboData::class);
 })->throws(InvalidArgumentException::class, 'is not an Eloquent model');
+
+test('table() rejects an abstract Eloquent model class', function () {
+    TurboSeeder::forTable(AbstractTestModel::class);
+})->throws(InvalidArgumentException::class, 'is an abstract Eloquent model');
