@@ -99,6 +99,12 @@ final class TurboSeederBuilder
                 );
             }
 
+            if (! (new \ReflectionClass($table))->isInstantiable()) {
+                throw new \InvalidArgumentException(
+                    "Class [{$table}] is an abstract Eloquent model and cannot be instantiated. table()/forTable() requires a concrete Model class or instance."
+                );
+            }
+
             $model = new $table;
             $this->modelConnection = $model->getConnectionName();
 
