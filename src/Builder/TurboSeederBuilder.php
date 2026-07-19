@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Builder;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
@@ -44,6 +45,8 @@ final class TurboSeederBuilder
 
     private ?string $connection = null;
 
+    private ?string $modelConnection = null;
+
     private SeederStrategy $strategy = SeederStrategy::DEFAULT;
 
     /**
@@ -56,19 +59,53 @@ final class TurboSeederBuilder
     ) {}
 
     /**
-     * Set the table name.
+     * Set the table name - a literal table name, an Eloquent Model class-string, or a Model instance.
+     *
+     * @param  class-string<Model>|Model|string  $table
      */
-    public function table(string $table): self
+    public function table(string|Model $table): self
     {
-        if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/', $table)) {
+        $tableName = $this->resolveTableName($table);
+
+        if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/', $tableName)) {
             throw new \InvalidArgumentException(
-                "Invalid table name [{$table}]. Table names must start with a letter or underscore, contain only letters, digits, and underscores, and may include one schema prefix (schema.table)."
+                "Invalid table name [{$tableName}]. Table names must start with a letter or underscore, contain only letters, digits, and underscores, and may include one schema prefix (schema.table)."
             );
         }
 
-        $this->table = $table;
+        $this->table = $tableName;
 
         return $this;
+    }
+
+    /**
+     * Resolve a table() argument to a table name, capturing the model's connection
+     * along the way so it can be applied unless the caller sets connection() explicitly.
+     *
+     * @param  class-string<Model>|Model|string  $table
+     */
+    private function resolveTableName(string|Model $table): string
+    {
+        if ($table instanceof Model) {
+            $this->modelConnection = $table->getConnectionName();
+
+            return $table->getTable();
+        }
+
+        if (class_exists($table)) {
+            if (! is_subclass_of($table, Model::class)) {
+                throw new \InvalidArgumentException(
+                    "Class [{$table}] is not an Eloquent model. table()/forTable() accepts a table name, or an Eloquent Model class/instance."
+                );
+            }
+
+            $model = new $table;
+            $this->modelConnection = $model->getConnectionName();
+
+            return $model->getTable();
+        }
+
+        return $table;
     }
 
     /**
@@ -102,7 +139,7 @@ final class TurboSeederBuilder
             throw new \InvalidArgumentException('Call forTable()/table() before columnsFromSchema() to set the table that needs seeding.');
         }
 
-        $schema = DB::connection($this->connection ?? config('database.default'))->getSchemaBuilder();
+        $schema = DB::connection($this->resolveConnectionName())->getSchemaBuilder();
 
         try {
             $columns = [];
@@ -531,11 +568,20 @@ final class TurboSeederBuilder
             columns: $this->columns,
             generator: $this->generator,
             count: $this->count,
-            connection: $this->connection ?? config('database.default'),
+            connection: $this->resolveConnectionName(),
             strategy: $this->strategy,
             options: $this->options,
             pendingWarnings: $this->pendingWarnings,
         );
+    }
+
+    /**
+     * Explicit connection() always wins; otherwise falls back to a Model's connection
+     * (set via table()), then the app's default connection.
+     */
+    private function resolveConnectionName(): string
+    {
+        return $this->connection ?? $this->modelConnection ?? config('database.default');
     }
 
     /**
