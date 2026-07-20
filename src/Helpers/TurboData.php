@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Helpers;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use IzAhmad\TurboSeeder\Enums\FromTableMode;
+use IzAhmad\TurboSeeder\Support\ModelTableResolver;
 
 /**
  * Fast, Faker-free data generation helpers for use inside ->generate() closures.
@@ -305,13 +307,18 @@ final class TurboData
      * Pluck a column from a table once and cycle or randomly pick on every generator call.
      * Loaded lazily on first call; all subsequent calls are O(1) array lookups.
      *
+     * @param  class-string<Model>|Model|string  $table  A table name, or an Eloquent Model class/instance
      * @param  FromTableMode|string  $mode  FromTableMode::CYCLE (default) | ::RANDOM, or the
      *                                      legacy strings 'cycle' | 'random'
      * @return \Closure(int): mixed
      */
-    public static function fromTable(string $table, string $column = 'id', FromTableMode|string $mode = FromTableMode::CYCLE, ?string $connection = null): \Closure
+    public static function fromTable(string|Model $table, string $column = 'id', FromTableMode|string $mode = FromTableMode::CYCLE, ?string $connection = null): \Closure
     {
         self::warnIfInsideGenerator('fromTable');
+
+        $resolved = ModelTableResolver::resolve($table, 'fromTable()');
+        $table = $resolved['table'];
+        $connection ??= $resolved['connection'];
 
         if ($table === '') {
             throw new \InvalidArgumentException('fromTable() $table must not be empty.');
@@ -391,11 +398,16 @@ final class TurboData
      * orderable (e.g. a primary key) — this keeps each page O(pageSize) instead
      * of the O(N) cost of OFFSET on deep pages.
      *
+     * @param  class-string<Model>|Model|string  $table  A table name, or an Eloquent Model class/instance
      * @return \Closure(int): mixed
      */
-    public static function fromTableStream(string $table, string $column = 'id', int $pageSize = 10000, ?string $connection = null): \Closure
+    public static function fromTableStream(string|Model $table, string $column = 'id', int $pageSize = 10000, ?string $connection = null): \Closure
     {
         self::warnIfInsideGenerator('fromTableStream');
+
+        $resolved = ModelTableResolver::resolve($table, 'fromTableStream()');
+        $table = $resolved['table'];
+        $connection ??= $resolved['connection'];
 
         if ($table === '') {
             throw new \InvalidArgumentException('fromTableStream() $table must not be empty.');
