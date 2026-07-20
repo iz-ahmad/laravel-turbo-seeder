@@ -13,6 +13,7 @@ use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 use IzAhmad\TurboSeeder\Services\SeederOrchestrator;
 use IzAhmad\TurboSeeder\Support\FactoryDataGenerator;
+use IzAhmad\TurboSeeder\Support\ModelTableResolver;
 
 /**
  * Fluent builder for configuring and executing TurboSeeder operations.
@@ -86,32 +87,11 @@ final class TurboSeederBuilder
      */
     private function resolveTableName(string|Model $table): string
     {
-        if ($table instanceof Model) {
-            $this->modelConnection = $table->getConnectionName();
+        $resolved = ModelTableResolver::resolve($table, 'table()/forTable()');
 
-            return $table->getTable();
-        }
+        $this->modelConnection = $resolved['connection'];
 
-        if (class_exists($table)) {
-            if (! is_subclass_of($table, Model::class)) {
-                throw new \InvalidArgumentException(
-                    "Class [{$table}] is not an Eloquent model. table()/forTable() accepts a table name, or an Eloquent Model class/instance."
-                );
-            }
-
-            if (! (new \ReflectionClass($table))->isInstantiable()) {
-                throw new \InvalidArgumentException(
-                    "Class [{$table}] is an abstract Eloquent model and cannot be instantiated. table()/forTable() requires a concrete Model class or instance."
-                );
-            }
-
-            $model = new $table;
-            $this->modelConnection = $model->getConnectionName();
-
-            return $model->getTable();
-        }
-
-        return $table;
+        return $resolved['table'];
     }
 
     /**
