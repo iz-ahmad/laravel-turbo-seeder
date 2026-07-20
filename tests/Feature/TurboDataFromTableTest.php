@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\FromTableMode;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
+use IzAhmad\TurboSeeder\Tests\Fixtures\AbstractTestModel;
+use IzAhmad\TurboSeeder\Tests\Fixtures\TestUserModel;
+use IzAhmad\TurboSeeder\Tests\Fixtures\TestUserOnSecondaryConnectionModel;
 
 test('fromTable throws on empty table name', function () {
     TurboData::fromTable('');
@@ -224,3 +227,51 @@ test('fromTable accepts the FromTableMode enum', function () {
         ->and($cycle(1))->toBe($ids[1])
         ->and($random(0))->toBeIn($ids);
 });
+
+test('fromTable resolves the table name from a Model class-string', function () {
+    DB::table('test_users')->insert(['name' => 'A', 'email' => 'a@model.test']);
+
+    $id = DB::table('test_users')->value('id');
+
+    expect(TurboData::fromTable(TestUserModel::class)(0))->toBe($id);
+});
+
+test('fromTable resolves the table name from a Model instance', function () {
+    DB::table('test_users')->insert(['name' => 'A', 'email' => 'a@modelinstance.test']);
+
+    $id = DB::table('test_users')->value('id');
+
+    expect(TurboData::fromTable(new TestUserModel)(0))->toBe($id);
+});
+
+test('fromTable uses the model\'s connection when none is passed explicitly', function () {
+    TurboData::fromTable(TestUserOnSecondaryConnectionModel::class)(0);
+})->throws(InvalidArgumentException::class, 'testing_secondary');
+
+test('fromTable explicit connection parameter overrides the model\'s connection', function () {
+    DB::table('test_users')->insert(['name' => 'A', 'email' => 'a@connoverride.test']);
+
+    $id = DB::table('test_users')->value('id');
+
+    expect(TurboData::fromTable(TestUserOnSecondaryConnectionModel::class, 'id', 'cycle', 'testing')(0))->toBe($id);
+});
+
+test('fromTable rejects a class that is not an Eloquent model', function () {
+    TurboData::fromTable(TurboData::class);
+})->throws(InvalidArgumentException::class, 'is not an Eloquent model');
+
+test('fromTable rejects an abstract Eloquent model class', function () {
+    TurboData::fromTable(AbstractTestModel::class);
+})->throws(InvalidArgumentException::class, 'is an abstract Eloquent model');
+
+test('fromTableStream resolves the table name from a Model class-string', function () {
+    DB::table('test_users')->insert(['name' => 'A', 'email' => 'a@stream-model.test']);
+
+    $id = DB::table('test_users')->value('id');
+
+    expect(TurboData::fromTableStream(TestUserModel::class)(0))->toBe($id);
+});
+
+test('fromTableStream uses the model\'s connection when none is passed explicitly', function () {
+    TurboData::fromTableStream(TestUserOnSecondaryConnectionModel::class)(0);
+})->throws(InvalidArgumentException::class, 'testing_secondary');
