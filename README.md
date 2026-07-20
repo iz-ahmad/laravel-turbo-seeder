@@ -182,7 +182,7 @@ TurboSeeder::fromFactory(Post::factory())
     ->run();
 
 // ...and with generate()
-TurboSeeder::forTable('posts')
+TurboSeeder::forTable(Post::class)
     ->columns(['user_id', 'title', 'content'])
     ->generate(fn ($index) => [...])
     ->count(1_000_000)
@@ -196,7 +196,7 @@ TurboSeeder::forTable('posts')
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
-TurboSeeder::forTable('orders')
+TurboSeeder::forTable(Order::class)
     ->columns(['user_id', 'total', 'status', 'created_at'])
     ->generate(fn ($index) => [
         'user_id'    => TurboData::randomInt(1, 10000),
@@ -271,7 +271,7 @@ use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 $uniqueEmail = TurboData::uniqueEmail();
 
-TurboSeeder::forTable('users')
+TurboSeeder::forTable(User::class)
     ->columns(['name', 'email', 'password', 'role'])
     ->generate(fn ($i) => [
         'name'     => "User {$i}",
@@ -362,7 +362,7 @@ class UserSeeder extends Seeder
         // Or, go with the generator path with raw closure for max speed
         $uniqueEmail = TurboData::uniqueEmail();
 
-        TurboSeeder::forTable('users')
+        TurboSeeder::forTable(User::class)
             ->columns(['name', 'email', 'password'])
             ->generate(fn ($i) => [
                 'name'     => "User {$i}",
@@ -411,7 +411,7 @@ TurboSeeder::fromFactory(Post::factory()->recycle($users))
 Lighter on memory than loading full Eloquent models - stores only raw IDs:
 
 ```php
-// Seed parents first
+// Seed parents first (forTable() also accepts a Model class/instance - see note above)
 TurboSeeder::forTable('users')
     ->columns(['name', 'email', 'created_at'])
     ->generate(fn ($i) => [
@@ -458,6 +458,7 @@ TurboSeeder::fromFactory(Post::factory()->recycle($users))
 $postIds = TurboData::fromTable('posts');
 $tagIds  = TurboData::fromTable('tags');
 
+// Pivot tables rarely have a dedicated model, so a plain table name is used here
 TurboSeeder::forTable('post_tag')
     ->columns(['post_id', 'tag_id'])
     ->generate(fn ($i) => ['post_id' => $postIds($i), 'tag_id' => $tagIds($i)])
@@ -472,7 +473,7 @@ This pattern is actually faster than letting Eloquent handle these relationships
 Test your application with real-world data volumes:
 
 ```php
-TurboSeeder::forTable('orders')
+TurboSeeder::forTable(Order::class)
     ->columns(['user_id', 'total', 'status', 'created_at'])
     ->generate(fn ($i) => [
         'user_id'    => TurboData::randomInt(1, 50_000),
@@ -507,7 +508,7 @@ When seeding time-series data, use `TurboData::sequentialDate()` for perfectly s
 ```php
 $eventType = TurboData::cycleFrom(['page_view', 'click', 'signup']);
 
-TurboSeeder::forTable('analytics_events')
+TurboSeeder::forTable(AnalyticsEvent::class)
     ->columns(['event_type', 'value', 'recorded_at'])
     ->generate(fn ($i) => [
         'event_type'  => $eventType($i),
@@ -521,7 +522,7 @@ TurboSeeder::forTable('analytics_events')
 ### Dry Run (preview without writing)
 
 ```php
-$result = TurboSeeder::forTable('users')
+$result = TurboSeeder::forTable(User::class)
     ->columns(['name', 'email'])
     ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@test.com"])
     ->count(10_000)
@@ -537,7 +538,7 @@ echo "Would have inserted: {$result->recordsInserted} rows";
 If a row with matching unique-key columns already exists, using upsert() it updates the row's non-key columns to new values instead of erroring.
 
 ```php
-TurboSeeder::forTable('products')
+TurboSeeder::forTable(Product::class)
     ->columns(['sku', 'name', 'price'])
     ->generate(fn ($i) => [
         'sku'   => "SKU-{$i}",
@@ -634,7 +635,7 @@ Note that the default strategy is still very fast and needs no configuration.
 
 ```php
 // Generator path - explicitly name table and columns
-TurboSeeder::forTable('users')
+TurboSeeder::forTable(User::class)
     ->columns(['name', 'email'])
     ->generate(fn ($i) => [...])
     ->count(100_000)
@@ -710,7 +711,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 Every `run()` returns an immutable `SeederResultDTO` (and throws a `RuntimeException` - wrapping the original exception - if the seed fails):
 
 ```php
-$result = TurboSeeder::forTable('users')
+$result = TurboSeeder::forTable(User::class)
     ->columns(['name', 'email'])
     ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@test.com"])
     ->count(100_000)
@@ -847,12 +848,12 @@ $deletedAt = TurboData::nullable(0.15, fn () => now());
 ```php
 use IzAhmad\TurboSeeder\Enums\FromTableMode;
 
-$userIds     = TurboData::fromTable('users');                           // cycle (default)
-$categoryIds = TurboData::fromTable('categories', 'id', 'random');      // random pick
+$userIds     = TurboData::fromTable(User::class);                       // Model class - cycle (default)
+$categoryIds = TurboData::fromTable('categories', 'id', 'random');      // table name - random pick
 $tagIds      = TurboData::fromTable('tags', 'id', FromTableMode::RANDOM); // or the enum
 $codes       = TurboData::fromTable('regions', 'code', 'cycle', 'reports'); // custom connection
 
-TurboSeeder::forTable('posts')
+TurboSeeder::forTable(Post::class)
     ->columns(['user_id', 'category_id', 'title'])
     ->generate(fn ($i) => [
         'user_id'     => $userIds($i),
@@ -864,6 +865,8 @@ TurboSeeder::forTable('posts')
 ```
 
 > Seed the referenced table **before** calling `fromTable()`. The DB query fires once on the first generator call; all subsequent calls are O(1) array lookups.
+>
+> Like `forTable()`, the first argument accepts a table name, an Eloquent Model class, or a Model instance. The model's connection is used unless the `$connection` argument is passed explicitly.
 
 **`fromQuery()`** - when `fromTable()` isn't flexible enough (filters, joins, ordering):
 
@@ -877,7 +880,7 @@ $userIds = TurboData::fromQuery(
 
 ```php
 // Streams IDs one page at a time; cycles with bounded memory
-$userIds = TurboData::fromTableStream('users', 'id', pageSize: 10_000);
+$userIds = TurboData::fromTableStream(User::class, 'id', pageSize: 10_000);
 ```
 
 > `fromTable()`/`fromQuery()` log a warning past ~500k values. Use `fromTableStream()` for huge reference pools.
@@ -911,7 +914,7 @@ TurboSeeder automatically formats all values returned from your generator. You n
 | `object` / `stdClass` | JSON string |
 
 ```php
-TurboSeeder::forTable('products')
+TurboSeeder::forTable(Product::class)
     ->columns(['status', 'metadata', 'published_at'])
     ->generate(fn ($i) => [
         'status'       => ProductStatus::Active,    // BackedEnum → raw value
