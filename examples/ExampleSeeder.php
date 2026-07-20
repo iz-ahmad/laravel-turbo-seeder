@@ -4,12 +4,20 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Models\Category;
+use App\Models\Event;
+use App\Models\Order;
+use App\Models\Post;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
 
 /**
  * Real-world TurboSeeder examples covering all major features.
+ *
+ * forTable() accepts a table name, a Model class, or a Model instance
+ * interchangeably - both forms are used below.
  */
 class ExampleSeeder extends Seeder
 {
@@ -35,7 +43,7 @@ class ExampleSeeder extends Seeder
         $uniqueEmail = TurboData::uniqueEmail();
         $uniqueUsername = TurboData::uniqueUsername('usr');
 
-        TurboSeeder::forTable('users')
+        TurboSeeder::forTable(User::class)
             ->columns(['name', 'username', 'email', 'password', 'created_at', 'updated_at'])
             ->generate(fn ($index) => [
                 'name' => "User {$index}",
@@ -51,7 +59,7 @@ class ExampleSeeder extends Seeder
 
         // ── 3) Auto timestamps + nullable columns ─────────────────────────────
 
-        TurboSeeder::forTable('categories')
+        TurboSeeder::forTable(Category::class)
             ->columns(['name', 'slug', 'description'])
             ->generate(fn ($index) => [
                 'name' => "Category {$index}",
@@ -69,7 +77,7 @@ class ExampleSeeder extends Seeder
         $userIds = TurboData::fromTable('users');                           // cycle (default)
         $categoryIds = TurboData::fromTable('categories', 'id', 'random');
 
-        TurboSeeder::forTable('posts')
+        TurboSeeder::forTable(Post::class)
             ->columns(['user_id', 'category_id', 'title', 'status', 'created_at'])
             ->generate(fn ($index) => [
                 'user_id' => $userIds($index),
@@ -88,7 +96,7 @@ class ExampleSeeder extends Seeder
         $bigPoolUserIds = TurboData::fromTableStream('users', 'id', pageSize: 10_000);
         $eventName = TurboData::cycleFrom(['page_view', 'click', 'signup']);
 
-        TurboSeeder::forTable('events')
+        TurboSeeder::forTable(Event::class)
             ->columns(['user_id', 'name', 'occurred_at'])
             ->generate(fn ($index) => [
                 'user_id' => $bigPoolUserIds($index),
@@ -116,6 +124,7 @@ class ExampleSeeder extends Seeder
             ->run();
 
         // ── 7) Upsert (conflict key must be backed by a unique index) ─────────
+        // A plain table name works just as well as a Model class here.
 
         TurboSeeder::forTable('settings')
             ->columns(['key', 'value'])
@@ -129,7 +138,7 @@ class ExampleSeeder extends Seeder
 
         // ── 8) Dry run: validate generation without writing rows ──────────────
 
-        $result = TurboSeeder::forTable('orders')
+        $result = TurboSeeder::forTable(Order::class)
             ->columns(['user_id', 'total', 'note', 'created_at'])
             ->generate(fn ($index) => [
                 'user_id' => TurboData::randomInt(1, 50_000),
