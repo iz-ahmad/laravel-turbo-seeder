@@ -149,7 +149,7 @@ TurboSeeder::fromFactory(User::factory())
 // 2. Using package's generator closure for data gen with more speed
 $uniqueEmail = TurboData::uniqueEmail();
 
-TurboSeeder::forTable('users')
+TurboSeeder::forTable(User::class)
     ->columns(['name', 'email', 'password', 'created_at'])
     ->generate(fn ($index) => [
         'name'       => "User {$index}",
@@ -161,14 +161,16 @@ TurboSeeder::forTable('users')
     ->run();
 ```
 
-`forTable()`/`table()` also accepts an Eloquent Model class or instance instead of a table/string name - the table (and connection, unless overridden by `connection()`) are resolved from the model:
+> `forTable()`/`table()` also accepts a table name (string) instead of an Eloquent Model class or instance:
 
 ```php
-// These are equivalent when User's table is 'users':
-TurboSeeder::forTable('users')->...
+// These are equivalent when \App\Models\User's table name is 'users':
 TurboSeeder::forTable(User::class)->...
 TurboSeeder::forTable(new User)->...
+TurboSeeder::forTable('users')->...
 ```
+
+When an Eloquent Model is passed, the table (and connection, unless explicitly overridden by `connection()`) are resolved from the model.
 
 #### Max speed with the CSV strategy
 
@@ -412,7 +414,7 @@ Lighter on memory than loading full Eloquent models - stores only raw IDs:
 
 ```php
 // Seed parents first (forTable() also accepts a Model class/instance - see note above)
-TurboSeeder::forTable('users')
+TurboSeeder::forTable(User::class) // also can use table_name as param
     ->columns(['name', 'email', 'created_at'])
     ->generate(fn ($i) => [
         'name'       => "User {$i}",
@@ -423,7 +425,7 @@ TurboSeeder::forTable('users')
     ->run();
 
 // fromTable() loads IDs once from the DB, then cycles - zero extra queries
-$userIds = TurboData::fromTable('users');
+$userIds = TurboData::fromTable(User::class); // also can use table_name
 
 TurboSeeder::forTable('posts')
     ->columns(['user_id', 'title', 'created_at'])
@@ -455,8 +457,8 @@ TurboSeeder::fromFactory(Post::factory()->recycle($users))
     ->run();
 
 // 3. Seed pivot / child table separately (e.g. post_tags)
-$postIds = TurboData::fromTable('posts');
-$tagIds  = TurboData::fromTable('tags');
+$postIds = TurboData::fromTable(Post::class); // also can use `posts`
+$tagIds  = TurboData::fromTable(Tag::class);   // also can use `tags`
 
 // Pivot tables rarely have a dedicated model, so a plain table name is used here
 TurboSeeder::forTable('post_tag')
@@ -653,7 +655,8 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 
 | Method | Description |
 |---|---|
-| `table(string\|Model\|class-string<Model>)` | Table name, an Eloquent Model class, or a Model instance - also settable via `forTable()` (see note below) |
+| `table(string\|Model\|class-string<Model>)` | Table name, an Eloquent Model class, or a Model instance |
+| `forTable(string\|Model\|class-string<Model>)` | Table name, an Eloquent Model class, or a Model instance |
 | `columns(array)` | Columns to seed |
 | `columnsFromSchema()` | Derive columns from the table schema (opt-in; see note below) |
 | `generate(Closure)` | Row generator closure - receives `$index`, returns an array |
@@ -851,7 +854,7 @@ use IzAhmad\TurboSeeder\Enums\FromTableMode;
 $userIds     = TurboData::fromTable(User::class);                       // Model class - cycle (default)
 $categoryIds = TurboData::fromTable('categories', 'id', 'random');      // table name - random pick
 $tagIds      = TurboData::fromTable('tags', 'id', FromTableMode::RANDOM); // or the enum
-$codes       = TurboData::fromTable('regions', 'code', 'cycle', 'reports'); // custom connection
+$codes       = TurboData::fromTable('regions', 'code', 'cycle', 'custom_connection'); // custom connection
 
 TurboSeeder::forTable(Post::class)
     ->columns(['user_id', 'category_id', 'title'])
