@@ -92,6 +92,7 @@ class ExampleSeeder extends Seeder
 
         // ── 5) Huge reference tables: fromTableStream() ───────────────────────
         // Memory-bounded alternative to fromTable() — streams one page at a time.
+        // Use when dealing with large reference tables (>500K rows) to avoid memory issues.
 
         $bigPoolUserIds = TurboData::fromTableStream('users', 'id', pageSize: 10_000);
         $eventName = TurboData::cycleFrom(['page_view', 'click', 'signup']);

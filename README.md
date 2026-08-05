@@ -784,7 +784,7 @@ class TurboSeederListener
 
 > All returned values are automatically formatted via the internal `ValueFormatter`.
 
-**Three calling conventions:**
+**Three calling conventions for helpers:**
 
 | Convention | Which helpers | How to call |
 |---|---|---|
@@ -879,7 +879,7 @@ $userIds = TurboData::fromQuery(
 );
 ```
 
-**`fromTableStream()`** - for very large reference tables that would consume too much memory if loaded all at once:
+**`fromTableStream()`** - for very large reference tables (500K+ rows) that would consume too much memory if loaded all at once:
 
 ```php
 // Streams IDs one page at a time; cycles with bounded memory
