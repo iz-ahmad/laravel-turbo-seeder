@@ -24,7 +24,7 @@ Default Laravel seeders don't scale well. Seeding 500K-1M+ records for realistic
 | 1M records (simple table) | ~30 min | **~20s** |
 | 1M records (complex table) | ~40-50 min | **~60s** |
 | 1M records (CSV strategy) | - | **~10-45s** |
-| Peak Memory | unbounded | **< 50-200 MB** |
+| Peak Memory | unbounded | **< 0-200 MB** |
 
 No more coffee breaks, tab-switching, or "I'll test later"! So you can:
 
@@ -170,7 +170,7 @@ TurboSeeder::forTable(new User)->...
 TurboSeeder::forTable('users')->...
 ```
 
-When an Eloquent Model is passed, the table (and connection, unless explicitly overridden by `connection()`) are resolved from the model.
+When an Eloquent Model is passed, the table (and connection, unless explicitly overridden by `connection()`) are resolved from the model. Using Eloquent Model as the argument adds **zero performance overhead** compared to string table names, since model resolution is cached after the first call.
 
 #### Max speed with the CSV strategy
 
@@ -1096,15 +1096,17 @@ Measured on a MacBook M1, MySQL 8, PHP 8.5 and default chunk sizes.
 
 | Table | Records | Time | Peak memory |
 |---|---|---|---|
-| Simple (~5 cols) | 1M | ~20s | <50 MB |
+| Simple (~5 cols) | 1M | ~20-25s | <50 MB |
 | Complex (~15-20 cols) | 1M | ~60s | < 200 MB |
 
 ### CSV Strategy
 
 | Table | Records | Time | Additional memory |
 |---|---|---|---|
-| Simple (~5 cols) | 1M | ~10-15s | ~0 MB |
-| Complex (~15-20 cols) | 1M | ~45s | ~0 MB |
+| Simple (~5 cols) | 1M | ~10-18s | ~0 MB |
+| Complex (~15-20 cols) | 1M | ~40s | ~0 MB |
+
+> CSV is 25% faster than default strategy.
 
 ### fromFactory() Path
 
@@ -1112,11 +1114,12 @@ Measured on a MacBook M1, MySQL 8, PHP 8.5 and default chunk sizes.
 
 | Table | Records | Time | Additional memory |
 |---|---|---|---|
-| Simple (~5 cols) | 1M | ~60-70s | ~0 MB |
+| Simple (~5 cols) | 1M | ~60-80s | ~90 MB |
+| Complex (~15-20 cols) | 1M | ~90-150s | ~100 MB |
 
 > See [Two Data Generation Paths](#two-data-generation-paths) for more info.
 
-Use `fromFactory()` for convenience at moderate volumes (up to ~500k rows). If needed more records than 500k, you can switch to `generate()` when you need maximum speed.
+`fromFactory()` performance varies based on system load, model hydration overhead, and PHP garbage collection cycles. Peak memory remains constant (~100 MB), but execution time can vary between runs even on the same machine. Use this for convenience at moderate volumes (up to ~500k rows). When need 500K+ records, try `generate()` for maximum speed and predictability.
 
 > Reproduce results on your own machine: `php artisan turbo-seeder:benchmark`
 
