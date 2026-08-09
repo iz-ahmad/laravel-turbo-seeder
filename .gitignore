@@ -27,6 +27,7 @@ testbench.yaml
 /coverage
 
 /temp-docs
+/PROGRESS.md
 .claude/
 skills-lock.json
 .trae/

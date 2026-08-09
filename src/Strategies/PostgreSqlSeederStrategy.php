@@ -47,13 +47,13 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
         $columnCount = count($columns);
         $recordCount = count($records);
 
-        $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
+        $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL), $columns));
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL);
 
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));
 
-        $conflictTarget = implode(', ', array_map(fn ($col) => "\"{$col}\"", $upsertKeys));
+        $conflictTarget = implode(', ', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL), $upsertKeys));
 
         $updateColumns = array_diff($columns, $upsertKeys);
 
@@ -61,7 +61,11 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
             $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) DO NOTHING";
         } else {
             $updateClause = implode(', ', array_map(
-                fn ($col) => "\"{$col}\" = EXCLUDED.\"{$col}\"",
+                function ($col) {
+                    $q = SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL);
+
+                    return "{$q} = EXCLUDED.{$q}";
+                },
                 $updateColumns,
             ));
 
@@ -98,7 +102,7 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
         $columnCount = count($columns);
         $recordCount = count($records);
 
-        $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
+        $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL), $columns));
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL);
 
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
@@ -135,6 +139,7 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
         $configuredSize = $this->config->getChunkSize();
         $defaultSize = config('turbo-seeder.chunk_sizes.pgsql', config('turbo-seeder.default_chunk_size', 500));
 
-        return $configuredSize ?? $defaultSize;
+        // PostgreSQL rejects a statement with more than 65,535 bind parameters.
+        return $this->clampChunkSizeToBindLimit($configuredSize ?? $defaultSize, 65535);
     }
 }

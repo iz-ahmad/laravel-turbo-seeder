@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
-class TurboBenchmarkCommand extends Command
+final class TurboBenchmarkCommand extends Command
 {
+    use ConfirmableTrait;
+
     public $signature = 'turbo-seeder:benchmark
                         {--connection= : Database connection name}
                         {--table=benchmark_test : Table name for benchmarking}
-                        {--records=50000 : Number of records to seed}';
+                        {--records=100000 : Number of records to seed}
+                        {--force : Skip the production confirmation prompt}';
 
     public $description = 'Benchmark TurboSeeder performance (default vs CSV strategies)';
 
@@ -25,18 +29,38 @@ class TurboBenchmarkCommand extends Command
         $records = (int) $this->option('records');
         $columnCount = 5;
 
+        // This command CREATES, TRUNCATEs and DROPs the benchmark table. Guard
+        // against running it outside local/testing (e.g. a production typo).
+        if (! $this->confirmToProceed(
+            'This command creates and DROPS a benchmark table.',
+            fn () => ! app()->environment('local', 'testing'),
+        )) {
+            return self::FAILURE;
+        }
+
         $this->info('🏁 Starting TurboSeeder Performance Benchmark...');
         $this->info("Connection: {$connection}");
         $this->info("Table: {$table} (containing {$columnCount} columns)");
         $this->info('Records: '.number_format($records));
         $this->newLine();
 
-        try {
-            $driver = $this->detectDriver($connection);
-            $this->info("Detected Driver: {$driver->getDisplayName()}");
-            $this->newLine();
+        $driver = $this->detectDriver($connection);
 
+        if (DB::connection($connection)->getSchemaBuilder()->hasTable($table)) {
+            $this->error("✗ Table [{$table}] already exists on connection [{$connection}].");
+            $this->line('  Pass a different --table name for benchmarking as the table will be dropped before testing and also afterwords.');
+
+            return self::FAILURE;
+        }
+
+        $this->info("Detected Driver: {$driver->getDisplayName()}");
+        $this->newLine();
+
+        $created = false;
+
+        try {
             $this->createBenchmarkTable($table, $connection, $driver);
+            $created = true;
 
             $results = [];
 
@@ -63,6 +87,10 @@ class TurboBenchmarkCommand extends Command
         } catch (\Throwable $e) {
             $this->error('✗ Benchmark failed: '.$e->getMessage());
 
+            if ($created) {
+                $this->dropBenchmarkTable($table, $connection, $driver);
+            }
+
             return self::FAILURE;
         }
     }
@@ -72,7 +100,7 @@ class TurboBenchmarkCommand extends Command
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
 
-        $seederBuilder = TurboSeeder::create($table)
+        $seederBuilder = TurboSeeder::forTable($table)
             ->columns(['name', 'email', 'value', 'created_at'])
             ->generate(fn ($i) => [
                 'name' => "User {$i}",

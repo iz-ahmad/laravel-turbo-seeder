@@ -8,9 +8,12 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Services\ValueFormatter;
+use IzAhmad\TurboSeeder\Strategies\Concerns\ResolvesSqliteVariableLimit;
 
 final class SqliteSeederStrategy extends AbstractSeederStrategy
 {
+    use ResolvesSqliteVariableLimit;
+
     public function supports(DatabaseDriver $driver): bool
     {
         return $driver === DatabaseDriver::SQLITE;
@@ -46,29 +49,32 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
     protected function upsertUsingMultiRowStatement(string $table, array $columns, array $records, array $upsertKeys): void
     {
         $columnCount = count($columns);
-        $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
+        $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::SQLITE), $columns));
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE);
 
-        $conflictTarget = implode(', ', array_map(fn ($col) => "\"{$col}\"", $upsertKeys));
+        $conflictTarget = implode(', ', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::SQLITE), $upsertKeys));
         $updateColumns = array_diff($columns, $upsertKeys);
 
-        if (empty($updateColumns)) {
-            $this->insertUsingMultiRowStatement($table, $columns, $records);
+        // Every column is a key, so there is nothing to update: DO NOTHING on
+        // conflict (consistent with PostgreSQL and MySQL) instead of a plain
+        // INSERT that would throw a unique-constraint error on re-seed.
+        $conflictAction = empty($updateColumns)
+            ? 'DO NOTHING'
+            : 'DO UPDATE SET '.implode(', ', array_map(
+                function ($col) {
+                    $q = SqlIdentifier::quoteColumn($col, DatabaseDriver::SQLITE);
 
-            return;
-        }
+                    return "{$q} = EXCLUDED.{$q}";
+                },
+                $updateColumns,
+            ));
 
-        $updateClause = implode(', ', array_map(
-            fn ($col) => "\"{$col}\" = EXCLUDED.\"{$col}\"",
-            $updateColumns,
-        ));
-
-        $maxRowsPerBatch = max(1, (int) floor(999 / $columnCount));
+        $maxRowsPerBatch = $this->sqliteMaxRowsPerBatch($columnCount);
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
             $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));
-            $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) DO UPDATE SET {$updateClause}";
+            $sql = "INSERT INTO {$quotedTable} ({$columnNames}) VALUES {$allPlaceholders} ON CONFLICT ({$conflictTarget}) {$conflictAction}";
 
             $bindings = [];
             foreach ($batch as $record) {
@@ -99,11 +105,11 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
     protected function insertUsingMultiRowStatement(string $table, array $columns, array $records): void
     {
         $columnCount = count($columns);
-        $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
+        $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::SQLITE), $columns));
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE);
 
-        $maxRowsPerBatch = max(1, (int) floor(999 / $columnCount));
+        $maxRowsPerBatch = $this->sqliteMaxRowsPerBatch($columnCount);
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
             $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));

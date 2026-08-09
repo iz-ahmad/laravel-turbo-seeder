@@ -10,9 +10,6 @@ use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\ConsoleProgressTrackerAdapter;
 use IzAhmad\TurboSeeder\Services\StrategyResolver;
 
-/**
- * Trait to handle fallback for CSV strategies.
- */
 trait HandlesCsvFallback
 {
     /**
@@ -35,9 +32,6 @@ trait HandlesCsvFallback
         return $this->executeDefaultStrategy($config);
     }
 
-    /**
-     * Clean up CSV strategy environment.
-     */
     protected function cleanupCsvEnvironment(): void
     {
         if ($this->environmentPrepared) {
@@ -82,15 +76,12 @@ trait HandlesCsvFallback
     protected function getFallbackWarningMessage(): string
     {
         return match ($this->dbConnection->driver->value) {
-            'mysql' => '⚠️  CSV strategy failed (MySQL LOAD DATA LOCAL INFILE not available). Falling back to default strategy.',
-            'pgsql' => '⚠️  CSV strategy failed (PostgreSQL COPY command not available). Falling back to default strategy.',
-            default => '⚠️  CSV strategy failed. Falling back to default strategy.',
+            'mysql' => '⚠️  CSV strategy failed (MySQL LOAD DATA LOCAL INFILE not available). Will fall back to default strategy.',
+            'pgsql' => '⚠️  CSV strategy failed (PostgreSQL COPY command not available). Will fall back to default strategy.',
+            default => '⚠️  CSV strategy failed. Will fall back to default strategy.',
         };
     }
 
-    /**
-     * Reset progress tracker to 0.
-     */
     protected function resetProgressTracker(): void
     {
         /** @var ConsoleProgressTrackerAdapter $adapter */

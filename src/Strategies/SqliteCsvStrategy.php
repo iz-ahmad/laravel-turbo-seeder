@@ -8,9 +8,12 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Services\CsvReader;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
+use IzAhmad\TurboSeeder\Strategies\Concerns\ResolvesSqliteVariableLimit;
 
 final class SqliteCsvStrategy extends AbstractCsvStrategy
 {
+    use ResolvesSqliteVariableLimit;
+
     public function supports(DatabaseDriver $driver): bool
     {
         return $driver === DatabaseDriver::SQLITE;
@@ -70,7 +73,7 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
         $singleRowPlaceholders = '('.str_repeat('?,', $columnCount - 1).'?)';
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE);
 
-        $maxRowsPerBatch = max(1, (int) floor(999 / $columnCount));
+        $maxRowsPerBatch = $this->sqliteMaxRowsPerBatch($columnCount);
 
         foreach (array_chunk($records, $maxRowsPerBatch) as $batch) {
             $allPlaceholders = implode(',', array_fill(0, count($batch), $singleRowPlaceholders));

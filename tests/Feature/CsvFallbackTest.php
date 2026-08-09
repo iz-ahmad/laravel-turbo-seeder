@@ -40,7 +40,7 @@ test('csv import failed exception preserves original exception', function () {
 });
 
 test('csv strategy works or falls back gracefully on mysql', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -56,7 +56,7 @@ test('csv strategy works or falls back gracefully on mysql', function () {
 })->skip(fn () => getDatabaseDriver() !== 'mysql', 'MySQL-specific test');
 
 test('csv strategy handles large datasets on mysql', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -73,7 +73,7 @@ test('csv strategy handles large datasets on mysql', function () {
 })->skip(fn () => getDatabaseDriver() !== 'mysql', 'MySQL-specific test');
 
 test('csv strategy handles timestamps on mysql', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'created_at', 'updated_at'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -94,7 +94,7 @@ test('csv strategy handles timestamps on mysql', function () {
 })->skip(fn () => getDatabaseDriver() !== 'mysql', 'MySQL-specific test');
 
 test('csv strategy works or falls back gracefully on postgresql', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -110,7 +110,7 @@ test('csv strategy works or falls back gracefully on postgresql', function () {
 })->skip(fn () => getDatabaseDriver() !== 'pgsql', 'PostgreSQL-specific test');
 
 test('csv strategy handles large datasets on postgresql', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -127,7 +127,7 @@ test('csv strategy handles large datasets on postgresql', function () {
 })->skip(fn () => getDatabaseDriver() !== 'pgsql', 'PostgreSQL-specific test');
 
 test('csv strategy handles timestamps on postgresql', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'created_at', 'updated_at'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -147,8 +147,26 @@ test('csv strategy handles timestamps on postgresql', function () {
         ->and($user->updated_at)->not->toBeNull();
 })->skip(fn () => getDatabaseDriver() !== 'pgsql', 'PostgreSQL-specific test');
 
+test('mysql csv preflight falls back without generating when local_infile is off', function () {
+    DB::statement('SET GLOBAL local_infile=0');
+
+    try {
+        $result = TurboSeeder::forTable('test_users')
+            ->columns(['name', 'email'])
+            ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@preflight.test"])
+            ->count(20)
+            ->useCsvStrategy()
+            ->run();
+
+        expect($result->success)->toBeTrue()
+            ->and(DB::table('test_users')->count())->toBe(20);
+    } finally {
+        DB::statement('SET GLOBAL local_infile=1');
+    }
+})->skip(fn () => getDatabaseDriver() !== 'mysql', 'MySQL-specific test');
+
 test('csv strategy tracks performance metrics', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",

@@ -32,8 +32,11 @@ final class CleanupEnvironmentAction
 
     private function cleanupMySql(Connection $connection, SeederConfigurationDTO $config): void
     {
-        if ($config->shouldDisableForeignKeyChecks()) {
+        if ($config->shouldDisableUniqueChecks()) {
             $connection->statement('SET unique_checks=1');
+        }
+
+        if ($config->shouldDisableForeignKeyChecks()) {
             $connection->statement('SET FOREIGN_KEY_CHECKS=1');
         }
     }

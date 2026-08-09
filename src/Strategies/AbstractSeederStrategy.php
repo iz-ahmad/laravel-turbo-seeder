@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Strategies;
 
+use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Actions\CleanupEnvironmentAction;
 use IzAhmad\TurboSeeder\Actions\PrepareEnvironmentAction;
 use IzAhmad\TurboSeeder\Contracts\MemoryManagerInterface;
@@ -11,10 +12,12 @@ use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface;
 use IzAhmad\TurboSeeder\DTOs\DatabaseConnectionDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
+use IzAhmad\TurboSeeder\Strategies\Concerns\ClassifiesDatabaseErrors;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ManagesEnvironment;
 
 abstract class AbstractSeederStrategy implements SeederStrategyInterface
 {
+    use ClassifiesDatabaseErrors;
     use ManagesEnvironment;
 
     protected int $chunkSize;
@@ -40,27 +43,54 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
         $totalChunks = (int) ceil($config->count / $this->chunkSize);
         $recordsInserted = 0;
 
-        for ($chunkIndex = 0; $chunkIndex < $totalChunks; $chunkIndex++) {
-            $recordsInChunk = min(
-                $this->chunkSize,
-                $config->count - ($chunkIndex * $this->chunkSize)
-            );
+        // commitEvery() trades all-or-nothing atomicity for a small redo log /
+        // WAL: instead of one wrapping transaction it commits every N chunks.
+        $commitEvery = $config->getCommitEvery();
+        $usePeriodicCommits = $commitEvery !== null && ! $config->isDryRun();
+        $connection = DB::connection($this->dbConnection->name);
 
-            $records = $this->generateChunk(
-                $config->generator,
-                $config->columns,
-                $chunkIndex,
-                $recordsInChunk
-            );
+        if ($usePeriodicCommits) {
+            $connection->beginTransaction();
+        }
 
-            $this->insertChunkWithRetry($config->table, $config->columns, $records, $config->getRetryAttempts());
+        try {
+            for ($chunkIndex = 0; $chunkIndex < $totalChunks; $chunkIndex++) {
+                $recordsInChunk = min(
+                    $this->chunkSize,
+                    $config->count - ($chunkIndex * $this->chunkSize)
+                );
 
-            $recordsInserted += $recordsInChunk;
+                $records = $this->generateChunk(
+                    $config->generator,
+                    $config->columns,
+                    $chunkIndex,
+                    $recordsInChunk
+                );
 
-            $this->memoryManager->maybeCleanup();
-            $this->progressTracker->advance($recordsInChunk);
+                $this->insertChunkWithRetry($config->table, $config->columns, $records, $config->getRetryAttempts());
 
-            unset($records);
+                $recordsInserted += $recordsInChunk;
+
+                if ($usePeriodicCommits && ($chunkIndex + 1) % $commitEvery === 0) {
+                    $connection->commit();
+                    $connection->beginTransaction();
+                }
+
+                $this->memoryManager->maybeCleanup();
+                $this->progressTracker->advance($recordsInChunk);
+
+                unset($records);
+            }
+        } catch (\Throwable $e) {
+            if ($usePeriodicCommits && $connection->transactionLevel() > 0) {
+                $connection->rollBack();
+            }
+
+            throw $e;
+        }
+
+        if ($usePeriodicCommits && $connection->transactionLevel() > 0) {
+            $connection->commit();
         }
 
         return $recordsInserted;
@@ -116,7 +146,14 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
 
                 return;
             } catch (\Throwable $e) {
-                if (! $this->isRetryableException($e) || $attempt >= $maxAttempts - 1) {
+                // A deadlock aborts the entire open transaction, so retrying a single
+                // chunk inside one would silently drop rows already written in this
+                // transaction while still counting them. Retry only when each insert
+                // autocommits (no wrapping/commitEvery transaction), where a failed
+                // statement leaves nothing behind.
+                $insideTransaction = DB::connection($this->dbConnection->name)->transactionLevel() > 0;
+
+                if ($insideTransaction || ! $this->isTransientLockError($e) || $attempt >= $maxAttempts - 1) {
                     throw $e;
                 }
 
@@ -128,18 +165,16 @@ abstract class AbstractSeederStrategy implements SeederStrategyInterface
     }
 
     /**
-     * Determine whether an exception is a transient lock/deadlock error worth retrying.
+     * Clamp a chunk size so a single multi-row INSERT never exceeds the driver's
+     * bind-parameter ceiling (chunk rows × column count). PostgreSQL and MySQL
+     * both hard-fail past 65,535 placeholders in one statement.
      */
-    private function isRetryableException(\Throwable $e): bool
+    protected function clampChunkSizeToBindLimit(int $chunkSize, int $maxParameters): int
     {
-        $message = strtolower($e->getMessage());
+        $columnCount = max(1, count($this->config->columns));
+        $maxRows = max(1, intdiv($maxParameters, $columnCount));
 
-        // SQLSTATE 40001 = serialization failure / deadlock detected (MySQL + PostgreSQL)
-        // MySQL error 1205 = lock wait timeout exceeded
-        return str_contains($message, 'deadlock')
-            || str_contains($message, 'lock wait timeout')
-            || (string) $e->getCode() === '40001'
-            || (int) $e->getCode() === 1205;
+        return min($chunkSize, $maxRows);
     }
 
     /**

@@ -226,3 +226,95 @@ test('shouldUseTransactions returns false when disabled', function () {
 
     expect($config->shouldUseTransactions())->toBeFalse();
 });
+
+test('csv strategy skips the wrapping transaction by default', function () {
+    $config = new SeederConfigurationDTO(
+        table: 'users',
+        columns: ['name'],
+        generator: fn ($i) => ['name' => "User {$i}"],
+        count: 1,
+        connection: 'mysql',
+        strategy: SeederStrategy::CSV,
+    );
+
+    expect($config->shouldUseTransactions())->toBeFalse();
+});
+
+test('dry-run forces a transaction even for the csv strategy', function () {
+    $config = new SeederConfigurationDTO(
+        table: 'users',
+        columns: ['name'],
+        generator: fn ($i) => ['name' => "User {$i}"],
+        count: 1,
+        connection: 'mysql',
+        strategy: SeederStrategy::CSV,
+        options: ['dry_run' => true],
+    );
+
+    expect($config->shouldUseTransactions())->toBeTrue();
+});
+
+test('commitEvery replaces the single wrapping transaction', function () {
+    $config = new SeederConfigurationDTO(
+        table: 'users',
+        columns: ['name'],
+        generator: fn ($i) => ['name' => "User {$i}"],
+        count: 1,
+        connection: 'mysql',
+        options: ['commit_every' => 5],
+    );
+
+    expect($config->shouldUseTransactions())->toBeFalse()
+        ->and($config->getCommitEvery())->toBe(5);
+});
+
+test('explicit useTransactions wins over csv default', function () {
+    $config = new SeederConfigurationDTO(
+        table: 'users',
+        columns: ['name'],
+        generator: fn ($i) => ['name' => "User {$i}"],
+        count: 1,
+        connection: 'mysql',
+        strategy: SeederStrategy::CSV,
+        options: ['use_transactions' => true],
+    );
+
+    expect($config->shouldUseTransactions())->toBeTrue();
+});
+
+test('published config keys are honoured when no builder option is set', function () {
+    config()->set('turbo-seeder.performance.use_transactions', false);
+    config()->set('turbo-seeder.performance.disable_foreign_keys', false);
+    config()->set('turbo-seeder.performance.disable_query_log', false);
+    config()->set('turbo-seeder.progress.enabled', false);
+
+    $config = new SeederConfigurationDTO(
+        table: 'users',
+        columns: ['name'],
+        generator: fn ($i) => ['name' => "User {$i}"],
+        count: 1,
+        connection: 'mysql',
+    );
+
+    expect($config->shouldUseTransactions())->toBeFalse()
+        ->and($config->shouldDisableForeignKeyChecks())->toBeFalse()
+        ->and($config->shouldDisableQueryLog())->toBeFalse()
+        ->and($config->hasProgressTracking())->toBeFalse();
+});
+
+test('builder options take precedence over published config', function () {
+    config()->set('turbo-seeder.performance.use_transactions', false);
+    config()->set('turbo-seeder.progress.enabled', false);
+
+    $config = new SeederConfigurationDTO(
+        table: 'users',
+        columns: ['name'],
+        generator: fn ($i) => ['name' => "User {$i}"],
+        count: 1,
+        connection: 'mysql',
+        options: ['use_transactions' => true, 'progress_tracking' => true],
+    );
+
+    expect($config->shouldUseTransactions())->toBeTrue()
+        ->and($config->hasProgressTracking())->toBeTrue();
+});

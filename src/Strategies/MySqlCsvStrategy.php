@@ -5,15 +5,62 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Strategies;
 
 use Illuminate\Support\Facades\DB;
+use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
+use IzAhmad\TurboSeeder\Services\MySqlPdoAttributes;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
+use IzAhmad\TurboSeeder\Strategies\Concerns\ClassifiesDatabaseErrors;
 
 final class MySqlCsvStrategy extends AbstractCsvStrategy
 {
+    use ClassifiesDatabaseErrors;
+
     public function supports(DatabaseDriver $driver): bool
     {
         return $driver === DatabaseDriver::MYSQL;
+    }
+
+    /**
+     * Fall back before generating the CSV when LOCAL INFILE is unavailable —
+     * either the PDO client option is off or the server's local_infile is
+     * disabled. Avoids writing a large file that could never be imported.
+     */
+    protected function preflightImportCapability(SeederConfigurationDTO $config): void
+    {
+        $connection = DB::connection($this->dbConnection->name);
+
+        $options = $connection->getConfig('options') ?? [];
+        $clientEnabled = ! empty($options[MySqlPdoAttributes::localInfileAttribute()]);
+
+        $serverEnabled = true;
+
+        try {
+            $row = $connection->selectOne('SELECT @@GLOBAL.local_infile AS enabled');
+            // The value may come back as an int (1/0) or a string ('ON'/'OFF')
+            $value = strtolower((string) ($row->enabled ?? ''));
+            $serverEnabled = $row !== null && in_array($value, ['1', 'on', 'true'], true);
+        } catch (\Throwable) {
+            // Cannot determine the server setting
+            $serverEnabled = true;
+        }
+
+        if ($clientEnabled && $serverEnabled) {
+            return;
+        }
+
+        $reason = ! $clientEnabled
+            ? 'MYSQL ATTR_LOCAL_INFILE is not enabled on the connection'
+            : 'local_infile is disabled on the MySQL server';
+
+        throw new CsvImportFailedException(
+            "MySQL CSV import is unavailable ({$reason}); falling back without generating the CSV. See README for configuration guideline.",
+            config('turbo-seeder.csv_strategy.fallback_to_default_strategy_on_config_error', true),
+            null,
+            'mysql',
+            $config->table,
+            null,
+        );
     }
 
     /**
@@ -24,16 +71,26 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
     protected function importFromCsv(string $table, array $columns): void
     {
         $pdo = DB::connection($this->dbConnection->name)->getPdo();
-        $filepath = trim(
-            $pdo->quote($this->getAbsoluteFilePath()),
-            "'"
-        );
+        // Normalise to forward slashes: MySQL treats backslashes in the LOAD DATA path as escape characters
+        $filepath = str_replace('\\', '/', $this->assertSafeCsvPath($this->getAbsoluteFilePath()));
 
-        $columnNames = implode(',', array_map(fn ($col) => "`{$col}`", $columns));
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
 
-        // PDO::MYSQL_ATTR_LOCAL_INFILE must be enabled on the connection; if not,
-        // the import will fail and trigger an automatic fallback to the default strategy.
+        $nullMarker = config('turbo-seeder.csv_strategy.null_marker', '\\N');
+        $quotedNullMarker = $pdo->quote($nullMarker);
+
+        // Each column is read into a user variable, then assigned via NULLIF so the null marker becomes a real NULL
+        $userVars = [];
+        $setClauses = [];
+        foreach ($columns as $i => $col) {
+            $var = "@ts_col_{$i}";
+            $userVars[] = $var;
+            $setClauses[] = SqlIdentifier::quoteColumn($col, DatabaseDriver::MYSQL)." = NULLIF({$var}, {$quotedNullMarker})";
+        }
+
+        $columnVarList = implode(',', $userVars);
+        $setClause = implode(', ', $setClauses);
+
         $sql = "
             LOAD DATA LOCAL INFILE '{$filepath}'
             INTO TABLE {$quotedTable}
@@ -41,7 +98,8 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
             OPTIONALLY ENCLOSED BY '\"'
             ESCAPED BY ''
             LINES TERMINATED BY '\\n'
-            ({$columnNames})
+            ({$columnVarList})
+            SET {$setClause}
         ";
 
         try {
@@ -49,7 +107,7 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
         } catch (\Throwable $e) {
             $errorMessage = $e->getMessage();
 
-            if ($this->isLocalInfileError($errorMessage)) {
+            if ($this->isLocalInfileError($e)) {
                 $shouldFallback = config('turbo-seeder.csv_strategy.fallback_to_default_strategy_on_config_error', true);
 
                 throw new CsvImportFailedException(
@@ -72,28 +130,13 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
     }
 
     /**
-     * Check if error is related to LOCAL_INFILE configuration.
+     * Whether the failure is a LOCAL INFILE capability error worth falling back
+     * to the default strategy for. Classified by MySQL error number rather than
+     * by matching English error text.
      */
-    private function isLocalInfileError(string $errorMessage): bool
+    private function isLocalInfileError(\Throwable $e): bool
     {
-        $localInfilePatterns = [
-            'LOAD DATA LOCAL INFILE is forbidden',
-            'local_infile',
-            'MYSQL_ATTR_LOCAL_INFILE',
-            'mysqli.allow_local_infile',
-            'mysqli.local_infile_directory',
-            'PDO::MYSQL_ATTR_LOCAL_INFILE',
-            'PDO::MYSQL_ATTR_LOCAL_INFILE_DIRECTORY',
-            'LOCAL INFILE',
-        ];
-
-        foreach ($localInfilePatterns as $pattern) {
-            if (stripos($errorMessage, $pattern) !== false) {
-                return true;
-            }
-        }
-
-        return false;
+        return in_array($this->driverErrno($e), [1148, 3948, 2068], true);
     }
 
     /**
@@ -102,7 +145,7 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
     private function getLocalInfileErrorMessage(string $originalError): string
     {
         return sprintf(
-            'MySQL LOAD DATA LOCAL INFILE not available. The PDO connection must have `PDO::MYSQL_ATTR_LOCAL_INFILE` enabled for CSV strategy. See README.md for detailed configuration instructions.'.
+            'MySQL LOAD DATA LOCAL INFILE not available. The PDO connection must have `PDO::MYSQL_ATTR_LOCAL_INFILE` or `Pdo\Mysql::ATTR_LOCAL_INFILE` enabled for CSV strategy. See README.md for detailed configuration instructions.'.
             'Original error: %s',
             $originalError
         );

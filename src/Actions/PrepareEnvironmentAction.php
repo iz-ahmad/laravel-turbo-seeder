@@ -68,6 +68,12 @@ final class PrepareEnvironmentAction
     {
         if ($config->shouldDisableForeignKeyChecks()) {
             $connection->statement('SET FOREIGN_KEY_CHECKS=0');
+        }
+
+        // unique_checks is a separate, opt-in concern: disabling it speeds up
+        // bulk loads but can admit duplicate values into unique secondary
+        // indexes, so it is never bundled with the foreign key flag.
+        if ($config->shouldDisableUniqueChecks()) {
             $connection->statement('SET unique_checks=0');
         }
 
@@ -76,7 +82,16 @@ final class PrepareEnvironmentAction
 
     private function preparePostgreSql(Connection $connection, SeederConfigurationDTO $config): void
     {
-        if ($config->shouldDisableForeignKeyChecks()) {
+        // NOTE: this only defers DEFERRABLE constraints. Laravel migrations
+        // create foreign keys as NOT DEFERRABLE by default, so for a typical
+        // schema PostgreSQL still validates foreign keys row-by-row. It is kept
+        // because it does help schemas that declare deferrable constraints.
+        //
+        // SET CONSTRAINTS is only meaningful inside a transaction; skip it
+        // otherwise (e.g. the CSV strategy, which runs without a wrapping
+        // transaction) to avoid a useless "can only be used in transaction
+        // blocks" warning.
+        if ($config->shouldDisableForeignKeyChecks() && $connection->transactionLevel() > 0) {
             $connection->statement('SET CONSTRAINTS ALL DEFERRED');
         }
     }

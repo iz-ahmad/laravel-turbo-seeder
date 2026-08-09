@@ -4,17 +4,21 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder\Builder;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
 use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 use IzAhmad\TurboSeeder\Services\SeederOrchestrator;
+use IzAhmad\TurboSeeder\Support\FactoryDataGenerator;
+use IzAhmad\TurboSeeder\Support\ModelTableResolver;
 
 /**
  * Fluent builder for configuring and executing TurboSeeder operations.
  *
- * Provides a chainable interface for setting up seeding operations with
- * various configuration options. Supports method chaining for intuitive
- * and readable configuration.
+ * Provides a chainable interface for setting up seeding operations with various configuration options.
  */
 final class TurboSeederBuilder
 {
@@ -27,9 +31,22 @@ final class TurboSeederBuilder
 
     private ?\Closure $generator = null;
 
+    private ?FactoryDataGenerator $factoryGenerator = null;
+
+    /**
+     * @var array<int, string>
+     */
+    private array $pendingWarnings = [];
+
+    private ?bool $withTimestamps = null;
+
+    private bool $timestampsApplied = false;
+
     private int $count = 1000;
 
     private ?string $connection = null;
+
+    private ?string $modelConnection = null;
 
     private SeederStrategy $strategy = SeederStrategy::DEFAULT;
 
@@ -43,19 +60,38 @@ final class TurboSeederBuilder
     ) {}
 
     /**
-     * Set the table name.
+     * Set the table name - a literal table name, an Eloquent Model class-string, or a Model instance.
+     *
+     * @param  class-string<Model>|Model|string  $table
      */
-    public function table(string $table): self
+    public function table(string|Model $table): self
     {
-        if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/', $table)) {
+        $tableName = $this->resolveTableName($table);
+
+        if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/', $tableName)) {
             throw new \InvalidArgumentException(
-                "Invalid table name [{$table}]. Table names must start with a letter or underscore, contain only letters, digits, and underscores, and may include one schema prefix (schema.table)."
+                "Invalid table name [{$tableName}]. Table names must start with a letter or underscore, contain only letters, digits, and underscores, and may include one schema prefix (schema.table)."
             );
         }
 
-        $this->table = $table;
+        $this->table = $tableName;
 
         return $this;
+    }
+
+    /**
+     * Resolve a table() argument to a table name, capturing the model's connection
+     * along the way so it can be applied unless the caller sets connection() explicitly.
+     *
+     * @param  class-string<Model>|Model|string  $table
+     */
+    private function resolveTableName(string|Model $table): string
+    {
+        $resolved = ModelTableResolver::resolve($table, 'table()/forTable()');
+
+        $this->modelConnection = $resolved['connection'];
+
+        return $resolved['table'];
     }
 
     /**
@@ -79,11 +115,108 @@ final class TurboSeederBuilder
     }
 
     /**
+     * Derive the columns to seed from the table schema (every column except the
+     * auto-incrementing key). Opt-in convenience so you don't repeat the column
+     * list; the generator must still produce values for the non-nullable ones.
+     */
+    public function columnsFromSchema(): self
+    {
+        if ($this->table === null || $this->table === '') {
+            throw new \InvalidArgumentException('Call forTable()/table() before columnsFromSchema() to set the table that needs seeding.');
+        }
+
+        $schema = DB::connection($this->resolveConnectionName())->getSchemaBuilder();
+
+        try {
+            $columns = [];
+
+            foreach ($schema->getColumns($this->table) as $column) {
+                if ($column['auto_increment'] === true) {
+                    continue;
+                }
+
+                $columns[] = $column['name'];
+            }
+        } catch (\Throwable) {
+            // Older Laravel / driver without getColumns() support.
+            $columns = array_values(array_filter(
+                $schema->getColumnListing($this->table),
+                fn ($col) => $col !== 'id',
+            ));
+        }
+
+        if (empty($columns)) {
+            throw new \InvalidArgumentException(
+                "columnsFromSchema(): no columns found for table [{$this->table}]."
+            );
+        }
+
+        return $this->columns($columns);
+    }
+
+    /**
      * Set the data generator closure.
      */
     public function generate(\Closure $generator): self
     {
         $this->generator = $generator;
+
+        return $this;
+    }
+
+    /**
+     * Generate rows from an existing Laravel model factory.
+     *
+     * Reuses the factory's definition, states and Faker as the single source of truth for the row shape.
+     * Model events, observers and accessors are skipped; timestamps are filled automatically.
+     */
+    public function fromFactory(Factory $factory): self
+    {
+        $this->factoryGenerator = new FactoryDataGenerator($factory);
+
+        if ($this->table === null) {
+            $this->table($this->factoryGenerator->table());
+        }
+
+        $warning = $this->factoryGenerator->getRecycleWarning();
+        if ($warning !== null) {
+            $this->pendingWarnings[] = $warning;
+        }
+
+        $this->generator = $this->factoryGenerator->toGenerator();
+
+        return $this;
+    }
+
+    /**
+     * Auto-fill created_at/updated_at with a single timestamp for every row.
+     *
+     * Enabled by default on the factory path when the model uses timestamps.
+     * Explicit calls always win.
+     */
+    public function withTimestamps(bool $enabled = true): self
+    {
+        $this->withTimestamps = $enabled;
+
+        return $this;
+    }
+
+    /**
+     * Do not auto-fill timestamps (even on the factory path).
+     */
+    public function withoutTimestamps(): self
+    {
+        return $this->withTimestamps(false);
+    }
+
+    /**
+     * Empty the target table before seeding (a fresh, committed operation).
+     *
+     * Cannot be combined with dryRun(): the wipe is not rolled back.
+     */
+    public function truncate(bool $enabled = true): self
+    {
+        $this->options['truncate'] = $enabled;
 
         return $this;
     }
@@ -189,6 +322,27 @@ final class TurboSeederBuilder
     }
 
     /**
+     * Disable MySQL unique-index checks during seeding (opt-in, MySQL only).
+     *
+     * Speeds up bulk loads but can let duplicate values into unique secondary
+     * indexes — only use it when the data is known to be unique.
+     */
+    public function disableUniqueChecks(bool $disabled = true): self
+    {
+        $this->options['disable_unique_checks'] = $disabled;
+
+        return $this;
+    }
+
+    /**
+     * Enable MySQL unique-index checks when seeding.
+     */
+    public function enableUniqueChecks(): self
+    {
+        return $this->disableUniqueChecks(false);
+    }
+
+    /**
      * Enable or disable query log when seeding.
      */
     public function disableQueryLog(bool $disabled = true): self
@@ -222,6 +376,25 @@ final class TurboSeederBuilder
     public function withoutTransactions(): self
     {
         return $this->useTransactions(false);
+    }
+
+    /**
+     * Commit every N chunks (default strategy only) instead of wrapping the
+     * whole run in one transaction. Keeps the redo log / WAL small on very
+     * large seeds at the cost of all-or-nothing atomicity.
+     *
+     * Any error mid-run leaves already-committed chunks permanently in the table —
+     * there is no rollback path.
+     */
+    public function commitEvery(int $chunks): self
+    {
+        if ($chunks < 1) {
+            throw new \InvalidArgumentException('commitEvery() must be at least 1.');
+        }
+
+        $this->options['commit_every'] = $chunks;
+
+        return $this;
     }
 
     /**
@@ -265,12 +438,7 @@ final class TurboSeederBuilder
     /**
      * Enable dry-run mode: data is generated and validated but not committed.
      * The result will report how many records would have been inserted.
-     *
-     * WARNING: Dry-run discards inserts by rolling back a transaction.
-     * If you also call withoutTransactions(), the rollback cannot happen and
-     * rows WILL be permanently written to the database even though
-     * $result->isDryRun will be true. Do not combine dryRun() with
-     * withoutTransactions() unless you intentionally want this behaviour.
+     * Cannot be combined with withoutTransactions() — dry run relies on a rollback to discard rows.
      */
     public function dryRun(bool $enabled = true): self
     {
@@ -353,8 +521,12 @@ final class TurboSeederBuilder
         $result = $this->orchestrator->execute($config);
 
         if (! $result->success) {
+            // Preserve the original failure (class, SQLSTATE, stack trace) as the
+            // previous exception so callers and error trackers do not lose it.
             throw new \RuntimeException(
-                $result->errorMessage ?? 'Seeding operation failed without error message'
+                $result->errorMessage ?? 'Seeding operation failed without error message',
+                0,
+                $result->exception,
             );
         }
 
@@ -371,10 +543,10 @@ final class TurboSeederBuilder
 
     /**
      * Validate state and build the configuration DTO.
-     * Shared by run() and toConfiguration() to avoid duplicate logic.
      */
     private function buildConfiguration(): SeederConfigurationDTO
     {
+        $this->applyTimestamps();
         $this->validate();
 
         return new SeederConfigurationDTO(
@@ -382,10 +554,73 @@ final class TurboSeederBuilder
             columns: $this->columns,
             generator: $this->generator,
             count: $this->count,
-            connection: $this->connection ?? config('database.default'),
+            connection: $this->resolveConnectionName(),
             strategy: $this->strategy,
-            options: $this->options
+            options: $this->options,
+            pendingWarnings: $this->pendingWarnings,
         );
+    }
+
+    /**
+     * Explicit connection() always wins; otherwise falls back to a Model's connection
+     * (set via table()), then the app's default connection.
+     */
+    private function resolveConnectionName(): string
+    {
+        return $this->connection ?? $this->modelConnection ?? config('database.default');
+    }
+
+    /**
+     * Explicit withTimestamps()/withoutTimestamps() wins; otherwise the factory path defaults to on.
+     */
+    private function shouldApplyTimestamps(): bool
+    {
+        if ($this->withTimestamps !== null) {
+            return $this->withTimestamps;
+        }
+
+        return $this->factoryGenerator?->usesTimestamps() ?? false;
+    }
+
+    /**
+     * Wrap the generator so created_at/updated_at are filled once per run.
+     * Must run before column inference so the timestamp columns are included.
+     */
+    private function applyTimestamps(): void
+    {
+        if ($this->timestampsApplied || $this->generator === null || ! $this->shouldApplyTimestamps()) {
+            return;
+        }
+
+        $createdAt = $this->factoryGenerator?->createdAtColumn() ?? 'created_at';
+        $updatedAt = $this->factoryGenerator?->updatedAtColumn() ?? 'updated_at';
+
+        $timestamp = now()->toDateTimeString();
+        $inner = $this->generator;
+
+        $this->generator = static function (int $index) use ($inner, $createdAt, $updatedAt, $timestamp): array {
+            $record = $inner($index);
+
+            if (! array_key_exists($createdAt, $record)) {
+                $record[$createdAt] = $timestamp;
+            }
+
+            if (! array_key_exists($updatedAt, $record)) {
+                $record[$updatedAt] = $timestamp;
+            }
+
+            return $record;
+        };
+
+        if (! empty($this->columns)) {
+            foreach ([$createdAt, $updatedAt] as $column) {
+                if (! in_array($column, $this->columns, true)) {
+                    $this->columns[] = $column;
+                }
+            }
+        }
+
+        $this->timestampsApplied = true;
     }
 
     /**
@@ -403,15 +638,17 @@ final class TurboSeederBuilder
         }
 
         if (empty($this->columns)) {
-            $firstRecord = ($this->generator)(0);
+            $probeRecord = ($this->generator)(0);
 
-            if (! is_array($firstRecord) || empty($firstRecord)) {
+            if (! is_array($probeRecord) || empty($probeRecord)) {
                 throw new \InvalidArgumentException(
                     'Columns could not be inferred from the generator. Use columns() method or ensure generate() returns a non-empty associative array.'
                 );
             }
 
-            $inferredColumns = array_keys($firstRecord);
+            $this->assertNoClosureValues($probeRecord);
+
+            $inferredColumns = array_keys($probeRecord);
 
             foreach ($inferredColumns as $column) {
                 if (! preg_match('/^[a-zA-Z0-9_]+$/', (string) $column)) {
@@ -422,6 +659,15 @@ final class TurboSeederBuilder
             }
 
             $this->columns = $inferredColumns;
+        } elseif ($this->factoryGenerator === null) {
+            // A raw Closure left in a column only happens with user-written generate()
+            // closures; a factory's raw() never yields a Closure, so the factory path
+            // is not probed here.
+            $probeRecord = ($this->generator)(0);
+
+            if (is_array($probeRecord) && ! empty($probeRecord)) {
+                $this->assertNoClosureValues($probeRecord);
+            }
         }
 
         if ($this->count < 1) {
@@ -430,6 +676,13 @@ final class TurboSeederBuilder
 
         $upsertKeys = $this->options['upsert_keys'] ?? [];
         if (! empty($upsertKeys)) {
+            if ($this->strategy === SeederStrategy::CSV) {
+                throw new \InvalidArgumentException(
+                    'upsert() is not supported with the CSV strategy: LOAD DATA / COPY FROM STDIN provides no ON CONFLICT handling. '
+                    .'Use useDefaultStrategy() for upsert, or remove upsert() when using useCsvStrategy().'
+                );
+            }
+
             $invalidKeys = array_diff($upsertKeys, $this->columns);
             if (! empty($invalidKeys)) {
                 throw new \InvalidArgumentException(
@@ -437,6 +690,56 @@ final class TurboSeederBuilder
                 );
             }
         }
+
+        if (isset($this->options['commit_every']) && $this->strategy === SeederStrategy::CSV) {
+            Log::warning(
+                'TurboSeeder: commitEvery() has no effect on the CSV strategy. '
+                .'CSV import runs outside a transaction; use useDefaultStrategy() if per-chunk commits are required.'
+            );
+        }
+
+        if (isset($this->options['commit_every'])
+            && ($this->options['use_transactions'] ?? false) === true) {
+            throw new \InvalidArgumentException(
+                'commitEvery() and useTransactions() cannot be combined: commitEvery() manages its own transaction boundaries. '
+                .'Remove useTransactions() to use periodic commits.'
+            );
+        }
+
+        if (($this->options['dry_run'] ?? false) === true
+            && ($this->options['use_transactions'] ?? true) === false) {
+            throw new \InvalidArgumentException(
+                'dryRun() cannot be combined with withoutTransactions(): a dry run relies on a transaction rollback to discard rows. '
+                .'Remove withoutTransactions() (dry runs always run inside a transaction).'
+            );
+        }
+
+        if (($this->options['truncate'] ?? false) === true
+            && ($this->options['dry_run'] ?? false) === true) {
+            throw new \InvalidArgumentException(
+                'truncate() cannot be combined with dryRun(): truncation is committed immediately and would not be rolled back.'
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     */
+    private function assertNoClosureValues(array $record): void
+    {
+        $closureColumns = array_keys(array_filter($record, fn ($v) => $v instanceof \Closure));
+
+        if (empty($closureColumns)) {
+            return;
+        }
+
+        throw new \InvalidArgumentException(sprintf(
+            'Generator returned a raw Closure for column(s) [%s]. '
+            .'Check if you forgot to call the helper. '
+            .'Assign it outside the closure (e.g. $fn = TurboData::uniqueEmail()) '
+            .'then invoke it inside (e.g. \'email\' => $fn($i)).',
+            implode(', ', $closureColumns),
+        ));
     }
 
     /**

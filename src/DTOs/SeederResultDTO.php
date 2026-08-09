@@ -13,6 +13,7 @@ final readonly class SeederResultDTO
         public int $peakMemoryBytes = 0,
         public ?string $errorMessage = null,
         public bool $isDryRun = false,
+        public ?\Throwable $exception = null,
     ) {}
 
     /**

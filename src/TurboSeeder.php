@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace IzAhmad\TurboSeeder;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
@@ -12,7 +14,6 @@ use IzAhmad\TurboSeeder\Services\SeederOrchestrator;
 /**
  * Main TurboSeeder service class.
  *
- * Provides the core seeding functionality and builder factory methods.
  * This is the primary entry point for the TurboSeeder package.
  */
 class TurboSeeder
@@ -30,16 +31,21 @@ class TurboSeeder
     }
 
     /**
-     * Create a new seeder builder instance.
+     * Create a new seeder builder instance for the given table - a literal table
+     * name, an Eloquent Model class-string, or a Model instance.
+     *
+     * @param  class-string<Model>|Model|string  $table
      */
-    public function create(?string $table = null): TurboSeederBuilder
+    public function forTable(string|Model $table): TurboSeederBuilder
     {
-        $builder = app(TurboSeederBuilder::class);
+        return app(TurboSeederBuilder::class)->table($table);
+    }
 
-        if ($table !== null) {
-            $builder->table($table);
-        }
-
-        return $builder;
+    /**
+     * Create a builder that generates rows from a Laravel model factory.
+     */
+    public function fromFactory(Factory $factory): TurboSeederBuilder
+    {
+        return app(TurboSeederBuilder::class)->fromFactory($factory);
     }
 }
