@@ -10,7 +10,7 @@ use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Helpers\ExceptionFormatter;
 use IzAhmad\TurboSeeder\Services\ConsoleProgressTracker;
 
-class TurboSeederCommand extends Command
+final class TurboSeederCommand extends Command
 {
     public $signature = 'turbo-seeder:run
                         {seeder? : The seeder class name (optional)}
@@ -24,14 +24,9 @@ class TurboSeederCommand extends Command
             return self::FAILURE;
         }
 
-        $this->info('🏁 Starting TurboSeeder...');
-        $this->newLine();
+        $tracker = new ConsoleProgressTracker($this->output);
 
-        // bind console progress tracker
-        app()->instance(
-            ProgressTrackerInterface::class,
-            new ConsoleProgressTracker($this->output)
-        );
+        app()->instance(ProgressTrackerInterface::class, $tracker);
 
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
@@ -39,13 +34,14 @@ class TurboSeederCommand extends Command
         try {
             $seeder->run();
 
+            $recordsInserted = $tracker->getTotalRecordsInserted();
             $duration = round(microtime(true) - $startTime, 2);
             $memoryUsed = round((memory_get_peak_usage(true) - $startMemory) / 1024 / 1024, 2);
 
             $this->newLine();
             $this->components->info('✓ Seeding completed successfully!');
 
-            $this->displayMetrics($duration, $memoryUsed);
+            $this->displayMetrics($duration, $memoryUsed, $recordsInserted);
 
             return self::SUCCESS;
 
@@ -58,9 +54,6 @@ class TurboSeederCommand extends Command
         }
     }
 
-    /**
-     * Validate the arguments and return the seeder class.
-     */
     private function validateArguments(): ?object
     {
         $seederClass = $this->argument('seeder') ?? $this->option('class');
@@ -99,18 +92,16 @@ class TurboSeederCommand extends Command
         return $seeder;
     }
 
-    /**
-     * display seeding metrics in a formatted table.
-     */
-    private function displayMetrics(float $duration, float $memoryMB): void
+    private function displayMetrics(float $duration, float $memoryMB, int $recordsInserted = 0): void
     {
         $this->newLine();
 
         $this->table(
             ['Metric', 'Value'],
             [
-                ['🕒 Duration', round($duration, 2).' seconds'],
-                ['💾 Peak Memory Usage', round($memoryMB, 2).' MB'],
+                ['Total Records', number_format($recordsInserted)],
+                ['Duration', round($duration, 2).' seconds'],
+                ['Peak Memory Usage', round($memoryMB, 2).' MB'],
             ]
         );
     }

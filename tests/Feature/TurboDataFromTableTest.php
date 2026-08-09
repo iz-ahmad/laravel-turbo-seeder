@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
+use IzAhmad\TurboSeeder\Enums\FromTableMode;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
-
-// ── argument validation (eager, before any DB call) ──────────────────────────
+use IzAhmad\TurboSeeder\Tests\Fixtures\AbstractTestModel;
+use IzAhmad\TurboSeeder\Tests\Fixtures\TestUserModel;
+use IzAhmad\TurboSeeder\Tests\Fixtures\TestUserOnSecondaryConnectionModel;
 
 test('fromTable throws on empty table name', function () {
     TurboData::fromTable('');
@@ -23,8 +25,6 @@ test('fromTable throws on invalid mode', function () {
 test('fromTable returns a closure', function () {
     expect(TurboData::fromTable('test_users'))->toBeInstanceOf(Closure::class);
 });
-
-// ── pool loading ──────────────────────────────────────────────────────────────
 
 test('fromTable loads pool lazily on first call', function () {
     DB::table('test_users')->insert([
@@ -68,8 +68,6 @@ test('fromTable throws when table column returns no rows', function () {
     $fn(0);
 })->throws(RuntimeException::class, 'returned no rows');
 
-// ── cycle mode ────────────────────────────────────────────────────────────────
-
 test('fromTable cycles values deterministically by index', function () {
     DB::table('test_users')->insert([
         ['name' => 'X', 'email' => 'x@t.test'],
@@ -97,13 +95,10 @@ test('fromTable cycle is the default mode', function () {
     $cycle = TurboData::fromTable('test_users');
     $explicit = TurboData::fromTable('test_users', 'id', 'cycle');
 
-    // both should produce identical deterministic sequence
     for ($i = 0; $i < 6; $i++) {
         expect($cycle($i))->toBe($explicit($i));
     }
 });
-
-// ── random mode ───────────────────────────────────────────────────────────────
 
 test('fromTable random mode returns values from the pool', function () {
     DB::table('test_users')->insert([
@@ -120,8 +115,6 @@ test('fromTable random mode returns values from the pool', function () {
     }
 });
 
-// ── custom column ─────────────────────────────────────────────────────────────
-
 test('fromTable respects custom column parameter', function () {
     DB::table('test_users')->insert([
         ['name' => 'Alice', 'email' => 'alice@t.test'],
@@ -134,10 +127,8 @@ test('fromTable respects custom column parameter', function () {
     expect($fn(1))->toBeIn(['alice@t.test', 'bob@t.test']);
 });
 
-// ── integration: use inside a seeder generator ────────────────────────────────
-
 test('fromTable works inside a seeder generator for FK assignment', function () {
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "u{$i}@fk.test"])
         ->count(5)
@@ -145,7 +136,7 @@ test('fromTable works inside a seeder generator for FK assignment', function () 
 
     $userIds = TurboData::fromTable('test_users');
 
-    TurboSeeder::create('test_posts')
+    TurboSeeder::forTable('test_posts')
         ->columns(['user_id', 'title', 'content'])
         ->generate(fn ($i) => [
             'user_id' => $userIds($i),
@@ -164,3 +155,123 @@ test('fromTable works inside a seeder generator for FK assignment', function () 
         expect($uid)->toBeIn($seededUserIds);
     }
 });
+
+test('fromTableStream throws on empty table name', function () {
+    TurboData::fromTableStream('');
+})->throws(InvalidArgumentException::class, '$table must not be empty');
+
+test('fromTableStream throws on a page size below one', function () {
+    TurboData::fromTableStream('test_users', 'id', 0);
+})->throws(InvalidArgumentException::class, '$pageSize must be at least 1');
+
+test('fromTableStream cycles through ids across page boundaries', function () {
+    DB::table('test_users')->insert(
+        collect(range(1, 25))
+            ->map(fn ($n) => ['name' => "U{$n}", 'email' => "u{$n}@stream.test"])
+            ->all()
+    );
+
+    $ids = DB::table('test_users')->orderBy('id')->pluck('id')->all();
+
+    // Page size smaller than the row count forces multiple page loads + wrap.
+    $stream = TurboData::fromTableStream('test_users', 'id', 10);
+
+    $produced = [];
+    for ($i = 0; $i < 30; $i++) {
+        $produced[] = $stream($i);
+    }
+
+    // First 25 follow id order; then it wraps around to the start.
+    expect(array_slice($produced, 0, 25))->toBe($ids)
+        ->and(array_slice($produced, 25, 5))->toBe(array_slice($ids, 0, 5))
+        ->and($produced)->each->toBeIn($ids);
+});
+
+test('fromTableStream assigns valid foreign keys when seeding', function () {
+    DB::table('test_users')->insert(
+        collect(range(1, 12))
+            ->map(fn ($n) => ['name' => "U{$n}", 'email' => "u{$n}@fk.test"])
+            ->all()
+    );
+
+    $userIds = TurboData::fromTableStream('test_users', 'id', 5);
+
+    TurboSeeder::forTable('test_posts')
+        ->columns(['user_id', 'title', 'content'])
+        ->generate(fn ($i) => [
+            'user_id' => $userIds($i),
+            'title' => "Post {$i}",
+            'content' => "Content {$i}",
+        ])
+        ->count(40)
+        ->run();
+
+    $seededUserIds = DB::table('test_users')->pluck('id')->all();
+
+    expect(DB::table('test_posts')->count())->toBe(40)
+        ->and(DB::table('test_posts')->pluck('user_id')->all())->each->toBeIn($seededUserIds);
+});
+
+test('fromTable accepts the FromTableMode enum', function () {
+    DB::table('test_users')->insert([
+        ['name' => 'A', 'email' => 'a@mode.test'],
+        ['name' => 'B', 'email' => 'b@mode.test'],
+    ]);
+
+    $ids = DB::table('test_users')->orderBy('id')->pluck('id')->all();
+
+    $cycle = TurboData::fromTable('test_users', 'id', FromTableMode::CYCLE);
+    $random = TurboData::fromTable('test_users', 'id', FromTableMode::RANDOM);
+
+    expect($cycle(0))->toBe($ids[0])
+        ->and($cycle(1))->toBe($ids[1])
+        ->and($random(0))->toBeIn($ids);
+});
+
+test('fromTable resolves the table name from a Model class-string', function () {
+    DB::table('test_users')->insert(['name' => 'A', 'email' => 'a@model.test']);
+
+    $id = DB::table('test_users')->value('id');
+
+    expect(TurboData::fromTable(TestUserModel::class)(0))->toBe($id);
+});
+
+test('fromTable resolves the table name from a Model instance', function () {
+    DB::table('test_users')->insert(['name' => 'A', 'email' => 'a@modelinstance.test']);
+
+    $id = DB::table('test_users')->value('id');
+
+    expect(TurboData::fromTable(new TestUserModel)(0))->toBe($id);
+});
+
+test('fromTable uses the model\'s connection when none is passed explicitly', function () {
+    TurboData::fromTable(TestUserOnSecondaryConnectionModel::class)(0);
+})->throws(InvalidArgumentException::class, 'testing_secondary');
+
+test('fromTable explicit connection parameter overrides the model\'s connection', function () {
+    DB::table('test_users')->insert(['name' => 'A', 'email' => 'a@connoverride.test']);
+
+    $id = DB::table('test_users')->value('id');
+
+    expect(TurboData::fromTable(TestUserOnSecondaryConnectionModel::class, 'id', 'cycle', 'testing')(0))->toBe($id);
+});
+
+test('fromTable rejects a class that is not an Eloquent model', function () {
+    TurboData::fromTable(TurboData::class);
+})->throws(InvalidArgumentException::class, 'is not an Eloquent model');
+
+test('fromTable rejects an abstract Eloquent model class', function () {
+    TurboData::fromTable(AbstractTestModel::class);
+})->throws(InvalidArgumentException::class, 'is an abstract Eloquent model');
+
+test('fromTableStream resolves the table name from a Model class-string', function () {
+    DB::table('test_users')->insert(['name' => 'A', 'email' => 'a@stream-model.test']);
+
+    $id = DB::table('test_users')->value('id');
+
+    expect(TurboData::fromTableStream(TestUserModel::class)(0))->toBe($id);
+});
+
+test('fromTableStream uses the model\'s connection when none is passed explicitly', function () {
+    TurboData::fromTableStream(TestUserOnSecondaryConnectionModel::class)(0);
+})->throws(InvalidArgumentException::class, 'testing_secondary');

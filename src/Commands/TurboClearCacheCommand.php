@@ -7,7 +7,7 @@ namespace IzAhmad\TurboSeeder\Commands;
 use Illuminate\Console\Command;
 use IzAhmad\TurboSeeder\Actions\CleanupCsvAction;
 
-class TurboClearCacheCommand extends Command
+final class TurboClearCacheCommand extends Command
 {
     public $signature = 'turbo-seeder:clear-cache
                         {--all : Clear all temporary files including subdirectories}';

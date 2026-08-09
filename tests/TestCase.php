@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Tests;
 
 use Illuminate\Support\Facades\DB;
+use IzAhmad\TurboSeeder\Helpers\TurboData;
+use IzAhmad\TurboSeeder\Services\MySqlPdoAttributes;
 use IzAhmad\TurboSeeder\TurboSeederServiceProvider;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
@@ -12,9 +14,6 @@ class TestCase extends OrchestraTestCase
 {
     protected function setUp(): void
     {
-        // Call setUpTheTestEnvironment() directly instead of parent::setUp() to avoid
-        // the static::$latestResponse = null line added in some testbench patch versions,
-        // which causes a fatal error in PHP 8.3 when the property is undeclared.
         $this->setUpTheTestEnvironment();
 
         $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
@@ -22,6 +21,8 @@ class TestCase extends OrchestraTestCase
 
         DB::table('test_posts')->delete();
         DB::table('test_users')->delete();
+
+        TurboData::reset();
     }
 
     protected function getPackageProviders($app): array
@@ -34,18 +35,7 @@ class TestCase extends OrchestraTestCase
     protected function defineEnvironment($app): void
     {
         $app['config']->set('database.default', 'testing');
-
-        $app['config']->set('database.connections.testing', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
-            // 'driver' => 'mysql',
-            // 'host' => '127.0.0.1',
-            // 'port' => '3306',
-            // 'database' => 'test_database',
-            // 'username' => 'root',
-            // 'password' => '',
-        ]);
+        $app['config']->set('database.connections.testing', $this->connectionConfigFromEnv());
 
         $app['config']->set('turbo-seeder', [
             'default_chunk_size' => 100,
@@ -77,6 +67,46 @@ class TestCase extends OrchestraTestCase
                 'update_frequency' => 100,
             ],
         ]);
+    }
+
+    /**
+     * Build the testing connection config from env, defaulting to in-memory SQLite.
+     *
+     *
+     * @return array<string, mixed>
+     */
+    protected function connectionConfigFromEnv(): array
+    {
+        $driver = env('DB_CONNECTION', 'sqlite');
+
+        return match ($driver) {
+            'mysql' => [
+                'driver' => 'mysql',
+                'host' => env('DB_HOST', '127.0.0.1'),
+                'port' => env('DB_PORT', '3306'),
+                'database' => env('DB_DATABASE', 'turbo_test'),
+                'username' => env('DB_USERNAME', 'root'),
+                'password' => env('DB_PASSWORD', ''),
+                'prefix' => '',
+                'options' => extension_loaded('pdo_mysql')
+                    ? [MySqlPdoAttributes::localInfileAttribute() => true]
+                    : [],
+            ],
+            'pgsql' => [
+                'driver' => 'pgsql',
+                'host' => env('DB_HOST', '127.0.0.1'),
+                'port' => env('DB_PORT', '5432'),
+                'database' => env('DB_DATABASE', 'turbo_test'),
+                'username' => env('DB_USERNAME', 'turbo'),
+                'password' => env('DB_PASSWORD', 'secret'),
+                'prefix' => '',
+            ],
+            default => [
+                'driver' => 'sqlite',
+                'database' => ':memory:',
+                'prefix' => '',
+            ],
+        };
     }
 
     protected function tearDown(): void

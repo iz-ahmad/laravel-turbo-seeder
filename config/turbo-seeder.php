@@ -65,6 +65,14 @@ return [
     'performance' => [
         'disable_query_log' => true,
         'disable_foreign_keys' => true,
+
+        /*
+        | MySQL only. Disabling unique_checks speeds up bulk loads but can let
+        | duplicate values into unique secondary indexes, so it is opt-in and
+        | defaults to false. Only enable it when your data is known unique.
+        */
+        'disable_unique_checks' => false,
+
         'use_transactions' => true,
     ],
 
@@ -77,10 +85,8 @@ return [
     |
     */
     'csv_strategy' => [
-        'enabled' => true,
         'temp_path' => storage_path('app/turbo-seeder'),
         'buffer_size' => 8192,
-        'line_terminator' => "\n",
         'field_delimiter' => ',',
         'field_enclosure' => '"',
         'batch_size' => 10000,
@@ -93,9 +99,10 @@ return [
         | Null Marker
         |--------------------------------------------------------------------------
         |
-        | The string used to represent NULL values in CSV files. MySQL and PostgreSQL
-        | native CSV import use \N by default. only change this for SQLite CSV strategy
-        | if your data may contain the literal string \N.
+        | The string used to represent NULL values in CSV files for the MySQL and
+        | SQLite CSV strategies. PostgreSQL's COPY ... FROM STDIN ignores this setting
+        | and always uses an internal null sentinel. Only change this if your data may
+        | contain the literal string \N.
         |
         */
         'null_marker' => '\\N',
@@ -111,7 +118,6 @@ return [
     */
     'progress' => [
         'enabled' => true,
-        'update_frequency' => 1000,
     ],
 
     /*

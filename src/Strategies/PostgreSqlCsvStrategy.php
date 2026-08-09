@@ -5,72 +5,138 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Strategies;
 
 use Illuminate\Support\Facades\DB;
+use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
+use IzAhmad\TurboSeeder\Services\PostgresCopyWriter;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
+use IzAhmad\TurboSeeder\Strategies\Concerns\ClassifiesDatabaseErrors;
+use Pdo\Pgsql;
 
 final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
 {
+    use ClassifiesDatabaseErrors;
+
     public function supports(DatabaseDriver $driver): bool
     {
         return $driver === DatabaseDriver::PGSQL;
     }
 
     /**
-     * Import data from a CSV file into the database.
+     * Generate the import file in PostgreSQL COPY *text* format.
+     *
+     * PDO's pgsqlCopyFromFile consumes COPY text format.
+     */
+    protected function generateCsvFile(SeederConfigurationDTO $config): void
+    {
+        $csvConfig = config('turbo-seeder.csv_strategy', []);
+
+        $writer = new PostgresCopyWriter($this->tempFilePath, $csvConfig);
+        $writer->open();
+
+        $batchSize = $csvConfig['batch_size'] ?? 10000;
+        $batches = (int) ceil($config->count / $batchSize);
+
+        try {
+            for ($batch = 0; $batch < $batches; $batch++) {
+                $recordsInBatch = min($batchSize, $config->count - ($batch * $batchSize));
+
+                for ($i = 0; $i < $recordsInBatch; $i++) {
+                    $index = ($batch * $batchSize) + $i;
+                    $writer->writeRecord(($config->generator)($index), $config->columns);
+                }
+
+                if ($config->hasProgressTracking()) {
+                    $this->progressTracker->advance($recordsInBatch);
+                }
+
+                if ($batch > 0 && ($batch % ($csvConfig['gc_frequency'] ?? 5)) === 0) {
+                    $this->memoryManager->maybeCleanup();
+                }
+            }
+        } finally {
+            $writer->close();
+        }
+    }
+
+    /**
+     * Import data using client-side COPY ... FROM STDIN.
+     *
+     * pgsqlCopyFromFile streams the file from the PHP host over the existing
+     * connection, so it works on managed/containerised PostgreSQL where the
+     * server cannot read the application's filesystem and the user is not a
+     * superuser.
      *
      * @param  array<int, string>  $columns
      */
     protected function importFromCsv(string $table, array $columns): void
     {
         $pdo = DB::connection($this->dbConnection->name)->getPdo();
-        $filepath = trim(
-            $pdo->quote($this->getAbsoluteFilePath()),
-            "'"
-        );
-
-        $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
         $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL);
-
-        // Server-side COPY requires superuser or pg_read_server_files privilege.
-        // Non-superuser connections will receive a permission error which is caught
-        // below and triggers automatic fallback to the default INSERT strategy.
-        $sql = "
-            COPY {$quotedTable} ({$columnNames})
-            FROM '{$filepath}'
-            WITH (
-                FORMAT csv,
-                DELIMITER ',',
-                QUOTE '\"',
-                NULL '\\N'
-            )
-        ";
+        $fieldList = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL), $columns));
 
         try {
-            DB::connection($this->dbConnection->name)->statement($sql);
-        } catch (\Throwable $e) {
-            $errorMessage = $e->getMessage();
+            $result = $this->copyFromFile($pdo, $quotedTable, $this->getAbsoluteFilePath(), $fieldList);
 
-            if ($this->isCopyCommandError($errorMessage)) {
+            if ($result === false) {
+                $errorInfo = $pdo->errorInfo();
+
+                throw new \RuntimeException(
+                    'PostgreSQL COPY FROM STDIN failed: '.($errorInfo[2] ?? 'unknown error')
+                );
+            }
+        } catch (\Throwable $e) {
+            if ($this->isCopyCommandError($e)) {
                 $shouldFallback = config('turbo-seeder.csv_strategy.fallback_to_default_strategy_on_config_error', true);
 
                 throw new CsvImportFailedException(
-                    $this->getCopyCommandErrorMessage($errorMessage),
+                    $this->getCopyCommandErrorMessage($e->getMessage()),
                     $shouldFallback,
                     $e,
                     'pgsql',
                     $table,
-                    $filepath,
+                    $this->getAbsoluteFilePath(),
                 );
             }
 
             throw new \RuntimeException(
-                'PostgreSQL COPY command failed. Ensure the PostgreSQL server has read access to the CSV file and the database user has COPY privileges. '.
-                'Error: '.$errorMessage,
+                'PostgreSQL COPY command failed. Ensure the database user has INSERT privileges on the target table. '.
+                'Error: '.$e->getMessage(),
                 0,
                 $e
             );
         }
+    }
+
+    /**
+     * Stream a file into the table via COPY ... FROM STDIN, version-safely.
+     *
+     * PDO::pgsqlCopyFromFile() is deprecated on the base PDO class in PHP 8.4+
+     * (superseded by Pdo\Pgsql::copyFromFile()). Laravel provides a base PDO
+     * instance, so the modern method is used when it actually is a Pdo\Pgsql and
+     * the still-functional base method is called dynamically otherwise.
+     */
+    private function copyFromFile(\PDO $pdo, string $table, string $path, string $fieldList): bool
+    {
+        if (PHP_VERSION_ID >= 80400 && $pdo instanceof Pgsql) {
+            return $pdo->copyFromFile(
+                $table,
+                $path,
+                PostgresCopyWriter::DELIMITER,
+                PostgresCopyWriter::NULL_MARKER,
+                $fieldList,
+            );
+        }
+
+        $copyFromFile = 'pgsqlCopyFromFile';
+
+        return (bool) $pdo->{$copyFromFile}(
+            $table,
+            $path,
+            PostgresCopyWriter::DELIMITER,
+            PostgresCopyWriter::NULL_MARKER,
+            $fieldList,
+        );
     }
 
     protected function determineOptimalChunkSize(): int
@@ -79,25 +145,19 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
     }
 
     /**
-     * Check if error is related to COPY command access/permissions.
+     * Whether the failure is a COPY capability/permission error worth falling
+     * back to the default INSERT strategy for.
+     *
+     * Classified by SQLSTATE (stable, locale-independent) rather than matching
+     * English error text. With client-side COPY FROM STDIN this is essentially
+     * limited to the connection lacking INSERT privilege on the table.
      */
-    private function isCopyCommandError(string $errorMessage): bool
+    private function isCopyCommandError(\Throwable $e): bool
     {
-        $copyErrorPatterns = [
-            'permission denied',
-            'could not open file',
-            'must be superuser',
-            'access denied',
-            'file not found',
-        ];
+        // 42501 insufficient_privilege, 42P01 undefined_table, 28000 invalid auth.
+        $fallbackStates = ['42501', '42P01', '28000', '28P01'];
 
-        foreach ($copyErrorPatterns as $pattern) {
-            if (stripos($errorMessage, $pattern) !== false) {
-                return true;
-            }
-        }
-
-        return false;
+        return in_array($this->sqlState($e), $fallbackStates, true);
     }
 
     /**

@@ -5,24 +5,51 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Helpers;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use IzAhmad\TurboSeeder\Enums\FromTableMode;
+use IzAhmad\TurboSeeder\Support\ModelTableResolver;
 
 /**
  * Fast, Faker-free data generation helpers for use inside ->generate() closures.
  *
  * All static methods are safe to call 1M+ times without performance issues.
+ *
+ * Randomness: randomInt() uses random_int() (CSPRNG). randomFloat(), randomBool(),
+ * and weightedFrom() use mt_rand() for bulk-generation speed — not suitable for
+ * security-sensitive values.
  */
 final class TurboData
 {
+    /**
+     * Pool size above which fromTable()/fromQuery() log a memory warning and
+     * suggest the streaming variant.
+     */
+    public const POOL_WARNING_THRESHOLD = 500_000;
+
+    /** Unix timestamp for 2038-01-19 03:14:07 UTC — MySQL TIMESTAMP upper bound. */
+    public const MYSQL_TIMESTAMP_MAX = 2_147_483_647;
+
     private static ?string $cachedNow = null;
 
     /** @var array<string, string> */
     private static array $cachedHashes = [];
 
-    // -------------------------------------------------------------------------
-    // Value selection
-    // -------------------------------------------------------------------------
+    /** @var array<string, int> Parsed dateRange() bounds, keyed by date string. */
+    private static array $cachedDateBounds = [];
+
+    /** @var array<string, Carbon> Parsed sequentialDate() start points. */
+    private static array $cachedSequentialStarts = [];
+
+    /** @var array<string, bool> */
+    private static array $timestampWarned = [];
+
+    private static bool $insideGenerator = false;
+
+    /** @var array<string, true> */
+    private static array $generatorWarnedMethods = [];
 
     /**
      * Return a value by cycling through the array in round-robin order.
@@ -31,6 +58,8 @@ final class TurboData
      */
     public static function cycleFrom(array $values): \Closure
     {
+        self::warnIfInsideGenerator('cycleFrom');
+
         $count = count($values);
 
         if ($count === 0) {
@@ -43,13 +72,18 @@ final class TurboData
     /**
      * Return a random value with weighted probability.
      * Weights are relative - they don't need to sum to 100.
-     *
      * Example: ['active' => 70, 'inactive' => 20, 'banned' => 10]
      *
      * @param  array<string|int, int|float>  $weights  [value => weight]
      */
     public static function weightedFrom(array $weights): mixed
     {
+        foreach ($weights as $value => $weight) {
+            if ($weight < 0) {
+                throw new \InvalidArgumentException("weightedFrom(): weight for '{$value}' must be non-negative.");
+            }
+        }
+
         $total = array_sum($weights);
 
         if ($total <= 0) {
@@ -60,6 +94,10 @@ final class TurboData
         $cumulative = 0.0;
 
         foreach ($weights as $value => $weight) {
+            if ($weight <= 0) {
+                continue;
+            }
+
             $cumulative += $weight;
             if ($rand <= $cumulative) {
                 return $value;
@@ -133,23 +171,30 @@ final class TurboData
      */
     public static function dateRange(string $from, string $to): Carbon
     {
-        static $parsed = [];
-
-        if (! isset($parsed[$from])) {
-            $parsed[$from] = Carbon::parse($from)->timestamp;
+        if (! isset(self::$cachedDateBounds[$from])) {
+            self::$cachedDateBounds[$from] = Carbon::parse($from)->timestamp;
         }
 
-        if (! isset($parsed[$to])) {
-            $parsed[$to] = Carbon::parse($to)->timestamp;
+        if (! isset(self::$cachedDateBounds[$to])) {
+            self::$cachedDateBounds[$to] = Carbon::parse($to)->timestamp;
+
+            if (self::$cachedDateBounds[$to] > self::MYSQL_TIMESTAMP_MAX) {
+                Log::warning(sprintf(
+                    'TurboData::dateRange() — upper bound [%s] exceeds the MySQL TIMESTAMP ceiling (2038-01-19 03:14:07 UTC). '
+                    .'Dates past that limit may be rejected by MySQL TIMESTAMP columns. '
+                    .'Use a DATETIME column or cap $to to 2038-01-19.',
+                    $to,
+                ));
+            }
         }
 
-        if ($parsed[$from] > $parsed[$to]) {
+        if (self::$cachedDateBounds[$from] > self::$cachedDateBounds[$to]) {
             throw new \InvalidArgumentException(
                 "dateRange() \$from [{$from}] must not be after \$to [{$to}]."
             );
         }
 
-        $timestamp = random_int($parsed[$from], $parsed[$to]);
+        $timestamp = random_int(self::$cachedDateBounds[$from], self::$cachedDateBounds[$to]);
 
         return Carbon::createFromTimestamp($timestamp);
     }
@@ -162,13 +207,23 @@ final class TurboData
      */
     public static function sequentialDate(string $start, string $step, int $index): Carbon
     {
-        static $startParsed = [];
-
-        if (! isset($startParsed[$start])) {
-            $startParsed[$start] = Carbon::parse($start);
+        if (! isset(self::$cachedSequentialStarts[$start])) {
+            self::$cachedSequentialStarts[$start] = Carbon::parse($start);
         }
 
-        return $startParsed[$start]->copy()->modify("+{$index} {$step}");
+        $date = self::$cachedSequentialStarts[$start]->copy()->modify("+{$index} {$step}");
+
+        if (! isset(self::$timestampWarned['sequentialDate:'.$start]) && $date->timestamp > self::MYSQL_TIMESTAMP_MAX) {
+            self::$timestampWarned['sequentialDate:'.$start] = true;
+            Log::warning(sprintf(
+                'TurboData::sequentialDate() — generated date [%s] exceeds the MySQL TIMESTAMP ceiling (2038-01-19 03:14:07 UTC). '
+                .'Rows with dates past that limit may be rejected by MySQL TIMESTAMP columns. '
+                .'Use a DATETIME column, reduce row count, or switch to a smaller step.',
+                $date->toDateTimeString(),
+            ));
+        }
+
+        return $date;
     }
 
     /**
@@ -216,14 +271,55 @@ final class TurboData
     }
 
     /**
+     * Reset every cached value held by TurboData.
+     * Useful in tests to prevent state leakage between test cases.
+     */
+    public static function reset(): void
+    {
+        self::$cachedNow = null;
+        self::$cachedHashes = [];
+        self::$cachedDateBounds = [];
+        self::$cachedSequentialStarts = [];
+        self::$timestampWarned = [];
+        self::$insideGenerator = false;
+        self::$generatorWarnedMethods = [];
+    }
+
+    /**
+     * Mark the generator loop as active or inactive.
+     * Passing true also resets the per-run warned-methods list so each new run warns once.
+     */
+    public static function markGeneratorActive(bool $active): void
+    {
+        self::$insideGenerator = $active;
+
+        if ($active) {
+            self::$generatorWarnedMethods = [];
+        }
+    }
+
+    public static function isInsideGenerator(): bool
+    {
+        return self::$insideGenerator;
+    }
+
+    /**
      * Pluck a column from a table once and cycle or randomly pick on every generator call.
      * Loaded lazily on first call; all subsequent calls are O(1) array lookups.
      *
-     * @param  string  $mode  'cycle' (default) | 'random'
+     * @param  class-string<Model>|Model|string  $table  A table name, or an Eloquent Model class/instance
+     * @param  FromTableMode|string  $mode  FromTableMode::CYCLE (default) | ::RANDOM, or the
+     *                                      legacy strings 'cycle' | 'random'
      * @return \Closure(int): mixed
      */
-    public static function fromTable(string $table, string $column = 'id', string $mode = 'cycle', ?string $connection = null): \Closure
+    public static function fromTable(string|Model $table, string $column = 'id', FromTableMode|string $mode = FromTableMode::CYCLE, ?string $connection = null): \Closure
     {
+        self::warnIfInsideGenerator('fromTable');
+
+        $resolved = ModelTableResolver::resolve($table, 'fromTable()');
+        $table = $resolved['table'];
+        $connection ??= $resolved['connection'];
+
         if ($table === '') {
             throw new \InvalidArgumentException('fromTable() $table must not be empty.');
         }
@@ -232,9 +328,7 @@ final class TurboData
             throw new \InvalidArgumentException('fromTable() $column must not be empty.');
         }
 
-        if (! in_array($mode, ['cycle', 'random'], true)) {
-            throw new \InvalidArgumentException('fromTable() $mode must be "cycle" or "random".');
-        }
+        $mode = FromTableMode::normalize($mode);
 
         $pool = null;
         $count = 0;
@@ -252,9 +346,11 @@ final class TurboData
                 }
 
                 $count = count($pool);
+
+                self::warnIfPoolTooLarge($count, "fromTable('{$table}', '{$column}')");
             }
 
-            return $mode === 'random'
+            return $mode === FromTableMode::RANDOM
                 ? $pool[array_rand($pool)]
                 : $pool[$index % $count];
         };
@@ -269,6 +365,8 @@ final class TurboData
      */
     public static function fromQuery(callable $loader): \Closure
     {
+        self::warnIfInsideGenerator('fromQuery');
+
         $pool = null;
         $count = 0;
 
@@ -281,6 +379,8 @@ final class TurboData
                 }
 
                 $count = count($pool);
+
+                self::warnIfPoolTooLarge($count, 'fromQuery()');
             }
 
             return $pool[$index % $count];
@@ -288,11 +388,144 @@ final class TurboData
     }
 
     /**
+     * Memory-bounded alternative to fromTable() for very large reference tables.
+     *
+     * Instead of loading every value into memory, IDs are streamed one page at a
+     * time and cycled sequentially (wrapping around at the end). Use this when the
+     * referenced table is too large to materialise within the memory budget.
+     *
+     * Uses keyset (cursor) pagination on $column, which must be unique and
+     * orderable (e.g. a primary key) — this keeps each page O(pageSize) instead
+     * of the O(N) cost of OFFSET on deep pages.
+     *
+     * @param  class-string<Model>|Model|string  $table  A table name, or an Eloquent Model class/instance
+     * @return \Closure(int): mixed
+     */
+    public static function fromTableStream(string|Model $table, string $column = 'id', int $pageSize = 10000, ?string $connection = null): \Closure
+    {
+        self::warnIfInsideGenerator('fromTableStream');
+
+        $resolved = ModelTableResolver::resolve($table, 'fromTableStream()');
+        $table = $resolved['table'];
+        $connection ??= $resolved['connection'];
+
+        if ($table === '') {
+            throw new \InvalidArgumentException('fromTableStream() $table must not be empty.');
+        }
+
+        if ($column === '') {
+            throw new \InvalidArgumentException('fromTableStream() $column must not be empty.');
+        }
+
+        if ($pageSize < 1) {
+            throw new \InvalidArgumentException('fromTableStream() $pageSize must be at least 1.');
+        }
+
+        /** @var array<int, mixed> $buffer */
+        $buffer = [];
+        $position = 0;
+        $lastValue = null;
+        $lastIndex = null;
+        $lastDispensed = null;
+
+        $loadPage = static function (mixed $after) use ($table, $column, $pageSize, $connection): array {
+            $query = DB::connection($connection)->table($table)
+                ->orderBy($column)
+                ->limit($pageSize);
+
+            if ($after !== null) {
+                $query->where($column, '>', $after);
+            }
+
+            return array_values($query->pluck($column)->toArray());
+        };
+
+        return static function (int $index) use ($table, $column, $loadPage, &$buffer, &$position, &$lastValue, &$lastIndex, &$lastDispensed): mixed {
+            if ($lastIndex === $index) {
+                return $lastDispensed;
+            }
+
+            if ($position >= count($buffer)) {
+                $buffer = $loadPage($lastValue);
+
+                if (empty($buffer)) {
+                    $lastValue = null;
+                    $buffer = $loadPage(null);
+
+                    if (empty($buffer)) {
+                        throw new \RuntimeException(
+                            "TurboData::fromTableStream() - [{$table}.{$column}] returned no rows. Seed the table before referencing it."
+                        );
+                    }
+                }
+
+                $lastValue = end($buffer);
+                $position = 0;
+            }
+
+            $lastIndex = $index;
+
+            return $lastDispensed = $buffer[$position++];
+        };
+    }
+
+    /**
+     * Each call inside the loop creates a fresh value (new token, new DB query),
+     * silently breaking uniqueness or reference-pool guarantees.
+     */
+    private static function warnIfInsideGenerator(string $method): void
+    {
+        if (! self::$insideGenerator || isset(self::$generatorWarnedMethods[$method])) {
+            return;
+        }
+
+        self::$generatorWarnedMethods[$method] = true;
+
+        if (in_array($method, ['uniqueEmail', 'uniqueUsername', 'uniqueSlug'], true)) {
+            $broken = 'uniqueness';
+        } elseif ($method === 'cycleFrom') {
+            $broken = 'round-robin ordering (cycle counter resets to position 0 on every row)';
+        } else {
+            $broken = 'consistent reference-pool loading';
+        }
+
+        Log::warning(sprintf(
+            'TurboData::%s() was called inside the generate() closure. '
+            .'This creates a new value on every row, breaking %s across rows. '
+            .'Call TurboData::%s() outside the closure, assign to a variable, then invoke it inside: $fn = TurboData::%s(); ... $fn($index)',
+            $method,
+            $broken,
+            $method,
+            $method,
+        ));
+    }
+
+    /**
+     * Log a one-time warning when an in-memory reference pool is large enough to
+     * threaten the memory budget, pointing users at fromTableStream().
+     */
+    private static function warnIfPoolTooLarge(int $count, string $source): void
+    {
+        if ($count <= self::POOL_WARNING_THRESHOLD) {
+            return;
+        }
+
+        Log::warning(sprintf(
+            'TurboData::%s loaded %s values into memory (over %s). Consider TurboData::fromTableStream() to avoid high memory use.',
+            $source,
+            number_format($count),
+            number_format(self::POOL_WARNING_THRESHOLD),
+        ));
+    }
+
+    /**
      * Generate a unique email address with realistic format.
-     * Example output: u_a3f9b2c1@turbo.test
+     * Example output: u_a3f9b2c1_0@turbo.test
      */
     public static function uniqueEmail(string $domain = 'turbo.test'): \Closure
     {
+        self::warnIfInsideGenerator('uniqueEmail');
+
         $token = bin2hex(random_bytes(4));
 
         return static fn (int $index) => "u_{$token}_{$index}@{$domain}";
@@ -304,6 +537,8 @@ final class TurboData
      */
     public static function uniqueUsername(string $prefix = 'usr'): \Closure
     {
+        self::warnIfInsideGenerator('uniqueUsername');
+
         $token = bin2hex(random_bytes(4));
 
         return static fn (int $index) => "{$prefix}_{$token}_{$index}";
@@ -315,6 +550,8 @@ final class TurboData
      */
     public static function uniqueSlug(string $base): \Closure
     {
+        self::warnIfInsideGenerator('uniqueSlug');
+
         $token = bin2hex(random_bytes(4));
         $slug = Str::slug($base);
 

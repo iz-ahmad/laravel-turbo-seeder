@@ -80,3 +80,91 @@ jobs:
 
       - name: Execute tests
         run: vendor/bin/pest --ci
+
+  test-mysql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    name: MySQL - P8.3 - L12.*
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: turbo_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          extensions: dom, curl, libxml, mbstring, zip, pdo, pdo_mysql, mysqli, bcmath
+          coverage: none
+
+      - name: Enable local_infile on server
+        run: mysql -h 127.0.0.1 -P 3306 -uroot -proot -e "SET GLOBAL local_infile=1;"
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:12.*" "orchestra/testbench:10.*" --no-interaction --no-update
+          composer update --prefer-dist --no-interaction
+
+      - name: Execute tests
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: turbo_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
+        run: vendor/bin/pest --ci
+
+  test-pgsql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    name: PostgreSQL - P8.3 - L12.*
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: turbo_test
+          POSTGRES_USER: turbo
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd=pg_isready --health-interval=10s
+          --health-timeout=5s --health-retries=10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          extensions: dom, curl, libxml, mbstring, zip, pdo, pdo_pgsql, pgsql, bcmath
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:12.*" "orchestra/testbench:10.*" --no-interaction --no-update
+          composer update --prefer-dist --no-interaction
+
+      - name: Execute tests
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: turbo_test
+          DB_USERNAME: turbo
+          DB_PASSWORD: secret
+        run: vendor/bin/pest --ci

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 test('can seed using csv strategy', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -23,7 +23,7 @@ test('can seed using csv strategy', function () {
 });
 
 test('csv strategy handles large datasets', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -38,10 +38,50 @@ test('csv strategy handles large datasets', function () {
         ->and(DB::table('test_users')->count())->toBe(1000);
 });
 
+test('csv strategy imports null values as real NULLs', function () {
+    $result = TurboSeeder::forTable('test_users')
+        ->columns(['name', 'email', 'age'])
+        ->generate(fn ($i) => [
+            'name' => "User {$i}",
+            'email' => "user{$i}@test.com",
+            'age' => $i % 2 === 0 ? null : 30,
+        ])
+        ->count(10)
+        ->useCsvStrategy()
+        ->run();
+
+    expect($result->success)->toBeTrue()
+        ->and(DB::table('test_users')->whereNull('age')->count())->toBe(5)
+        ->and(DB::table('test_users')->where('age', 30)->count())->toBe(5);
+});
+
+test('csv strategy fails loudly on null-marker collision', function () {
+    $marker = config('turbo-seeder.csv_strategy.null_marker', '\\N');
+
+    $run = fn () => TurboSeeder::forTable('test_users')
+        ->columns(['name', 'email', 'age'])
+        ->generate(fn ($i) => [
+            'name' => $marker, // legitimately equals the null marker
+            'email' => "user{$i}@test.com",
+            'age' => 20,
+        ])
+        ->count(3)
+        ->useCsvStrategy()
+        ->run();
+
+    expect($run)->toThrow(RuntimeException::class);
+})->skip(
+    // PostgreSQL uses its own COPY sentinel, not csv_strategy.null_marker, so a
+    // value equal to that config marker is not a collision there. PostgreSQL's
+    // own sentinel collision is covered by PostgresCopyWriterTest.
+    fn () => config('database.connections.testing.driver') === 'pgsql',
+    'PostgreSQL uses a separate COPY null sentinel',
+);
+
 test('can switch between default and csv strategies', function () {
     test()->truncateTable('test_users');
 
-    $defaultResult = TurboSeeder::create('test_users')
+    $defaultResult = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(50)
@@ -50,7 +90,7 @@ test('can switch between default and csv strategies', function () {
 
     test()->truncateTable('test_users');
 
-    $csvResult = TurboSeeder::create('test_users')
+    $csvResult = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(50)

@@ -11,6 +11,7 @@ final readonly class SeederConfigurationDTO
     /**
      * @param  array<int, string>  $columns
      * @param  array<string, mixed>  $options
+     * @param  array<int, string>  $pendingWarnings
      */
     public function __construct(
         public string $table,
@@ -20,6 +21,7 @@ final readonly class SeederConfigurationDTO
         public string $connection,
         public SeederStrategy $strategy = SeederStrategy::DEFAULT,
         public array $options = [],
+        public array $pendingWarnings = [],
     ) {
         $this->validate();
     }
@@ -56,26 +58,51 @@ final readonly class SeederConfigurationDTO
 
     /**
      * Check if progress tracking is enabled.
+     *
+     * Falls back to the published config (progress.enabled) before the
+     * hardcoded default so a user's config/turbo-seeder.php is respected.
      */
     public function hasProgressTracking(): bool
     {
-        return $this->options['progress_tracking'] ?? true;
+        return (bool) ($this->options['progress_tracking']
+            ?? config('turbo-seeder.progress.enabled', true));
     }
 
     /**
      * Check if foreign key checks should be disabled.
+     *
+     * Falls back to config (performance.disable_foreign_keys) when not set
+     * explicitly on the builder.
      */
     public function shouldDisableForeignKeyChecks(): bool
     {
-        return $this->options['disable_foreign_keys'] ?? true;
+        return (bool) ($this->options['disable_foreign_keys']
+            ?? config('turbo-seeder.performance.disable_foreign_keys', true));
+    }
+
+    /**
+     * Check if unique-index checks should be disabled (MySQL only).
+     *
+     * Separate, opt-in flag (default OFF): bulk-loading with unique_checks=0 can
+     * let duplicate values slip into unique secondary indexes, so it is never
+     * implied by disabling foreign key checks.
+     */
+    public function shouldDisableUniqueChecks(): bool
+    {
+        return (bool) ($this->options['disable_unique_checks']
+            ?? config('turbo-seeder.performance.disable_unique_checks', false));
     }
 
     /**
      * Check if query log should be disabled.
+     *
+     * Falls back to config (performance.disable_query_log) when not set
+     * explicitly on the builder.
      */
     public function shouldDisableQueryLog(): bool
     {
-        return $this->options['disable_query_log'] ?? true;
+        return (bool) ($this->options['disable_query_log']
+            ?? config('turbo-seeder.performance.disable_query_log', true));
     }
 
     /**
@@ -83,7 +110,7 @@ final readonly class SeederConfigurationDTO
      */
     public function isDryRun(): bool
     {
-        return $this->options['dry_run'] ?? false;
+        return (bool) ($this->options['dry_run'] ?? false);
     }
 
     /**
@@ -117,14 +144,42 @@ final readonly class SeederConfigurationDTO
      */
     public function shouldValidateColumns(): bool
     {
-        return $this->options['validate_columns'] ?? true;
+        return (bool) ($this->options['validate_columns'] ?? true);
     }
 
     /**
-     * Check if database transactions should be used during seeding.
+     * Check if a single wrapping transaction should be used during seeding.
+     * Precedence: dry-run (always on) → explicit option → commitEvery() (off) → CSV strategy (off) → config.
      */
     public function shouldUseTransactions(): bool
     {
-        return $this->options['use_transactions'] ?? true;
+        if ($this->isDryRun()) {
+            return true;
+        }
+
+        if (array_key_exists('use_transactions', $this->options)) {
+            return (bool) $this->options['use_transactions'];
+        }
+
+        if ($this->getCommitEvery() !== null) {
+            return false;
+        }
+
+        if ($this->strategy === SeederStrategy::CSV) {
+            return false;
+        }
+
+        return config('turbo-seeder.performance.use_transactions', true);
+    }
+
+    /**
+     * Number of chunks to commit per transaction for the default strategy.
+     * Null means a single wrapping transaction (or none) is used instead.
+     */
+    public function getCommitEvery(): ?int
+    {
+        $value = $this->options['commit_every'] ?? null;
+
+        return $value === null ? null : max(1, (int) $value);
     }
 }

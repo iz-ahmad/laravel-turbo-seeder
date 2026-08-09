@@ -66,4 +66,22 @@ trait ManagesCsvTempFiles
 
         return realpath($this->tempFilePath) ?: $this->tempFilePath;
     }
+
+    /**
+     * Assert a filesystem path is safe to interpolate into raw SQL.
+     *
+     * The path is package-generated (random hex name under a configured dir), so
+     * this is defence-in-depth: an allow-list of path-safe characters guarantees
+     * the value can never break out of a single-quoted SQL string literal.
+     */
+    protected function assertSafeCsvPath(string $path): string
+    {
+        if (! preg_match('#^[A-Za-z0-9 _./\\\\:-]+$#', $path)) {
+            throw new \RuntimeException(
+                "Refusing to build SQL with a CSV path containing unexpected characters: {$path}"
+            );
+        }
+
+        return $path;
+    }
 }

@@ -10,6 +10,7 @@ use IzAhmad\TurboSeeder\Actions\ExecuteSeederAction;
 use IzAhmad\TurboSeeder\Actions\GenerateCsvAction;
 use IzAhmad\TurboSeeder\Actions\PrepareEnvironmentAction;
 use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
+use IzAhmad\TurboSeeder\Commands\MakeTurboSeederCommand;
 use IzAhmad\TurboSeeder\Commands\TurboBenchmarkCommand;
 use IzAhmad\TurboSeeder\Commands\TurboClearCacheCommand;
 use IzAhmad\TurboSeeder\Commands\TurboSeederCommand;
@@ -42,6 +43,7 @@ class TurboSeederServiceProvider extends PackageServiceProvider
                 TurboBenchmarkCommand::class,
                 TurboTestConnectionCommand::class,
                 TurboClearCacheCommand::class,
+                MakeTurboSeederCommand::class,
             ]);
     }
 
@@ -105,12 +107,10 @@ class TurboSeederServiceProvider extends PackageServiceProvider
     {
         $resolver = $this->app->make(StrategyResolver::class);
 
-        // default strategies (bulk insert way)
         $resolver->register('default.mysql', MySqlSeederStrategy::class);
         $resolver->register('default.pgsql', PostgreSqlSeederStrategy::class);
         $resolver->register('default.sqlite', SqliteSeederStrategy::class);
 
-        // csv strategies (csv file-based import way)
         $resolver->register('csv.mysql', MySqlCsvStrategy::class);
         $resolver->register('csv.pgsql', PostgreSqlCsvStrategy::class);
         $resolver->register('csv.sqlite', SqliteCsvStrategy::class);

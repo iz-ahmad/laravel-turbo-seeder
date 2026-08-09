@@ -6,13 +6,13 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 test('can seed multiple tables in sequence', function () {
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(10)
         ->run();
 
-    TurboSeeder::create('test_posts')
+    TurboSeeder::forTable('test_posts')
         ->columns(['user_id', 'title', 'content'])
         ->generate(fn ($i) => [
             'user_id' => ($i % 10) + 1,
@@ -29,7 +29,7 @@ test('can seed multiple tables in sequence', function () {
 test('can seed with different strategies in same test', function () {
     test()->truncateTable('test_users');
 
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(50)
@@ -40,7 +40,7 @@ test('can seed with different strategies in same test', function () {
 
     test()->truncateTable('test_users');
 
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(50)
@@ -51,7 +51,7 @@ test('can seed with different strategies in same test', function () {
 });
 
 test('can seed with complex data types', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age', 'created_at'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",

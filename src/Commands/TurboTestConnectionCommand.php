@@ -7,8 +7,9 @@ namespace IzAhmad\TurboSeeder\Commands;
 use Illuminate\Console\Command;
 use IzAhmad\TurboSeeder\DTOs\DatabaseConnectionDTO;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
+use IzAhmad\TurboSeeder\Services\MySqlPdoAttributes;
 
-class TurboTestConnectionCommand extends Command
+final class TurboTestConnectionCommand extends Command
 {
     public $signature = 'turbo-seeder:test-connection
                         {connection? : Database connection name to test}';
@@ -115,15 +116,28 @@ class TurboTestConnectionCommand extends Command
 
     private function testMySqlCsvRequirements(DatabaseConnectionDTO $dbConnection): void
     {
+        $clientOptions = config("database.connections.{$dbConnection->name}.options", []);
+        $clientLocalInfileEnabled = ! empty($clientOptions[MySqlPdoAttributes::localInfileAttribute()] ?? false);
+
+        if ($clientLocalInfileEnabled) {
+            $this->line('  ✓ MYSQL ATTR_LOCAL_INFILE is set in config/database.php');
+        } else {
+            $this->warn('  ⚠ Warning: MYSQL ATTR_LOCAL_INFILE is not set in config/database.php');
+            $this->line('  ℹ The DEFAULT strategy will be used as a fallback');
+            $this->line('  ℹ Add PDO::MYSQL_ATTR_LOCAL_INFILE or Pdo\Mysql::ATTR_LOCAL_INFILE true to the connection options. See README.md for details.');
+        }
+
         $result = $dbConnection->connection
             ->select("SHOW VARIABLES LIKE 'local_infile'");
 
-        if (empty($result) || $result[0]->Value !== 'ON') {
-            $this->warn('  ⚠ Warning: local_infile is disabled');
+        $serverLocalInfileEnabled = ! empty($result) && $result[0]->Value === 'ON';
+
+        if ($serverLocalInfileEnabled) {
+            $this->line('  ✓ local_infile is enabled server-side');
+        } else {
+            $this->warn('  ⚠ Warning: local_infile is disabled server-side');
             $this->line('  ℹ The DEFAULT strategy will be used as a fallback');
             $this->line('  ℹ Enable local_infile in MySQL config to use the CSV strategy. See README.md for details.');
-        } else {
-            $this->line('  ✓ local_infile is enabled');
         }
     }
 
@@ -131,8 +145,8 @@ class TurboTestConnectionCommand extends Command
     {
         $tempPath = config('turbo-seeder.csv_strategy.temp_path', storage_path('app/turbo-seeder'));
 
-        $this->line('  ✓ PostgreSQL COPY command available');
-        $this->line("  ℹ CSV files will be stored in: {$tempPath}");
-        $this->line('  ℹ Ensure PostgreSQL has read access to this path: the DB server must have access to the CSV file and the database');
+        $this->line('  ✓ PostgreSQL COPY command available (client-side COPY ... FROM STDIN)');
+        $this->line("  ℹ CSV files are written locally and streamed over the connection: {$tempPath}");
+        $this->line('  ℹ No superuser or server file access needed — only INSERT privilege on the target table.');
     }
 }

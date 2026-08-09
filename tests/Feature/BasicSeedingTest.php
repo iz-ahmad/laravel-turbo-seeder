@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 test('can seed basic records using fluent api', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -22,7 +22,7 @@ test('can seed basic records using fluent api', function () {
 });
 
 test('can seed with timestamps', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age', 'created_at', 'updated_at'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -42,7 +42,7 @@ test('can seed with timestamps', function () {
 });
 
 test('can seed with custom chunk size', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -58,7 +58,7 @@ test('can seed with custom chunk size', function () {
 });
 
 test('seeding tracks performance metrics', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -73,7 +73,7 @@ test('seeding tracks performance metrics', function () {
 });
 
 test('can seed with foreign key relationships', function () {
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -82,7 +82,7 @@ test('can seed with foreign key relationships', function () {
         ->count(10)
         ->run();
 
-    $result = TurboSeeder::create('test_posts')
+    $result = TurboSeeder::forTable('test_posts')
         ->columns(['user_id', 'title', 'content'])
         ->generate(fn ($i) => [
             'user_id' => ($i % 10) + 1,
@@ -99,7 +99,7 @@ test('can seed with foreign key relationships', function () {
 test('can seed large datasets efficiently', function () {
     $startTime = microtime(true);
 
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -120,7 +120,7 @@ test('can seed large datasets efficiently', function () {
 test('handles empty table gracefully', function () {
     test()->truncateTable('test_users');
 
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -133,10 +133,8 @@ test('handles empty table gracefully', function () {
         ->and(DB::table('test_users')->count())->toBe(10);
 });
 
-// Edge cases
-
 test('can seed exactly 1 record', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => 'Only User',
@@ -151,7 +149,7 @@ test('can seed exactly 1 record', function () {
 });
 
 test('chunk size larger than total count seeds correctly', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -167,7 +165,7 @@ test('chunk size larger than total count seeds correctly', function () {
 });
 
 test('generator returning extra columns only inserts declared columns', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -182,7 +180,7 @@ test('generator returning extra columns only inserts declared columns', function
 });
 
 test('seeding handles BackedEnum values in generator', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email', 'age'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -200,7 +198,7 @@ test('seeding handles BackedEnum values in generator', function () {
 test('when with callable condition is evaluated correctly', function () {
     $useCsv = false;
 
-    $builder = TurboSeeder::create('test_users')
+    $builder = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(5)
@@ -212,7 +210,7 @@ test('when with callable condition is evaluated correctly', function () {
 test('unless with callable condition is evaluated correctly', function () {
     $isProduction = false;
 
-    $builder = TurboSeeder::create('test_users')
+    $builder = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(5)

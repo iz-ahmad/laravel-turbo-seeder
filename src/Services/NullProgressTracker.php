@@ -9,7 +9,6 @@ use IzAhmad\TurboSeeder\Enums\SeederStrategy;
 
 /**
  * Null Object implementation of ProgressTrackerInterface.
- * Performs no tracking and produces no output.
  */
 final class NullProgressTracker implements ProgressTrackerInterface
 {
@@ -17,7 +16,9 @@ final class NullProgressTracker implements ProgressTrackerInterface
 
     private int $total = 0;
 
-    public function start(int $total, SeederStrategy $strategy = SeederStrategy::DEFAULT): void
+    public function writeHeader(int $total, SeederStrategy $strategy, string $table): void {}
+
+    public function start(int $total, SeederStrategy $strategy = SeederStrategy::DEFAULT, string $table = ''): void
     {
         $this->total = $total;
         $this->current = 0;
@@ -28,15 +29,14 @@ final class NullProgressTracker implements ProgressTrackerInterface
         $this->current += $step;
     }
 
-    public function finish(): void
+    public function finish(int $recordsInserted = 0): void
     {
         $this->current = $this->total;
     }
 
-    public function setMessage(string $message): void
-    {
-        // no-op here, but have usage in seeder strategies
-    }
+    public function setMessage(string $message): void {}
+
+    public function warn(string $message): void {}
 
     public function getPercentage(): float
     {

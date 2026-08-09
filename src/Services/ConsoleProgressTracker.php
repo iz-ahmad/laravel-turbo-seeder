@@ -23,11 +23,27 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
 
     private int $startMemory = 0;
 
+    private int $totalInserted = 0;
+
     public function __construct(
         private readonly ?OutputInterface $output = null
     ) {}
 
-    public function start(int $total, SeederStrategy $strategy = SeederStrategy::DEFAULT): void
+    public function writeHeader(int $total, SeederStrategy $strategy, string $table): void
+    {
+        if ($this->output === null || $table === '') {
+            return;
+        }
+
+        $this->output->writeln(
+            '<fg=green>‣‣</fg=green> <fg=gray>table</fg=gray> '.$table
+            .'   <fg=gray>strategy</fg=gray> '.$strategy->value
+            .'   <fg=gray>count</fg=gray> '.number_format($total)
+        );
+        $this->output->writeln('');
+    }
+
+    public function start(int $total, SeederStrategy $strategy = SeederStrategy::DEFAULT, string $table = ''): void
     {
         $this->total = $total;
         $this->current = 0;
@@ -37,10 +53,6 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
         if ($this->output === null) {
             return;
         }
-
-        $strategyName = $strategy->getDisplayName();
-        $this->output->writeln("<fg=cyan>ℹ️  Using {$strategyName} strategy</fg=cyan>");
-        $this->output->writeln('');
 
         $this->progressBar = new ProgressBar($this->output, $total);
 
@@ -73,8 +85,10 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
         }
     }
 
-    public function finish(): void
+    public function finish(int $recordsInserted = 0): void
     {
+        $this->totalInserted += $recordsInserted;
+
         if ($this->finished) {
             return;
         }
@@ -92,6 +106,11 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
         $this->finished = true;
     }
 
+    public function getTotalRecordsInserted(): int
+    {
+        return $this->totalInserted;
+    }
+
     public function setMessage(string $message): void
     {
         $this->progressBar?->setMessage($message);
@@ -105,6 +124,11 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
         }
 
         return ($this->current / $this->total) * 100;
+    }
+
+    public function warn(string $message): void
+    {
+        $this->output?->writeln('<comment>⚠  '.$message.'</comment>');
     }
 
     /**
@@ -162,7 +186,6 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
             $remaining = $this->calculateRemaining();
             $this->progressBar->setMessage($remaining, 'eta');
 
-            // relative memory usage
             $currentMemory = memory_get_usage(true);
             $memoryUsed = $currentMemory - $this->startMemory;
             $memoryUsedMB = round($memoryUsed / 1024 / 1024, 1);

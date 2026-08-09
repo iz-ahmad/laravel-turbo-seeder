@@ -37,6 +37,7 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
         protected readonly ProgressTrackerInterface $progressTracker,
         protected readonly PrepareEnvironmentAction $prepareAction,
         protected readonly CleanupEnvironmentAction $cleanupAction,
+        protected readonly GenerateCsvAction $generateCsvAction,
     ) {
         $this->chunkSize = $this->determineOptimalChunkSize();
     }
@@ -49,6 +50,11 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
         $this->tempFilePath = $this->generateTempFilePath($config->table);
 
         try {
+            // Check import capability BEFORE generating the file so a misconfigured
+            // connection falls back immediately instead of wasting minutes writing a
+            // CSV that can never be imported.
+            $this->preflightImportCapability($config);
+
             $this->displayStep1Message();
             $this->generateCsvFile($config);
 
@@ -71,14 +77,23 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
     }
 
     /**
+     * Check whether the native CSV import can run before generating the file.
+     *
+     * Default: no preflight (drivers without special requirements). Drivers with
+     * configuration prerequisites (e.g. MySQL LOCAL INFILE) override this and
+     * throw a CsvImportFailedException(shouldFallback: true) when unavailable.
+     */
+    protected function preflightImportCapability(SeederConfigurationDTO $config): void {}
+
+    /**
      * Generate CSV file from data generator.
      */
     protected function generateCsvFile(SeederConfigurationDTO $config): void
     {
-        $generateAction = app(GenerateCsvAction::class);
+        $filepath = $this->tempFilePath ?? throw new \LogicException('Temp file path not set');
 
-        $generateAction(
-            $this->tempFilePath,
+        ($this->generateCsvAction)(
+            $filepath,
             $config->columns,
             $config->generator,
             $config->count,

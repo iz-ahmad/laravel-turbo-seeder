@@ -22,7 +22,9 @@ class TestProgressTracker implements ProgressTrackerInterface
 
     public array $advances = [];
 
-    public function start(int $total, SeederStrategy $strategy = SeederStrategy::DEFAULT): void
+    public function writeHeader(int $total, SeederStrategy $strategy, string $table): void {}
+
+    public function start(int $total, SeederStrategy $strategy = SeederStrategy::DEFAULT, string $table = ''): void
     {
         $this->startCount++;
         $this->totalReceived = $total;
@@ -34,15 +36,14 @@ class TestProgressTracker implements ProgressTrackerInterface
         $this->advances[] = $step;
     }
 
-    public function finish(): void
+    public function finish(int $recordsInserted = 0): void
     {
         $this->finishCount++;
     }
 
-    public function setMessage(string $message): void
-    {
-        // no-op
-    }
+    public function setMessage(string $message): void {}
+
+    public function warn(string $message): void {}
 
     public function getPercentage(): float
     {
@@ -56,7 +57,7 @@ test('csv strategy shows progress during csv generation', function () {
     $tracker = new TestProgressTracker;
     app()->instance(ProgressTrackerInterface::class, $tracker);
 
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -81,7 +82,7 @@ test('csv strategy progress tracker receives correct total count', function () {
     $tracker = new TestProgressTracker;
     app()->instance(ProgressTrackerInterface::class, $tracker);
 
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -102,7 +103,7 @@ test('csv strategy advances progress in batches during generation', function () 
     $tracker = new TestProgressTracker;
     app()->instance(ProgressTrackerInterface::class, $tracker);
 
-    TurboSeeder::create('test_users')
+    TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",
@@ -113,10 +114,9 @@ test('csv strategy advances progress in batches during generation', function () 
         ->withProgressTracking()
         ->run();
 
-    // Verify progress was advanced multiple times (in batches)
     expect($tracker->advances)->not->toBeEmpty()
-        ->and($tracker->advanceCount)->toBeGreaterThan(1) // Multiple batches
-        ->and(array_sum($tracker->advances))->toBeGreaterThanOrEqual(15000); // Total should be at least count (could be more if fallback occurs)
+        ->and($tracker->advanceCount)->toBeGreaterThan(1)
+        ->and(array_sum($tracker->advances))->toBeGreaterThanOrEqual(15000); // Total should be at least count
 });
 
 test('csv strategy with fallback still tracks progress correctly', function () {
@@ -126,7 +126,7 @@ test('csv strategy with fallback still tracks progress correctly', function () {
     app()->instance(ProgressTrackerInterface::class, $tracker);
 
     // This will potentially fallback to default strategy if CSV import fails
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => [
             'name' => "User {$i}",

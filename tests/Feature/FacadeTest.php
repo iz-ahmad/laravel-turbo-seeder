@@ -7,19 +7,19 @@ use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 test('facade can create builder', function () {
-    $builder = TurboSeeder::create('test_users');
+    $builder = TurboSeeder::forTable('test_users');
 
     expect($builder)->toBeInstanceOf(TurboSeederBuilder::class);
 });
 
 test('facade can create builder with table name', function () {
-    $builder = TurboSeeder::create('test_users');
+    $builder = TurboSeeder::forTable('test_users');
 
     expect($builder->getTable())->toBe('test_users');
 });
 
 test('facade can execute seeding', function () {
-    $result = TurboSeeder::create('test_users')
+    $result = TurboSeeder::forTable('test_users')
         ->columns(['name', 'email'])
         ->generate(fn ($i) => ['name' => "User {$i}", 'email' => "user{$i}@test.com"])
         ->count(10)

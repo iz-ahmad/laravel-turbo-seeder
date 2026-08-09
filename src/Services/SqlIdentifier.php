@@ -13,9 +13,18 @@ final class SqlIdentifier
         $parts = explode('.', $table, 2);
 
         if ($driver === DatabaseDriver::MYSQL) {
-            return implode('.', array_map(static fn (string $p) => "`{$p}`", $parts));
+            return implode('.', array_map(static fn (string $p) => '`'.str_replace('`', '``', $p).'`', $parts));
         }
 
-        return implode('.', array_map(static fn (string $p) => "\"{$p}\"", $parts));
+        return implode('.', array_map(static fn (string $p) => '"'.str_replace('"', '""', $p).'"', $parts));
+    }
+
+    public static function quoteColumn(string $column, DatabaseDriver $driver): string
+    {
+        if ($driver === DatabaseDriver::MYSQL) {
+            return '`'.str_replace('`', '``', $column).'`';
+        }
+
+        return '"'.str_replace('"', '""', $column).'"';
     }
 }
