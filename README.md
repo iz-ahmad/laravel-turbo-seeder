@@ -146,7 +146,7 @@ TurboSeeder::fromFactory(User::factory())
             ->count(50_000)
             ->run();
 
-// 2. Using package's generator closure for data gen with more speed
+// 2. Using our package's data generator closure for data gen with more speed
 $uniqueEmail = TurboData::uniqueEmail();
 
 TurboSeeder::forTable(User::class)
@@ -1110,7 +1110,7 @@ Measured on a MacBook M1, MySQL 8, PHP 8.5 and default chunk sizes.
 
 ### fromFactory() Path
 
-> The factory path for data generation calls Faker's `definition()` once per row, so throughput is CPU-bound on Faker rather than on the database. Expect it to be *slower* than the raw `generate()` path (numbers shown above) - but **still far faster** than typical seeding with `Model::factory()->create()` - since it *skips* Eloquent, model events, and per-row inserts. For factory path -
+> The factory path for data generation calls Faker's `definition()` once per row, so throughput is CPU-bound on Faker rather than on the database. Expect it to be *slower* than the raw `generate()` path (numbers shown above) - but **still far faster** than typical seeding with `Model::factory()->create()` - since it also *skips* Eloquent, model events, and per-row inserts. For factory path -
 
 | Table | Records | Time | Additional memory |
 |---|---|---|---|

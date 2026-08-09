@@ -25,20 +25,20 @@ class ExampleSeeder extends Seeder
     {
         // ── 1) Factory path ───────────────────────────────────────────────────
         // Reuse an existing factory — table, columns, and timestamps are auto-inferred.
-        //
-        // TurboSeeder::fromFactory(\App\Models\User::factory()->unverified())
-        //     ->count(100_000)
-        //     ->run();
-        //
-        // With recycle() — pre-load parents so for() doesn't create one per row:
-        // $users = \App\Models\User::all();
-        // TurboSeeder::fromFactory(\App\Models\Post::factory()->recycle($users))
-        //     ->count(1_000_000)
-        //     ->run();
 
-        // ── 2) Speed path: raw generator + TurboData ─────────────────────────
+        TurboSeeder::fromFactory(User::factory()->active())
+            ->count(100_000)
+            ->run();
+
+        // With recycle() — pre-load parents so for() doesn't create one per row:
+        $users = User::all();
+        TurboSeeder::fromFactory(Post::factory()->recycle($users))
+            ->count(1_000_000)
+            ->run();
+
+        // ── 2) Max Speed path: raw data generator + TurboData helpers ─────────────────────────
         // No Faker, no Eloquent — the fastest way to seed millions of rows.
-        // Closure-factory helpers must be created outside generate() and called inside.
+        // Closure-factory helpers must be created outside generate() and then called inside.
 
         $uniqueEmail = TurboData::uniqueEmail();
         $uniqueUsername = TurboData::uniqueUsername('usr');
