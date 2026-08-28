@@ -131,6 +131,11 @@ final class ConsoleProgressTracker implements ResettableOutputAwareProgressTrack
         $this->output?->writeln('<comment>⚠  '.$message.'</comment>');
     }
 
+    public function notice(string $message): void
+    {
+        $this->output?->writeln($message);
+    }
+
     /**
      * Calculate the rate of records processed per second.
      */
