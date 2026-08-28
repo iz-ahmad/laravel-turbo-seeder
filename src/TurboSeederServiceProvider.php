@@ -8,6 +8,7 @@ use IzAhmad\TurboSeeder\Actions\CleanupCsvAction;
 use IzAhmad\TurboSeeder\Actions\CleanupEnvironmentAction;
 use IzAhmad\TurboSeeder\Actions\ExecuteSeederAction;
 use IzAhmad\TurboSeeder\Actions\GenerateCsvAction;
+use IzAhmad\TurboSeeder\Actions\GuardAgainstProductionAction;
 use IzAhmad\TurboSeeder\Actions\PrepareEnvironmentAction;
 use IzAhmad\TurboSeeder\Builder\TurboSeederBuilder;
 use IzAhmad\TurboSeeder\Commands\MakeTurboSeederCommand;
@@ -75,6 +76,7 @@ class TurboSeederServiceProvider extends PackageServiceProvider
         $this->app->bind(ExecuteSeederAction::class);
         $this->app->bind(GenerateCsvAction::class);
         $this->app->bind(CleanupCsvAction::class);
+        $this->app->bind(GuardAgainstProductionAction::class);
     }
 
     private function registerServices(): void
