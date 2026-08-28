@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Schema;
+use IzAhmad\TurboSeeder\Tests\Fixtures\TurboSeederRunCommandMultiCallTestSeeder;
 use IzAhmad\TurboSeeder\Tests\Fixtures\TurboSeederRunCommandTestSeeder;
 
 test('can run turbo seeder test connection command', function () {
@@ -64,6 +65,60 @@ test('turbo-seeder:run outputs info row with table, strategy and count', functio
     $this->artisan('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class])
         ->expectsOutputToContain('table test_users   strategy default   count 10')
         ->assertSuccessful();
+});
+
+test('turbo-seeder:run --force skips the production confirmation prompt', function () {
+    $original = app()->environment();
+    app()->instance('env', 'production');
+
+    try {
+        $this->artisan('turbo-seeder:run', [
+            'seeder' => TurboSeederRunCommandTestSeeder::class,
+            '--force' => true,
+        ])->assertSuccessful();
+    } finally {
+        app()->instance('env', $original);
+    }
+});
+
+test('turbo-seeder:run prompts and aborts without seeding when declined in production', function () {
+    $original = app()->environment();
+    app()->instance('env', 'production');
+
+    try {
+        $this->artisan('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class])
+            ->expectsConfirmation('Are you sure you want to run this command?', 'no')
+            ->assertFailed();
+    } finally {
+        app()->instance('env', $original);
+    }
+});
+
+test('turbo-seeder:run prompts and proceeds when confirmed in production', function () {
+    $original = app()->environment();
+    app()->instance('env', 'production');
+
+    try {
+        $this->artisan('turbo-seeder:run', ['seeder' => TurboSeederRunCommandTestSeeder::class])
+            ->expectsConfirmation('Are you sure you want to run this command?', 'yes')
+            ->assertSuccessful();
+    } finally {
+        app()->instance('env', $original);
+    }
+});
+
+test('turbo-seeder:run confirms once even when the seeder makes multiple ->run() calls', function () {
+    $original = app()->environment();
+    app()->instance('env', 'production');
+
+    try {
+        // Only one expectsConfirmation() is queued
+        $this->artisan('turbo-seeder:run', ['seeder' => TurboSeederRunCommandMultiCallTestSeeder::class])
+            ->expectsConfirmation('Are you sure you want to run this command?', 'yes')
+            ->assertSuccessful();
+    } finally {
+        app()->instance('env', $original);
+    }
 });
 
 test('benchmark command drops the benchmark table even when seeding fails', function () {
