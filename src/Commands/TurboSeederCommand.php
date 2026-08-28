@@ -5,21 +5,33 @@ declare(strict_types=1);
 namespace IzAhmad\TurboSeeder\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Support\Facades\Log;
+use IzAhmad\TurboSeeder\Actions\GuardAgainstProductionAction;
 use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Helpers\ExceptionFormatter;
 use IzAhmad\TurboSeeder\Services\ConsoleProgressTracker;
 
 final class TurboSeederCommand extends Command
 {
+    use ConfirmableTrait;
+
     public $signature = 'turbo-seeder:run
                         {seeder? : The seeder class name (optional)}
-                        {--class= : The seeder class name}';
+                        {--class= : The seeder class name}
+                        {--force : Skip the production confirmation prompt}';
 
     public $description = 'Run TurboSeeder for high-performance and fast database seeding with bulk amount of data';
 
     public function handle(): int
     {
+        if (! $this->confirmToProceed(
+            'App Environment: '.app()->environment().'. Turbo Seeder may insert or truncate large amounts of data.',
+            fn () => ! app()->environment('local', 'testing'),
+        )) {
+            return self::FAILURE;
+        }
+
         if (! $seeder = $this->validateArguments()) {
             return self::FAILURE;
         }
@@ -27,6 +39,7 @@ final class TurboSeederCommand extends Command
         $tracker = new ConsoleProgressTracker($this->output);
 
         app()->instance(ProgressTrackerInterface::class, $tracker);
+        app()->instance(GuardAgainstProductionAction::CONFIRMED_BINDING, true);
 
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
@@ -51,6 +64,7 @@ final class TurboSeederCommand extends Command
             return self::FAILURE;
         } finally {
             app()->forgetInstance(ProgressTrackerInterface::class);
+            app()->forgetInstance(GuardAgainstProductionAction::CONFIRMED_BINDING);
         }
     }
 
