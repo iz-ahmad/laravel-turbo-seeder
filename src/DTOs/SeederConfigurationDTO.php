@@ -114,6 +114,14 @@ final readonly class SeederConfigurationDTO
     }
 
     /**
+     * Check if the production-environment guard should be bypassed.
+     */
+    public function isForced(): bool
+    {
+        return (bool) ($this->options['force'] ?? false);
+    }
+
+    /**
      * Check if upsert mode is enabled.
      */
     public function isUpsert(): bool

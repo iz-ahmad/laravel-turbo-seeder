@@ -38,6 +38,8 @@ final class NullProgressTracker implements ProgressTrackerInterface
 
     public function warn(string $message): void {}
 
+    public function notice(string $message): void {}
+
     public function getPercentage(): float
     {
         if ($this->total === 0) {

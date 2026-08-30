@@ -24,4 +24,6 @@ interface ProgressTrackerInterface
     public function getPercentage(): float;
 
     public function warn(string $message): void;
+
+    public function notice(string $message): void;
 }

@@ -45,6 +45,8 @@ class TestProgressTracker implements ProgressTrackerInterface
 
     public function warn(string $message): void {}
 
+    public function notice(string $message): void {}
+
     public function getPercentage(): float
     {
         return 0.0;

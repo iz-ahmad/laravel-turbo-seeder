@@ -222,6 +222,19 @@ final class TurboSeederBuilder
     }
 
     /**
+     * Bypass the production-environment guard for this run.
+     *
+     * Without this, run() throws a ProductionEnvironmentException outside
+     * local/testing environments.
+     */
+    public function force(bool $enabled = true): self
+    {
+        $this->options['force'] = $enabled;
+
+        return $this;
+    }
+
+    /**
      * Set the number of records to seed.
      */
     public function count(int $count): self

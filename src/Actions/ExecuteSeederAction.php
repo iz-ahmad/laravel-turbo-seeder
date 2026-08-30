@@ -21,6 +21,7 @@ final class ExecuteSeederAction
 {
     public function __construct(
         private readonly ProgressTrackerInterface $progressTracker,
+        private readonly GuardAgainstProductionAction $guardAgainstProduction,
     ) {}
 
     /**
@@ -30,14 +31,17 @@ final class ExecuteSeederAction
         SeederStrategyInterface $strategy,
         SeederConfigurationDTO $config
     ): SeederResultDTO {
-        $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
 
         try {
+            ($this->guardAgainstProduction)($config);
+
             $this->validateColumns($config);
             $this->validateUpsertKeys($config);
 
             $this->truncateIfRequested($config);
+
+            $startTime = microtime(true);
 
             Event::dispatch(new TurboSeederStarting(
                 $config->table,
@@ -163,6 +167,8 @@ final class ExecuteSeederAction
             return;
         }
 
+        $this->progressTracker->notice("<fg=yellow>⏳ Truncating table [{$config->table}]...</>");
+
         $connection = DB::connection($config->connection);
 
         if ($connection->getDriverName() === 'mysql') {
@@ -173,11 +179,11 @@ final class ExecuteSeederAction
             } finally {
                 $connection->statement('SET FOREIGN_KEY_CHECKS=1');
             }
-
-            return;
+        } else {
+            $connection->table($config->table)->delete();
         }
 
-        $connection->table($config->table)->delete();
+        $this->progressTracker->notice("<fg=green>✓ Truncated table [{$config->table}]</>");
     }
 
     private function validateColumns(SeederConfigurationDTO $config): void

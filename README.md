@@ -88,6 +88,7 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you can:
   - [TurboData Helpers](#turbodata-helpers)
   - [Data Type Handling](#data-type-handling)
   - [Artisan Commands](#artisan-commands)
+  - [Production Safety Guard](#production-safety-guard)
 - [Configuration Reference](#configuration-reference)
 - [Architecture Overview](#architecture-overview)
 - [Performance Benchmarks](#performance-benchmarks)
@@ -675,7 +676,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 |---|---|
 | `count(int)` | Number of records to seed |
 | `chunkSize(int)` | Records per chunk - automatically clamped to the driver's bind-parameter limit (65,535 on MySQL/PostgreSQL; auto-detected on SQLite) |
-| `truncate()` | Empty the target table before seeding (committed before the seed; cannot combine with `dryRun()`). MySQL resets `AUTO_INCREMENT`; PostgreSQL and SQLite use `DELETE` (FK-safe) which does **not** reset identity sequences - IDs continue from the previous high-water mark. |
+| `truncate()` | Empty the target table before seeding (committed before the seed; cannot combine with `dryRun()`). MySQL resets `AUTO_INCREMENT`; PostgreSQL and SQLite use `DELETE` (FK-safe) which does **not** reset identity sequences - IDs continue from the previous high-water mark. Prints a `⏳ Truncating...` / `✓ Truncated` status line |
 | `commitEvery(int)` | Default strategy only: commit every N chunks instead of one wrapping transaction (for very large seeds). No-op on the CSV strategy. Cannot be combined with `useTransactions()` (throws). **Warning:** If seeding fails mid-run (generator exception, DB constraint violation, etc.) leaves already-committed chunks permanently in the table - there is no rollback path. So truncate the table and re-run if a clean retry is needed. |
 | `upsert(array $uniqueBy)` | Insert-or-update on conflict; keys must match a unique/primary index (validated up front) |
 | `dryRun()` | Generate and validate without committing - uses transaction rollback |
@@ -705,6 +706,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 | `withProgressTracking()` / `withoutProgressTracking()` | Toggle progress bar |
 | `retryAttempts(int)` | Retry on transient deadlock/lock-timeout (1-10; default: 3) |
 | `withoutColumnValidation()` | Skip pre-seed column validation (existence check and NOT NULL coverage check) |
+| `force()` | Bypass the production-environment guard for this run (see [Production Safety Guard](#production-safety-guard)) |
 | `when(condition, callback)` / `unless(condition, callback)` | Conditional chaining |
 
 ---
@@ -963,7 +965,9 @@ php artisan make:turbo-seeder UsersTurboSeeder --table=users --force
 php artisan turbo-seeder:run UsersTurboSeeder
 ```
 
-Shows real-time progress, detailed metrics, and errors. You can still use `php artisan db:seed` as well.
+This shows real-time progress, detailed metrics, and errors during seeding. You can still use `php artisan db:seed` as well.
+
+Asks for confirmation outside local/testing environments (pass `--force` to skip it). See [Production Safety Guard](#production-safety-guard).
 
 #### Benchmark
 
@@ -979,6 +983,24 @@ Creates and drops its own temporary table. Refuses to run if the target table al
 php artisan turbo-seeder:test-connection    # verify the DB connection and check which strategies are supported
 php artisan turbo-seeder:clear-cache        # remove temporary CSV files
 php artisan turbo-seeder:clear-cache --all  # including subdirectories
+```
+
+---
+
+### Production Safety Guard
+
+Every seed run is refused outside `local`/`testing` environments unless explicitly allowed, guarding against an accidental production seed/truncate:
+
+- **`php artisan turbo-seeder:run`** - prompts for interactive confirmation (skip with `--force`).
+- **`db:seed` or a direct `->run()` call** - no terminal to prompt, so it throws a `ProductionEnvironmentException` immediately; call `->force()` on the builder to allow it without throwing.
+
+```php
+TurboSeeder::forTable(User::class)
+    ->columns(['name', 'email'])
+    ->generate(fn ($i) => [...])
+    ->count(10_000)
+    ->force() // required in prod environments when not run via turbo-seeder:run
+    ->run();
 ```
 
 ---
