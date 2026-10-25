@@ -71,6 +71,7 @@ No more coffee breaks, tab-switching, or "I'll test later"! So you can:
 
 - [Requirements](#requirements)
 - [Installation](#installation)
+  - [Agent Skill](#agent-skill)
 - [Quick Start](#quick-start)
   - [Scaffold a seeder](#scaffold-a-seeder-recommended)
   - [Basic Usage](#basic-usage)
@@ -114,6 +115,16 @@ The package auto-registers itself. Optionally publish the config:
 ```bash
 php artisan vendor:publish --tag="turbo-seeder-config"
 ```
+
+### Agent Skill
+
+An optional [agent skill](https://github.com/iz-ahmad/turbo-seeder-skill) teaches AI coding agents supported by the [skills CLI](https://github.com/vercel-labs/skills) to use this package according to its documentation. Install it in your Laravel project:
+
+```bash
+npx skills add iz-ahmad/turbo-seeder-skill
+```
+
+The skill targets package `^1.0`. The agent reads the installed package README first, asks before installing anything or using `force()`, and does not guess undocumented behaviour.
 
 ---
 
