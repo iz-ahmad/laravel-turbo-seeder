@@ -43,8 +43,7 @@
     },
     "autoload": {
         "psr-4": {
-            "IzAhmad\\TurboSeeder\\": "src/",
-            "IzAhmad\\TurboSeeder\\Database\\Factories\\": "database/factories/"
+            "IzAhmad\\TurboSeeder\\": "src/"
         }
     },
     "autoload-dev": {
