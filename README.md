@@ -162,7 +162,7 @@ TurboSeeder::forTable(User::class)
     ->run();
 ```
 
-> `forTable()`/`table()` also accepts a table name (string) instead of an Eloquent Model class or instance:
+> `forTable()` (and the builder's `table()`) also accepts a table name (string) instead of an Eloquent Model class or instance:
 
 ```php
 // These are equivalent when \App\Models\User's table name is 'users':
@@ -175,7 +175,7 @@ When an Eloquent Model is passed, the table (and connection, unless explicitly o
 
 #### Max speed with the CSV strategy
 
-Add one method - `useCsvStrategy()`. It uses `LOAD DATA LOCAL INFILE` (MySQL) or `COPY FROM STDIN` (PostgreSQL), typically 2-4× faster than bulk INSERT for large datasets.
+Add one method - `useCsvStrategy()`. It uses `LOAD DATA LOCAL INFILE` (MySQL) or `COPY FROM STDIN` (PostgreSQL), typically ~1.5-3× faster than bulk INSERT for large datasets (see [Performance Benchmarks](#performance-benchmarks)).
 
 ```php
 // with fromFactory()...
@@ -553,6 +553,8 @@ TurboSeeder::forTable(Product::class)
     ->run();
 ```
 
+> Upsert keys must be a subset of the seeded columns, and `upsert()` is **not supported with `useCsvStrategy()`** (it throws) - `LOAD DATA` / `COPY` have no conflict handling. Use the default strategy for upserts.
+
 ### Things To Remember
 
 - No model events or observers fired
@@ -565,7 +567,7 @@ TurboSeeder::forTable(Product::class)
 
 ### MySQL
 
-For using the CSV strategy with MySQL, first you have to add `PDO::MYSQL_ATTR_LOCAL_INFILE` or `Pdo\Mysql::ATTR_LOCAL_INFILE` (for PHP 8.5+) to the connection options in `config/database.php`:
+For using the CSV strategy with MySQL, first you have to add `PDO::MYSQL_ATTR_LOCAL_INFILE` or `Pdo\Mysql::ATTR_LOCAL_INFILE` (for PHP 8.4+) to the connection options in `config/database.php`:
 
 ```php
 'mysql' => [
@@ -656,8 +658,8 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 
 | Method | Description |
 |---|---|
-| `table(string\|Model\|class-string<Model>)` | Table name, an Eloquent Model class, or a Model instance |
-| `forTable(string\|Model\|class-string<Model>)` | Table name, an Eloquent Model class, or a Model instance |
+| `table(string\|Model\|class-string<Model>)` | Table name, an Eloquent Model class, or a Model instance (builder method) |
+| `forTable(string\|Model\|class-string<Model>)` | Same as `table()`, but available as the facade/service entry point |
 | `columns(array)` | Columns to seed |
 | `columnsFromSchema()` | Derive columns from the table schema (opt-in; see note below) |
 | `generate(Closure)` | Row generator closure - receives `$index`, returns an array |
@@ -666,7 +668,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 
 > **`table()`/`forTable()` with a Model note:** Resolves the table name via the model's `getTable()`. The model's connection (`getConnectionName()`) is also applied unless `connection()` is called explicitly (wins regardless of call order). Passing an existing class that is not an Eloquent model throws an `InvalidArgumentException`.
 
-> **`columnsFromSchema()` note:** Pulls every non-PK column from the schema builder. Opt-in (not default) - ensure your generator produces values for every NOT NULL column without a default.
+> **`columnsFromSchema()` note:** Pulls every column except auto-incrementing keys from the schema builder. Opt-in (not default) - ensure your generator produces values for every NOT NULL column without a default.
 
 > **NOT NULL coverage check:** Before every seed runs, TurboSeeder verifies that all `NOT NULL` columns without a DB default are covered by the seeded columns. If any are missing, an `InvalidArgumentException` is thrown before a single row is written. Use `withoutColumnValidation()` to skip this check when you know a column will be filled by a trigger or DB default not visible to the schema builder.
 
@@ -678,7 +680,7 @@ TurboSeeder::fromFactory(User::factory()->unverified())
 | `chunkSize(int)` | Records per chunk - automatically clamped to the driver's bind-parameter limit (65,535 on MySQL/PostgreSQL; auto-detected on SQLite) |
 | `truncate()` | Empty the target table before seeding (committed before the seed; cannot combine with `dryRun()`). MySQL resets `AUTO_INCREMENT`; PostgreSQL and SQLite use `DELETE` (FK-safe) which does **not** reset identity sequences - IDs continue from the previous high-water mark. Prints a `⏳ Truncating...` / `✓ Truncated` status line |
 | `commitEvery(int)` | Default strategy only: commit every N chunks instead of one wrapping transaction (for very large seeds). No-op on the CSV strategy. Cannot be combined with `useTransactions()` (throws). **Warning:** If seeding fails mid-run (generator exception, DB constraint violation, etc.) leaves already-committed chunks permanently in the table - there is no rollback path. So truncate the table and re-run if a clean retry is needed. |
-| `upsert(array $uniqueBy)` | Insert-or-update on conflict; keys must match a unique/primary index (validated up front) |
+| `upsert(array $uniqueBy)` | Insert-or-update on conflict; keys must match a unique/primary index (validated up front) and be a subset of the seeded columns. Default strategy only - throws with `useCsvStrategy()` |
 | `dryRun()` | Generate and validate without committing - uses transaction rollback |
 
 #### Strategy
@@ -794,7 +796,7 @@ class TurboSeederListener
 | **Returns a value** - call per row | `weightedFrom`, `randomFrom`, `randomInt`, `randomFloat`, `randomBool`, `nullable`, `dateRange`, `sequentialDate` | Call directly inside the generator: See [examples/ExampleSeeder.php](examples/ExampleSeeder.php) |
 | **Computed once, cached** | `nowOnce`, `hashedPassword` | Call inside the generator; the value is computed once and reused every row |
 
-> **Runtime guards:** Calling a closure-factory helper (`uniqueEmail`, `fromTable`, etc.) *inside* `generate()` instead of outside emits a log warning - the helper resets its state on every row, silently breaking uniqueness or reference-pool consistency. 
+> **Runtime guards:** Calling a closure-factory helper (`uniqueEmail`, `fromTable`, etc. - `uniqueUuid` is stateless) *inside* `generate()` instead of outside emits a log warning - the helper resets its state on every row, silently breaking uniqueness or reference-pool consistency. 
 > And returning a raw `\Closure` value from the generator (forgetting to invoke it: `'email' => TurboData::uniqueEmail()` instead of `'email' => $fn($i)`) throws an `InvalidArgumentException` immediately with a fix message.
 
 ```php
@@ -992,7 +994,7 @@ php artisan turbo-seeder:clear-cache --all  # including subdirectories
 Every seed run is refused outside `local`/`testing` environments unless explicitly allowed, guarding against an accidental production seed/truncate:
 
 - **`php artisan turbo-seeder:run`** - prompts for interactive confirmation (skip with `--force`).
-- **`db:seed` or a direct `->run()` call** - no terminal to prompt, so it throws a `ProductionEnvironmentException` immediately; call `->force()` on the builder to allow it without throwing.
+- **`db:seed` or a direct `->run()` call** - no terminal to prompt, so `run()` throws a `RuntimeException` whose `getPrevious()` is a `ProductionEnvironmentException` (a `TurboSeederFailed` event is also dispatched); call `->force()` on the builder to allow the run.
 
 ```php
 TurboSeeder::forTable(User::class)
@@ -1078,7 +1080,7 @@ When you run `php artisan turbo-seeder:run UsersTurboSeeder` with a bare (non-qu
 ```
 
 - `fallback_to_default_strategy_on_config_error` - auto-switches to bulk INSERT if CSV import isn't available, so seeding always completes
-- `null_marker` - string written to CSV for `null` values. If a non-null value in your data equals the marker, TurboSeeder throws rather than silently importing it as `NULL`
+- `null_marker` - string written to CSV for `null` values. If a non-null value in your data equals the marker, TurboSeeder throws rather than silently importing it as `NULL`. Applies to the MySQL and SQLite CSV strategies; PostgreSQL ignores it and uses an internal sentinel
 
 ### Progress
 
@@ -1128,7 +1130,7 @@ Measured on a MacBook M1, MySQL 8, PHP 8.5 and default chunk sizes.
 | Simple (~5 cols) | 1M | ~10-18s | ~0 MB |
 | Complex (~15-20 cols) | 1M | ~40s | ~0 MB |
 
-> CSV is 25% faster than default strategy.
+> CSV is roughly 1.5-3× faster than the default strategy (speed depends on the table complexity and the machine configuration).
 
 ### fromFactory() Path
 
