@@ -39,7 +39,11 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 7. **suggest improvements to the documentation** if needed
 8. **Commit your changes** (`git commit -m 'add some amazing feature'`)
 9. **Push to the branch** (`git push origin feature/amazing-feature`)
-10. **Open a Pull Request** to the main branch
+10. **Open a Pull Request** to the `master` branch
+
+### Agent Skill
+
+If your change alters the public API or documented behaviour, also update [turbo-seeder-skill](https://github.com/iz-ahmad/turbo-seeder-skill), the agent skill that mirrors these docs.
 
 ## Development Setup
 

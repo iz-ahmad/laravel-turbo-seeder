@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Schema;
+use IzAhmad\TurboSeeder\Actions\GuardAgainstProductionAction;
 use IzAhmad\TurboSeeder\Tests\Fixtures\TurboSeederRunCommandMultiCallTestSeeder;
 use IzAhmad\TurboSeeder\Tests\Fixtures\TurboSeederRunCommandTestSeeder;
 
@@ -131,4 +132,38 @@ test('benchmark command drops the benchmark table even when seeding fails', func
     ])->assertFailed();
 
     expect(Schema::connection('testing')->hasTable($table))->toBeFalse();
+});
+
+test('benchmark --force runs its seeds in production', function () {
+    $original = app()->environment();
+    app()->instance('env', 'production');
+
+    try {
+        $this->artisan('turbo-seeder:benchmark', [
+            '--connection' => 'testing',
+            '--table' => 'benchmark_production_'.time(),
+            '--records' => 100,
+            '--force' => true,
+        ])->assertSuccessful();
+    } finally {
+        app()->instance('env', $original);
+    }
+});
+
+test('benchmark clears the production confirmation once it finishes', function () {
+    $original = app()->environment();
+    app()->instance('env', 'production');
+
+    try {
+        $this->artisan('turbo-seeder:benchmark', [
+            '--connection' => 'testing',
+            '--table' => 'benchmark_binding_'.time(),
+            '--records' => 100,
+            '--force' => true,
+        ])->assertSuccessful();
+
+        expect(app()->bound(GuardAgainstProductionAction::CONFIRMED_BINDING))->toBeFalse();
+    } finally {
+        app()->instance('env', $original);
+    }
 });

@@ -7,6 +7,7 @@ namespace IzAhmad\TurboSeeder\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Support\Facades\DB;
+use IzAhmad\TurboSeeder\Actions\GuardAgainstProductionAction;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
@@ -58,6 +59,8 @@ final class TurboBenchmarkCommand extends Command
 
         $created = false;
 
+        app()->instance(GuardAgainstProductionAction::CONFIRMED_BINDING, true);
+
         try {
             $this->createBenchmarkTable($table, $connection, $driver);
             $created = true;
@@ -92,6 +95,8 @@ final class TurboBenchmarkCommand extends Command
             }
 
             return self::FAILURE;
+        } finally {
+            app()->forgetInstance(GuardAgainstProductionAction::CONFIRMED_BINDING);
         }
     }
 

@@ -172,13 +172,13 @@ Types: `feat` · `fix` · `refactor` · `test` · `ci` · `docs` · `perf` · `s
 - No co-author lines (`Co-authored-by`), no AI attribution in commit messages.
 - Never amend a pushed commit — create a new one.
 - Never skip hooks (`--no-verify`).
-- Never force-push `main` or `dev`.
+- Never force-push `master`.
 
 ### Branch Strategy
 
 - Feature work: `feat/<short-slug>`
-- Target: `dev` branch (not `main`)
-- PRs merge `dev` → `main` for releases only
+- Target: `master` (the default branch)
+- Releases are tagged from `master`
 
 ### Before Pushing
 
