@@ -78,7 +78,7 @@ final class MakeTurboSeederCommand extends GeneratorCommand
             $columns = [];
 
             foreach (Schema::getColumns($table) as $column) {
-                if (($column['auto_increment'] ?? false) === true) {
+                if ($column['auto_increment'] === true) {
                     continue;
                 }
 
