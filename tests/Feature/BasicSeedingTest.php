@@ -225,3 +225,30 @@ enum SeedingTestAge: int
     case Adult = 18;
     case Senior = 65;
 }
+
+test('sequence is advanced after seeding explicit ids', function () {
+    TurboSeeder::forTable('test_users')
+        ->columns(['id', 'name', 'email'])
+        ->generate(fn ($i) => ['id' => $i + 1, 'name' => "User {$i}", 'email' => "user{$i}@test.com"])
+        ->count(5)
+        ->withoutProgressTracking()
+        ->run();
+
+    $nextId = DB::table('test_users')->insertGetId(['name' => 'Next', 'email' => 'next@test.com']);
+
+    expect($nextId)->toBe(6);
+});
+
+test('sequence is not advanced by a dry run', function () {
+    TurboSeeder::forTable('test_users')
+        ->columns(['id', 'name', 'email'])
+        ->generate(fn ($i) => ['id' => $i + 100, 'name' => "User {$i}", 'email' => "user{$i}@test.com"])
+        ->count(5)
+        ->dryRun()
+        ->withoutProgressTracking()
+        ->run();
+
+    $nextId = DB::table('test_users')->insertGetId(['name' => 'Next', 'email' => 'next@test.com']);
+
+    expect($nextId)->toBeLessThan(100);
+})->skip(fn () => DB::getDriverName() !== 'pgsql', 'PostgreSQL-specific');
