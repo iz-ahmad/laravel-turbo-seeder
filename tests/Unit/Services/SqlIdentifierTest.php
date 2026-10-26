@@ -36,3 +36,13 @@ test('quoteTable escapes embedded double-quote in PostgreSQL identifier', functi
 test('quoteTable escapes embedded double-quote in SQLite identifier', function () {
     expect(SqlIdentifier::quoteTable('use"rs', DatabaseDriver::SQLITE))->toBe('"use""rs"');
 });
+
+test('quoteTable applies the connection prefix to the table name', function () {
+    expect(SqlIdentifier::quoteTable('users', DatabaseDriver::MYSQL, 'app_'))->toBe('`app_users`')
+        ->and(SqlIdentifier::quoteTable('users', DatabaseDriver::PGSQL, 'app_'))->toBe('"app_users"');
+});
+
+test('quoteTable applies the prefix after the schema qualifier', function () {
+    expect(SqlIdentifier::quoteTable('mydb.users', DatabaseDriver::MYSQL, 'app_'))->toBe('`mydb`.`app_users`')
+        ->and(SqlIdentifier::quoteTable('public.users', DatabaseDriver::PGSQL, 'app_'))->toBe('"public"."app_users"');
+});
