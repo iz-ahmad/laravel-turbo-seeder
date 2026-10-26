@@ -12,10 +12,12 @@ use IzAhmad\TurboSeeder\Contracts\ProgressTrackerInterface;
 use IzAhmad\TurboSeeder\Contracts\SeederStrategyInterface;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederResultDTO;
+use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Events\TurboSeederCompleted;
 use IzAhmad\TurboSeeder\Events\TurboSeederFailed;
 use IzAhmad\TurboSeeder\Events\TurboSeederStarting;
 use IzAhmad\TurboSeeder\Helpers\TurboData;
+use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 
 final class ExecuteSeederAction
 {
@@ -74,6 +76,8 @@ final class ExecuteSeederAction
 
             $strategy->cleanup();
 
+            $this->syncPostgresSequences($config);
+
             $duration = microtime(true) - $startTime;
             $peakMemory = memory_get_peak_usage(true) - $startMemory;
 
@@ -110,6 +114,40 @@ final class ExecuteSeederAction
                 recordsInserted: 0,
                 errorMessage: $e->getMessage(),
                 exception: $e,
+            );
+        }
+    }
+
+    /**
+     * Explicit values bypass nextval(), so a serial/identity column seeded with its own
+     * values would leave the sequence behind and make the next normal insert collide.
+     */
+    private function syncPostgresSequences(SeederConfigurationDTO $config): void
+    {
+        $connection = DB::connection($config->connection);
+
+        if ($config->isDryRun() || $connection->getDriverName() !== 'pgsql') {
+            return;
+        }
+
+        try {
+            $schemaColumns = $connection->getSchemaBuilder()->getColumns($config->table);
+        } catch (\Throwable) {
+            return;
+        }
+
+        $quotedTable = SqlIdentifier::quoteTable($config->table, DatabaseDriver::PGSQL);
+
+        foreach ($schemaColumns as $column) {
+            if ($column['auto_increment'] !== true || ! in_array($column['name'], $config->columns, true)) {
+                continue;
+            }
+
+            $quotedColumn = SqlIdentifier::quoteColumn($column['name'], DatabaseDriver::PGSQL);
+
+            $connection->statement(
+                "SELECT setval(pg_get_serial_sequence(?, ?), COALESCE(MAX({$quotedColumn}), 1), MAX({$quotedColumn}) IS NOT NULL) FROM {$quotedTable}",
+                [$quotedTable, $column['name']],
             );
         }
     }
