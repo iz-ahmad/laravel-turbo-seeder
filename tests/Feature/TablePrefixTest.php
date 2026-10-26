@@ -63,3 +63,20 @@ test('upsert works on a prefixed table', function () {
     expect(DB::table('prefixed_items')->count())->toBe(5)
         ->and(DB::table('prefixed_items')->value('label'))->toBe('second');
 });
+
+test('postgres sequence sync works on a prefixed table', function () {
+    Schema::dropIfExists('prefixed_items');
+    Schema::create('prefixed_items', function ($table) {
+        $table->id();
+        $table->integer('n');
+    });
+
+    TurboSeeder::forTable('prefixed_items')
+        ->columns(['id', 'n'])
+        ->generate(fn ($i) => ['id' => $i + 1, 'n' => $i])
+        ->count(5)
+        ->withoutProgressTracking()
+        ->run();
+
+    expect(DB::table('prefixed_items')->insertGetId(['n' => 99]))->toBe(6);
+});
