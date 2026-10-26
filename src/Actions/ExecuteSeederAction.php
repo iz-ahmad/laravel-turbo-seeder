@@ -136,7 +136,7 @@ final class ExecuteSeederAction
             return;
         }
 
-        $quotedTable = SqlIdentifier::quoteTable($config->table, DatabaseDriver::PGSQL);
+        $quotedTable = SqlIdentifier::quoteTable($config->table, DatabaseDriver::PGSQL, $connection->getTablePrefix());
 
         foreach ($schemaColumns as $column) {
             if ($column['auto_increment'] !== true || ! in_array($column['name'], $config->columns, true)) {
