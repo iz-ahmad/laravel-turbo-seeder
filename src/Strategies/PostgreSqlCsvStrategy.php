@@ -72,7 +72,7 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
     protected function importFromCsv(string $table, array $columns): void
     {
         $pdo = DB::connection($this->dbConnection->name)->getPdo();
-        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL);
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL, $this->dbConnection->tablePrefix());
         $fieldList = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL), $columns));
 
         try {

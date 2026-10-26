@@ -51,7 +51,7 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
         $columnCount = count($columns);
         $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::SQLITE), $columns));
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
-        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE);
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE, $this->dbConnection->tablePrefix());
 
         $conflictTarget = implode(', ', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::SQLITE), $upsertKeys));
         $updateColumns = array_diff($columns, $upsertKeys);
@@ -107,7 +107,7 @@ final class SqliteSeederStrategy extends AbstractSeederStrategy
         $columnCount = count($columns);
         $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::SQLITE), $columns));
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
-        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE);
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE, $this->dbConnection->tablePrefix());
 
         $maxRowsPerBatch = $this->sqliteMaxRowsPerBatch($columnCount);
 

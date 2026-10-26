@@ -8,9 +8,11 @@ use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 
 final class SqlIdentifier
 {
-    public static function quoteTable(string $table, DatabaseDriver $driver): string
+    public static function quoteTable(string $table, DatabaseDriver $driver, string $prefix = ''): string
     {
         $parts = explode('.', $table, 2);
+        $last = count($parts) - 1;
+        $parts[$last] = $prefix.$parts[$last];
 
         if ($driver === DatabaseDriver::MYSQL) {
             return implode('.', array_map(static fn (string $p) => '`'.str_replace('`', '``', $p).'`', $parts));

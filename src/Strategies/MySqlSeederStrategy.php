@@ -48,7 +48,7 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
         $recordCount = count($records);
 
         $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::MYSQL), $columns));
-        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL, $this->dbConnection->tablePrefix());
 
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));
@@ -106,7 +106,7 @@ final class MySqlSeederStrategy extends AbstractSeederStrategy
         $recordCount = count($records);
 
         $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::MYSQL), $columns));
-        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL, $this->dbConnection->tablePrefix());
 
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));

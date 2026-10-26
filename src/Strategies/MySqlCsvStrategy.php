@@ -74,7 +74,7 @@ final class MySqlCsvStrategy extends AbstractCsvStrategy
         // Normalise to forward slashes: MySQL treats backslashes in the LOAD DATA path as escape characters
         $filepath = str_replace('\\', '/', $this->assertSafeCsvPath($this->getAbsoluteFilePath()));
 
-        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL);
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::MYSQL, $this->dbConnection->tablePrefix());
 
         $nullMarker = config('turbo-seeder.csv_strategy.null_marker', '\\N');
         $quotedNullMarker = $pdo->quote($nullMarker);

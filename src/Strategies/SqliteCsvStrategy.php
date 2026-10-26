@@ -71,7 +71,7 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
         $columnCount = count($columns);
         $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
         $singleRowPlaceholders = '('.str_repeat('?,', $columnCount - 1).'?)';
-        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE);
+        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE, $this->dbConnection->tablePrefix());
 
         $maxRowsPerBatch = $this->sqliteMaxRowsPerBatch($columnCount);
 
