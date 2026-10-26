@@ -49,3 +49,23 @@ test('postgresql csv import stores null markers as real NULLs', function () {
         ->and(DB::table('test_users')->whereNull('age')->count())->toBe(10)
         ->and(DB::table('test_users')->where('age', 42)->count())->toBe(10);
 })->skip(fn () => nullHandlingDriver() !== 'pgsql', 'PostgreSQL-specific test');
+
+test('csv import keeps literal NULL and empty strings as values', function () {
+    TurboSeeder::forTable('test_users')
+        ->columns(['name', 'email', 'age'])
+        ->generate(fn ($i) => [
+            'name' => $i === 0 ? 'NULL' : '',
+            'email' => "user{$i}@test.com",
+            'age' => null,
+        ])
+        ->count(2)
+        ->useCsvStrategy()
+        ->withoutProgressTracking()
+        ->run();
+
+    $rows = DB::table('test_users')->orderBy('id')->get();
+
+    expect($rows[0]->name)->toBe('NULL')
+        ->and($rows[1]->name)->toBe('')
+        ->and($rows[0]->age)->toBeNull();
+});
