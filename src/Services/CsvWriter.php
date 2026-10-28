@@ -60,22 +60,67 @@ final class CsvWriter
             throw new \RuntimeException('File handle not initialized. Call open() first.');
         }
 
-        // empty escape = RFC 4180 mode (enclosure doubled, never backslash-escaped).
-        // This also ensures null markers like \N are written unquoted, so MySQL/PG
-        // correctly recognise them as NULL rather than the literal string \N.
-        $success = fputcsv(
-            $this->handle,
-            $row,
-            $this->delimiter,
-            $this->enclosure,
-            ''
-        );
+        if ($this->needsForcedQuoting($row)) {
+            $success = fwrite($this->handle, $this->encodeRowQuoted($row)) !== false;
+        } else {
+            // empty escape = RFC 4180 mode (enclosure doubled, never backslash-escaped).
+            // This also ensures null markers like \N are written unquoted, so MySQL/PG
+            // correctly recognise them as NULL rather than the literal string \N.
+            $success = fputcsv(
+                $this->handle,
+                $row,
+                $this->delimiter,
+                $this->enclosure,
+                ''
+            );
+        }
 
         if ($success === false) {
             throw new \RuntimeException('Failed to write CSV row');
         }
 
         $this->rowsWritten++;
+    }
+
+    /**
+     * fputcsv leaves a bare NULL unquoted, which MySQL's LOAD DATA reads as SQL NULL,
+     * and writes a lone empty field as a blank line, which readers drop to NULL.
+     *
+     * @param  array<int|string, mixed>  $row
+     */
+    private function needsForcedQuoting(array $row): bool
+    {
+        return in_array('NULL', $row, true) || (count($row) === 1 && reset($row) === '');
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $row
+     */
+    private function encodeRowQuoted(array $row): string
+    {
+        $multiColumn = count($row) > 1;
+        $fields = [];
+
+        foreach ($row as $value) {
+            $value = (string) $value;
+
+            if ($value === '' && $multiColumn) {
+                $fields[] = '';
+
+                continue;
+            }
+
+            $fields[] = $value === 'NULL' || $value === '' || $this->containsSpecialCharacter($value)
+                ? $this->enclosure.str_replace($this->enclosure, $this->enclosure.$this->enclosure, $value).$this->enclosure
+                : $value;
+        }
+
+        return implode($this->delimiter, $fields)."\n";
+    }
+
+    private function containsSpecialCharacter(string $value): bool
+    {
+        return strpbrk($value, $this->delimiter.$this->enclosure."\n\r\t ") !== false;
     }
 
     /**

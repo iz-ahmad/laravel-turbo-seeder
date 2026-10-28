@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 /**
@@ -49,3 +50,41 @@ test('postgresql csv import stores null markers as real NULLs', function () {
         ->and(DB::table('test_users')->whereNull('age')->count())->toBe(10)
         ->and(DB::table('test_users')->where('age', 42)->count())->toBe(10);
 })->skip(fn () => nullHandlingDriver() !== 'pgsql', 'PostgreSQL-specific test');
+
+test('csv import keeps literal NULL and empty strings as values', function () {
+    TurboSeeder::forTable('test_users')
+        ->columns(['name', 'email', 'age'])
+        ->generate(fn ($i) => [
+            'name' => $i === 0 ? 'NULL' : '',
+            'email' => "user{$i}@test.com",
+            'age' => null,
+        ])
+        ->count(2)
+        ->useCsvStrategy()
+        ->withoutProgressTracking()
+        ->run();
+
+    $rows = DB::table('test_users')->orderBy('id')->get();
+
+    expect($rows[0]->name)->toBe('NULL')
+        ->and($rows[1]->name)->toBe('')
+        ->and($rows[0]->age)->toBeNull();
+});
+
+test('sqlite csv import keeps an empty string in a single-column table', function () {
+    Schema::create('single_column_items', function ($table) {
+        $table->string('label')->nullable();
+    });
+
+    TurboSeeder::forTable('single_column_items')
+        ->columns(['label'])
+        ->generate(fn ($i) => ['label' => $i === 0 ? '' : null])
+        ->count(2)
+        ->useCsvStrategy()
+        ->withoutProgressTracking()
+        ->run();
+
+    $labels = DB::table('single_column_items')->pluck('label')->all();
+
+    expect($labels)->toBe(['', null]);
+})->skip(fn () => nullHandlingDriver() !== 'sqlite', 'SQLite-specific');
