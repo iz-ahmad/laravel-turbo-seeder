@@ -46,3 +46,24 @@ test('quoteTable applies the prefix after the schema qualifier', function () {
     expect(SqlIdentifier::quoteTable('mydb.users', DatabaseDriver::MYSQL, 'app_'))->toBe('`mydb`.`app_users`')
         ->and(SqlIdentifier::quoteTable('public.users', DatabaseDriver::PGSQL, 'app_'))->toBe('"public"."app_users"');
 });
+
+test('quoteTable accepts an empty prefix and alphanumeric underscore prefixes', function () {
+    expect(SqlIdentifier::quoteTable('users', DatabaseDriver::MYSQL, ''))->toBe('`users`')
+        ->and(SqlIdentifier::quoteTable('users', DatabaseDriver::MYSQL, 'App_01_'))->toBe('`App_01_users`');
+});
+
+test('quoteTable rejects an unsafe prefix', function (string $prefix) {
+    SqlIdentifier::quoteTable('users', DatabaseDriver::MYSQL, $prefix);
+})->with([
+    'backtick' => 'a`b_',
+    'double quote' => 'a"b_',
+    'semicolon' => 'a;b_',
+    'space' => 'a b_',
+    'dash' => 'a-b_',
+    'dot' => 'a.b_',
+    'newline' => "a\nb_",
+])->throws(InvalidArgumentException::class, 'Invalid table prefix');
+
+test('assertSafePrefix rejects a trailing newline', function () {
+    SqlIdentifier::assertSafePrefix("pfx_\n");
+})->throws(InvalidArgumentException::class);
