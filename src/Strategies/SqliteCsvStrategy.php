@@ -7,7 +7,6 @@ namespace IzAhmad\TurboSeeder\Strategies;
 use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Services\CsvReader;
-use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ResolvesSqliteVariableLimit;
 
 final class SqliteCsvStrategy extends AbstractCsvStrategy
@@ -71,7 +70,7 @@ final class SqliteCsvStrategy extends AbstractCsvStrategy
         $columnCount = count($columns);
         $columnNames = implode(',', array_map(fn ($col) => "\"{$col}\"", $columns));
         $singleRowPlaceholders = '('.str_repeat('?,', $columnCount - 1).'?)';
-        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::SQLITE, $this->dbConnection->tablePrefix());
+        $quotedTable = $this->quoteTable($table);
 
         $maxRowsPerBatch = $this->sqliteMaxRowsPerBatch($columnCount);
 
