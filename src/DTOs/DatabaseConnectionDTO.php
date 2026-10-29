@@ -39,6 +39,11 @@ final readonly class DatabaseConnectionDTO
         return self::fromName($name);
     }
 
+    public function tablePrefix(): string
+    {
+        return $this->connection->getTablePrefix();
+    }
+
     /**
      * Get the underlying PDO connection.
      */

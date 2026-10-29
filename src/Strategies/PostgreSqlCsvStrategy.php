@@ -11,11 +11,13 @@ use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\PostgresCopyWriter;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ClassifiesDatabaseErrors;
+use IzAhmad\TurboSeeder\Strategies\Concerns\SyncsPostgresSequences;
 use Pdo\Pgsql;
 
 final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
 {
     use ClassifiesDatabaseErrors;
+    use SyncsPostgresSequences;
 
     public function supports(DatabaseDriver $driver): bool
     {
@@ -72,7 +74,7 @@ final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
     protected function importFromCsv(string $table, array $columns): void
     {
         $pdo = DB::connection($this->dbConnection->name)->getPdo();
-        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL);
+        $quotedTable = $this->quoteTable($table);
         $fieldList = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL), $columns));
 
         try {

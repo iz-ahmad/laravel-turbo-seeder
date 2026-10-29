@@ -8,9 +8,12 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Services\ValueFormatter;
+use IzAhmad\TurboSeeder\Strategies\Concerns\SyncsPostgresSequences;
 
 final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
 {
+    use SyncsPostgresSequences;
+
     public function supports(DatabaseDriver $driver): bool
     {
         return $driver === DatabaseDriver::PGSQL;
@@ -48,7 +51,7 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
         $recordCount = count($records);
 
         $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL), $columns));
-        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL);
+        $quotedTable = $this->quoteTable($table);
 
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));
@@ -103,7 +106,7 @@ final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
         $recordCount = count($records);
 
         $columnNames = implode(',', array_map(fn ($col) => SqlIdentifier::quoteColumn($col, DatabaseDriver::PGSQL), $columns));
-        $quotedTable = SqlIdentifier::quoteTable($table, DatabaseDriver::PGSQL);
+        $quotedTable = $this->quoteTable($table);
 
         $singleRowPlaceholders = $this->buildSingleRowPlaceholder($columnCount);
         $allPlaceholders = implode(',', array_fill(0, $recordCount, $singleRowPlaceholders));

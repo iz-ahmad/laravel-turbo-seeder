@@ -30,6 +30,8 @@ final class SeederOrchestrator
     {
         $dbConnection = DatabaseConnectionDTO::fromName($config->connection);
 
+        SqlIdentifier::assertSafePrefix($dbConnection->tablePrefix());
+
         $strategy = $this->strategyResolver->resolve($config, $dbConnection);
 
         return ($this->executeAction)($strategy, $config);
