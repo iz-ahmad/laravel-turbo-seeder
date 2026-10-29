@@ -566,6 +566,12 @@ TurboSeeder::forTable(Product::class)
 
 > Upsert keys must be a subset of the seeded columns, and `upsert()` is **not supported with `useCsvStrategy()`** (it throws) - `LOAD DATA` / `COPY` have no conflict handling. Use the default strategy for upserts.
 
+### Table Prefixes
+
+Connections that define a table `prefix` in `config/database.php` are supported by both strategies, `upsert()`, `truncate()` and the benchmark command.
+
+> TurboSeeder applies the connection prefix itself (if the project has a prefix configured), so pass the table name without the prefix (e.g. `items`, not `pfx_items`). The prefix may only contain letters, digits and underscores.
+
 ### Things To Remember
 
 - No model events or observers fired

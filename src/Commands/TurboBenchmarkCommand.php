@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Actions\GuardAgainstProductionAction;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
+use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 
 final class TurboBenchmarkCommand extends Command
 {
@@ -182,17 +183,19 @@ final class TurboBenchmarkCommand extends Command
     {
         $this->dropBenchmarkTable($table, $connection, $driver);
 
+        $quotedTable = $this->quoteTable($table, $connection, $driver);
+
         match ($driver) {
-            DatabaseDriver::MYSQL => $this->createMySqlTable($table, $connection),
-            DatabaseDriver::PGSQL => $this->createPostgreSqlTable($table, $connection),
-            DatabaseDriver::SQLITE => $this->createSqliteTable($table, $connection),
+            DatabaseDriver::MYSQL => $this->createMySqlTable($quotedTable, $connection),
+            DatabaseDriver::PGSQL => $this->createPostgreSqlTable($quotedTable, $connection),
+            DatabaseDriver::SQLITE => $this->createSqliteTable($quotedTable, $connection),
         };
     }
 
-    private function createMySqlTable(string $table, string $connection): void
+    private function createMySqlTable(string $quotedTable, string $connection): void
     {
         DB::connection($connection)->statement("
-            CREATE TABLE `{$table}` (
+            CREATE TABLE {$quotedTable} (
                 `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 `name` VARCHAR(255) NOT NULL,
                 `email` VARCHAR(255) NOT NULL,
@@ -202,10 +205,10 @@ final class TurboBenchmarkCommand extends Command
         ");
     }
 
-    private function createPostgreSqlTable(string $table, string $connection): void
+    private function createPostgreSqlTable(string $quotedTable, string $connection): void
     {
         DB::connection($connection)->statement("
-            CREATE TABLE \"{$table}\" (
+            CREATE TABLE {$quotedTable} (
                 id BIGSERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 email VARCHAR(255) NOT NULL,
@@ -215,10 +218,10 @@ final class TurboBenchmarkCommand extends Command
         ");
     }
 
-    private function createSqliteTable(string $table, string $connection): void
+    private function createSqliteTable(string $quotedTable, string $connection): void
     {
         DB::connection($connection)->statement("
-            CREATE TABLE \"{$table}\" (
+            CREATE TABLE {$quotedTable} (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name VARCHAR(255) NOT NULL,
                 email VARCHAR(255) NOT NULL,
@@ -230,31 +233,23 @@ final class TurboBenchmarkCommand extends Command
 
     private function truncateTable(string $table, string $connection, DatabaseDriver $driver): void
     {
-        match ($driver) {
-            DatabaseDriver::MYSQL => DB::connection($connection)->statement("
-                TRUNCATE TABLE `{$table}`
-            "),
-            DatabaseDriver::PGSQL => DB::connection($connection)->statement("
-                TRUNCATE TABLE \"{$table}\"
-            "),
-            DatabaseDriver::SQLITE => DB::connection($connection)->statement("
-                DELETE FROM \"{$table}\"
-            "),
-        };
+        $quotedTable = $this->quoteTable($table, $connection, $driver);
+
+        DB::connection($connection)->statement(match ($driver) {
+            DatabaseDriver::MYSQL, DatabaseDriver::PGSQL => "TRUNCATE TABLE {$quotedTable}",
+            DatabaseDriver::SQLITE => "DELETE FROM {$quotedTable}",
+        });
     }
 
     private function dropBenchmarkTable(string $table, string $connection, DatabaseDriver $driver): void
     {
-        match ($driver) {
-            DatabaseDriver::MYSQL => DB::connection($connection)->statement("
-                DROP TABLE IF EXISTS `{$table}`
-            "),
-            DatabaseDriver::PGSQL => DB::connection($connection)->statement("
-                DROP TABLE IF EXISTS \"{$table}\"
-            "),
-            DatabaseDriver::SQLITE => DB::connection($connection)->statement("
-                DROP TABLE IF EXISTS \"{$table}\"
-            "),
-        };
+        $quotedTable = $this->quoteTable($table, $connection, $driver);
+
+        DB::connection($connection)->statement("DROP TABLE IF EXISTS {$quotedTable}");
+    }
+
+    private function quoteTable(string $table, string $connection, DatabaseDriver $driver): string
+    {
+        return SqlIdentifier::quoteTable($table, $driver, DB::connection($connection)->getTablePrefix());
     }
 }
