@@ -8,8 +8,19 @@ use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 
 final class SqlIdentifier
 {
+    public static function assertSafePrefix(string $prefix): void
+    {
+        if (preg_match('/^[A-Za-z0-9_]*$/D', $prefix) !== 1) {
+            throw new \InvalidArgumentException(
+                "Invalid table prefix [{$prefix}]. Table prefixes may only contain letters, digits, and underscores."
+            );
+        }
+    }
+
     public static function quoteTable(string $table, DatabaseDriver $driver, string $prefix = ''): string
     {
+        self::assertSafePrefix($prefix);
+
         $parts = explode('.', $table, 2);
         $last = count($parts) - 1;
         $parts[$last] = $prefix.$parts[$last];
