@@ -77,3 +77,30 @@ test('returns correct file path', function () {
 
     expect($writer->getFilePath())->toBe($this->tempFile);
 });
+
+test('quotes a literal NULL so it is not read as SQL NULL', function () {
+    $writer = new CsvWriter($this->tempFile);
+    $writer->open();
+    $writer->writeRow(['NULL', '\N', 'null']);
+    $writer->close();
+
+    expect(file_get_contents($this->tempFile))->toBe("\"NULL\",\\N,null\n");
+});
+
+test('writes a lone empty field as a quoted empty string', function () {
+    $writer = new CsvWriter($this->tempFile);
+    $writer->open();
+    $writer->writeRow(['']);
+    $writer->close();
+
+    expect(file_get_contents($this->tempFile))->toBe("\"\"\n");
+});
+
+test('forced quoting still encodes special characters', function () {
+    $writer = new CsvWriter($this->tempFile);
+    $writer->open();
+    $writer->writeRow(['NULL', 'a,"b"', '', 'plain']);
+    $writer->close();
+
+    expect(file_get_contents($this->tempFile))->toBe("\"NULL\",\"a,\"\"b\"\"\",,plain\n");
+});
