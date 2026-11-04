@@ -14,11 +14,13 @@ use IzAhmad\TurboSeeder\DTOs\DatabaseConnectionDTO;
 use IzAhmad\TurboSeeder\DTOs\SeederConfigurationDTO;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ClassifiesDatabaseErrors;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ManagesEnvironment;
+use IzAhmad\TurboSeeder\Strategies\Concerns\QuotesTableName;
 
 abstract class AbstractSeederStrategy implements SeederStrategyInterface
 {
     use ClassifiesDatabaseErrors;
     use ManagesEnvironment;
+    use QuotesTableName;
 
     protected int $chunkSize;
 

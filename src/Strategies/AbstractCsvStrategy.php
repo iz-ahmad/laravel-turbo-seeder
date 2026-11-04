@@ -18,6 +18,7 @@ use IzAhmad\TurboSeeder\Strategies\Concerns\HandlesCsvConsoleOutput;
 use IzAhmad\TurboSeeder\Strategies\Concerns\HandlesCsvFallback;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ManagesCsvTempFiles;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ManagesEnvironment;
+use IzAhmad\TurboSeeder\Strategies\Concerns\QuotesTableName;
 
 abstract class AbstractCsvStrategy implements SeederStrategyInterface
 {
@@ -25,6 +26,7 @@ abstract class AbstractCsvStrategy implements SeederStrategyInterface
     use HandlesCsvFallback;
     use ManagesCsvTempFiles;
     use ManagesEnvironment;
+    use QuotesTableName;
 
     protected ?string $tempFilePath = null;
 
