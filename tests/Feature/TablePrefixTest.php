@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Schema;
 use IzAhmad\TurboSeeder\Facades\TurboSeeder;
 
 beforeEach(function () {
-    DB::connection('testing')->setTablePrefix('pfx_');
+    $connection = DB::connection('testing');
+    $connection->setTablePrefix('pfx_');
+    $connection->useDefaultSchemaGrammar();
 
     Schema::dropIfExists('prefixed_items');
     Schema::create('prefixed_items', function ($table) {
@@ -17,7 +19,10 @@ beforeEach(function () {
 
 afterEach(function () {
     Schema::dropIfExists('prefixed_items');
-    DB::connection('testing')->setTablePrefix('');
+
+    $connection = DB::connection('testing');
+    $connection->setTablePrefix('');
+    $connection->useDefaultSchemaGrammar();
 });
 
 test('default strategy seeds a prefixed table', function () {
