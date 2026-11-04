@@ -11,11 +11,13 @@ use IzAhmad\TurboSeeder\Exceptions\CsvImportFailedException;
 use IzAhmad\TurboSeeder\Services\PostgresCopyWriter;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Strategies\Concerns\ClassifiesDatabaseErrors;
+use IzAhmad\TurboSeeder\Strategies\Concerns\SyncsPostgresSequences;
 use Pdo\Pgsql;
 
 final class PostgreSqlCsvStrategy extends AbstractCsvStrategy
 {
     use ClassifiesDatabaseErrors;
+    use SyncsPostgresSequences;
 
     public function supports(DatabaseDriver $driver): bool
     {

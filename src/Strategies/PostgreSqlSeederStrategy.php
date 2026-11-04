@@ -8,9 +8,12 @@ use Illuminate\Support\Facades\DB;
 use IzAhmad\TurboSeeder\Enums\DatabaseDriver;
 use IzAhmad\TurboSeeder\Services\SqlIdentifier;
 use IzAhmad\TurboSeeder\Services\ValueFormatter;
+use IzAhmad\TurboSeeder\Strategies\Concerns\SyncsPostgresSequences;
 
 final class PostgreSqlSeederStrategy extends AbstractSeederStrategy
 {
+    use SyncsPostgresSequences;
+
     public function supports(DatabaseDriver $driver): bool
     {
         return $driver === DatabaseDriver::PGSQL;

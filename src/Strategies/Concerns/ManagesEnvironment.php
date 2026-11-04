@@ -81,5 +81,14 @@ trait ManagesEnvironment
         ($this->cleanupAction)($this->dbConnection, $this->config, $this->environmentContext);
 
         $this->environmentPrepared = false;
+
+        if (! $fromException) {
+            $this->afterSuccessfulCleanup();
+        }
     }
+
+    /**
+     * Hook for work that must run once the seeded rows are committed and the environment is restored.
+     */
+    protected function afterSuccessfulCleanup(): void {}
 }
