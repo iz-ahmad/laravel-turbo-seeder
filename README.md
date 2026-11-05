@@ -577,6 +577,7 @@ Connections that define a table `prefix` in `config/database.php` are supported 
 - No model events or observers fired
 - Factory relationships must use recycle()
 - Seed parent tables before using fromTable()
+- **PostgreSQL sequences:** after a run that seeds explicit values into a serial or identity column, TurboSeeder advances that sequence to `MAX(column)` (it never lowers it), so later inserts without an id don't collide. If this step fails (for example, no `UPDATE` privilege on the sequence), a warning is logged and the seed still succeeds
 
 ---
 
